@@ -77,7 +77,7 @@ export async function controlView(tx: TransactionRepositories, context: CommandC
   } };
 }
 
-function receipt(report: Report, execution: Execution, tx: { incidents: readonly import("@/lib/contracts/domain").Incident[]; notifications: readonly import("@/lib/contracts/domain").NotificationIntent[] }): ReportReceiptDTO {
+export function receipt(report: Report, execution: Execution, tx: { incidents: readonly import("@/lib/contracts/domain").Incident[]; notifications: readonly import("@/lib/contracts/domain").NotificationIntent[] }): ReportReceiptDTO {
   const incident = report.incidentId ? tx.incidents.find(i => i.id === report.incidentId) ?? null : null;
   const intents = incident ? tx.notifications.filter(n => n.subject.kind === "incident" && n.subject.id === incident.id) : [];
   const latest = [...intents].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
