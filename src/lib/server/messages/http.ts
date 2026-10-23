@@ -33,7 +33,8 @@ export async function handleMessageRequest(deps: MessageHttpDeps, request: Reque
   const headers = authHeaders(request);
   const fromChannel = request.headers.has(SECURITY.publicSubmitHeader);
   const authorized = await deps.authorization.authorize({
-    route: "POST /api/messages", executionId: input.executionId, ...headers, authorizationHeader: fromChannel ? null : headers.authorizationHeader,
+    route: "POST /api/messages", executionId: input.executionId, ...headers,
+    ...(fromChannel ? { authorizationHeader: null, operatorCookies: undefined } : {}),
   });
   if (!authorized.ok) return fail(authorized.code, correlation);
   const result = await deps.service.submit(authorized.value, input);

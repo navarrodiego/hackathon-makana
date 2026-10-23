@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Flujos integrados (T18): varias superficies contra el servidor de producción local, la base del worktree y
  * un sumidero ntfy en loopback que reemplaza a ntfy.sh. Puertos propios para no chocar con `pnpm test:e2e`.
- * Requiere `pnpm build` previo y RODRIGO_* y CONTROL_* en `.env`. Plazos reales de 30 s: serial y un worker.
+ * Requiere `pnpm build` previo y OPERATOR_SECRET en `.env`. Plazos reales de 30 s: serial y un worker.
  */
 const port = Number(process.env.E2E_FLOWS_PORT || 34138);
 const sinkPort = Number(process.env.E2E_NTFY_PORT || 34139);

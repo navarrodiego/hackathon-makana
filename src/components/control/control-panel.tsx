@@ -8,6 +8,9 @@ import { SurfaceShell } from "@/components/relevo/surface-shell";
 import { Button } from "@/components/ui/button";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
 import { Status } from "@/components/ui/status";
+import { OperatorLogin } from "@/components/acceso/operator-login";
+import { isSessionProblem } from "@/components/acceso/messages";
+import { SignOutButton } from "@/components/acceso/sign-out-button";
 import { failureMessage, postJson, touchState } from "./api";
 import {
   SCRIPTED_REPORTS, adjacentScene, buildReportRequest, buildResetRequest, buildSceneRequest, buildTakeRequest,
@@ -16,7 +19,7 @@ import {
 
 const REFRESH_MS = 2000;
 const newKey = () => `control-${crypto.randomUUID()}`;
-type Notice = { readonly tone: "ok" | "error"; readonly text: string } | null;
+type Notice = { readonly tone: "ok" | "error"; readonly text: string; readonly relogin?: boolean } | null;
 
 /**
  * Operación protegida. Todo cambio pasa por las APIs comunes con origen escenario; la vista se rehace desde el
@@ -75,7 +78,7 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
     } else {
       // Un rechazo definitivo del servidor no se reintenta con la misma clave; un corte sí.
       if (result.code !== "NETWORK" && result.code !== "OPERATION_PENDING") keys.current.delete(intent);
-      setNotice({ tone: "error", text: failureMessage(result.code ?? "UNKNOWN") });
+      setNotice({ tone: "error", text: failureMessage(result.code ?? "UNKNOWN"), relogin: isSessionProblem(result.code ?? "") });
     }
     busyRef.current = null;
     restoreFocus.current = origin;
@@ -191,6 +194,9 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
         {notice?.tone === "ok" ? <p className="text-body font-semibold">{notice.text}</p> : null}
       </div>
       {notice?.tone === "error" ? <ErrorMessage title="No se completó"><p>{notice.text}</p></ErrorMessage> : null}
+      {notice?.relogin ? (
+        <OperatorLogin role="control" onSuccess={() => setNotice({ tone: "ok", text: "Ingresaste de nuevo. Vuelve a pulsar la acción." })} />
+      ) : null}
 
       <section aria-labelledby="escenas" className="flex flex-col gap-3 border-t border-line pt-6">
         <h2 id="escenas" className="text-section font-semibold">Escenas</h2>
@@ -267,6 +273,7 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
           </div>
         ) : null}
       </section>
+      <SignOutButton />
     </SurfaceShell>
   );
 }

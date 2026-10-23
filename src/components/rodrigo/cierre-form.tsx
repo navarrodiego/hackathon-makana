@@ -12,6 +12,9 @@ import { SurfaceShell } from "@/components/relevo/surface-shell";
 import { Button } from "@/components/ui/button";
 import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
+import { OperatorLogin } from "@/components/acceso/operator-login";
+import { isSessionProblem } from "@/components/acceso/messages";
+import { SignOutButton } from "@/components/acceso/sign-out-button";
 import { getState, postJson } from "./api";
 import {
   buildSendBody, clockLabel, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
@@ -21,7 +24,7 @@ import { Pendiente, type TicketDraft } from "./pendiente-card";
 import { ResumenNoche } from "./resumen/resumen-noche";
 
 type Busy = "idle" | "regenerating" | "sending";
-interface Problem { readonly text: string; readonly retryable: boolean }
+interface Problem { readonly text: string; readonly retryable: boolean; readonly relogin?: boolean }
 type SuggestionData = { version: number; note: RodrigoViewDTO["note"] };
 type SendData = { handoff: HandoffSummaryDTO; coverage: CoverageDTO };
 
@@ -105,7 +108,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
     });
     setBusy("idle");
     if (!result.ok) {
-      setProblem({ text: result.network ? "No se pudo conectar. Se conserva tu borrador." : errorMessage(result.code, "suggest"), retryable: result.network });
+      setProblem({ text: result.network ? "No se pudo conectar. Se conserva tu borrador." : errorMessage(result.code, "suggest"), retryable: result.network, relogin: isSessionProblem(result.code) });
       if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE") setStale(true);
       return;
     }
@@ -134,7 +137,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
     if (!result.ok) {
       setProblem({
         text: result.network ? "No se pudo comprobar si el relevo se envió. Reintenta: el servidor no lo duplicará." : errorMessage(result.code, "send"),
-        retryable: result.network || result.code === "OPERATION_PENDING",
+        retryable: result.network || result.code === "OPERATION_PENDING", relogin: isSessionProblem(result.code),
       });
       if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE" || result.code === "STATE_CONFLICT") setStale(true);
       return;
@@ -183,6 +186,9 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
       {view.note.status === "pending" && !sent ? <DegradedNotice title="La nota aún se está preparando">Puedes esperar unos segundos o escribirla tú. No es una nota guardada.</DegradedNotice> : null}
       {view.note.status === "failed" && !dirty && !sent ? <DegradedNotice title="La nota no se generó">No hay borrador de IA. Puedes enviar el relevo sin nota, escribirla o usar Regenerar.</DegradedNotice> : null}
       {problem ? <ErrorMessage title={problem.text}>{problem.retryable ? "Puedes volver a pulsar el botón." : null}</ErrorMessage> : null}
+      {problem?.relogin ? (
+        <OperatorLogin role="outgoing" onSuccess={() => setProblem({ text: "Ingresaste de nuevo. Tu borrador se conserva; vuelve a pulsar el botón.", retryable: false })} />
+      ) : null}
 
       {phase === "morning" && snapshot && follow ? <ResumenNoche state={snapshot} follow={follow} outgoing={outgoing} /> : null}
 
@@ -228,6 +234,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
           <div className="mt-4 flex flex-col gap-8">{pendientes}</div>
         </details>
       ) : pendientes}
+      <SignOutButton />
     </SurfaceShell>
   );
 }

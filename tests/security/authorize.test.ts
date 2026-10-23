@@ -6,6 +6,7 @@ import type { Execution, ReportSession } from '../../src/lib/contracts/domain';
 import type { AuthorizationInput } from '../../src/lib/contracts/auth';
 import { createAuthorizationService, type AuthDeps } from '../../src/lib/server/auth/service';
 import { generateOpaqueToken, hashCredential } from '../../src/lib/server/auth/credentials';
+import { issueOperatorToken } from '../../src/lib/server/auth/operator-session';
 
 const APP = 'https://relevo.example';
 const T0 = '2026-10-23T15:00:00.000Z' as Instant;
@@ -15,7 +16,7 @@ const EXEC: Execution = {
   preparation: 'ready', createdAt: T0, supersededBy: null,
 };
 const basic = (u: string, s: string) => 'Basic ' + Buffer.from(`${u}:${s}`).toString('base64');
-const RODRIGO = basic('rodrigo', 'secreto-rodrigo'), CONTROL = basic('control', 'secreto-control');
+const RODRIGO = basic('rodrigo', 'secreto-operador'), CONTROL = basic('control', 'secreto-operador');
 
 function world(over: Partial<AuthDeps> = {}) {
   const grants = new Map<string, RecipientGrant>(), sessions = new Map<string, ReportSession>();
@@ -28,7 +29,7 @@ function world(over: Partial<AuthDeps> = {}) {
       actorExists: async (e, a) => e === EXEC.executionId && ['actor_outgoing', 'actor_incoming', 'actor_backup'].includes(a),
     },
     persistGrant: async () => ({ ok: true, value: null }),
-    config: { outgoing: { username: 'rodrigo', secret: 'secreto-rodrigo' }, control: { username: 'control', secret: 'secreto-control' }, appOrigin: APP },
+    config: { operatorSecret: 'secreto-operador', appOrigin: APP },
     now: () => now, correlationId: () => `correlation_${++n}`, ...over,
   };
   const grant = (scope: RecipientScope, over: Partial<RecipientGrant> = {}) => {
@@ -67,8 +68,8 @@ test('credenciales Basic: ausente, malformada, incorrecta o sin configurar', asy
   assert.equal(await code(w, input({ authorizationHeader: null })), 'AUTH_REQUIRED');
   assert.equal(await code(w, input({ authorizationHeader: 'Basic ???' })), 'AUTH_INVALID');
   assert.equal(await code(w, input({ authorizationHeader: basic('rodrigo', 'otro') })), 'AUTH_INVALID');
-  assert.equal(await code(w, input({ authorizationHeader: basic('intruso', 'secreto-rodrigo') })), 'AUTH_INVALID');
-  const closed = world({ config: { outgoing: undefined, control: undefined, appOrigin: APP } });
+  assert.equal(await code(w, input({ authorizationHeader: basic('intruso', 'secreto-operador') })), 'AUTH_INVALID');
+  const closed = world({ config: { operatorSecret: undefined, appOrigin: APP } });
   assert.equal(await code(closed, input({ authorizationHeader: RODRIGO })), 'AUTH_INVALID');
   assert.equal(await code(closed, input({ route: 'POST /api/reset', authorizationHeader: CONTROL })), 'AUTH_INVALID');
 });
@@ -102,7 +103,7 @@ test('origen: POST con Origin ajeno, ausente o sin APP_ORIGIN se rechaza antes d
     assert.equal(await code(w, input({ authorizationHeader: RODRIGO, originHeader })), 'ORIGIN_REJECTED', String(originHeader));
   }
   assert.equal(await code(w, input({ authorizationHeader: null, originHeader: 'https://evil.example' })), 'ORIGIN_REJECTED');
-  const open = world({ config: { outgoing: { username: 'rodrigo', secret: 'secreto-rodrigo' }, control: undefined, appOrigin: undefined } });
+  const open = world({ config: { operatorSecret: 'secreto-operador', appOrigin: undefined } });
   assert.equal(await code(open, input({ authorizationHeader: RODRIGO })), 'ORIGIN_REJECTED');
 });
 
@@ -192,4 +193,50 @@ test('un fallo de lectura de credenciales o ejecución se informa como almacenam
   assert.deepEqual(r, { ok: false, code: 'STORAGE_UNAVAILABLE' });
   const w2 = world({ credentials: { findGrant: boom, findSession: boom } });
   assert.equal(await code(w2, input({ route: 'POST /api/ack/[id]', authorizationHeader: `Bearer ${generateOpaqueToken()}`, entityId: 'incident_1' })), 'STORAGE_UNAVAILABLE');
+});
+
+const op = (role: 'outgoing' | 'control', secret = 'secreto-operador', at = Date.parse(T0)) => issueOperatorToken(role, secret, at);
+const cookies = (o: { outgoing?: string; control?: string }) => ({ operatorCookies: { outgoing: o.outgoing ?? null, control: o.control ?? null } });
+
+test('sesión de operador: la cookie de Rodrigo autoriza como Rodrigo y gana sobre un Basic viejo y erróneo', async () => {
+  const w = world();
+  const r = await w.service.authorize(input({ ...cookies({ outgoing: op('outgoing') }), authorizationHeader: basic('rodrigo', 'vieja-y-mala') }));
+  assert.ok(r.ok);
+  assert.deepEqual(r.value.principal, { kind: 'outgoing', actorId: 'actor_outgoing' });
+  assert.equal(r.value.origin, 'web');
+});
+
+test('sesión de operador: control opera control y lee /rodrigo; con ambas sesiones, /rodrigo actúa como Rodrigo', async () => {
+  const w = world();
+  assert.equal(await code(w, input({ route: 'POST /api/reset', ...cookies({ control: op('control') }) })), 'ok');
+  assert.equal(await code(w, input({ route: 'read_outgoing', originHeader: null, ...cookies({ control: op('control') }) })), 'ok');
+  const both = await w.service.authorize(input({ ...cookies({ outgoing: op('outgoing'), control: op('control') }) }));
+  assert.ok(both.ok); assert.equal(both.value.principal.kind, 'outgoing');
+});
+
+test('sesión de operador: la de Rodrigo no abre control (FORBIDDEN, no pide credencial de nuevo)', async () => {
+  const w = world();
+  assert.equal(await code(w, input({ route: 'read_control', originHeader: null, ...cookies({ outgoing: op('outgoing') }) })), 'FORBIDDEN');
+  assert.equal(await code(w, input({ route: 'POST /api/reset', ...cookies({ outgoing: op('outgoing') }) })), 'FORBIDDEN');
+  assert.equal(await code(w, input({ route: 'read_control', originHeader: null, ...cookies({ control: op('outgoing') }) })), 'AUTH_REQUIRED', 'token de Rodrigo puesto en la cookie de control');
+});
+
+test('sesión de operador: vencida, firmada con otra contraseña o sin contraseña configurada no vale', async () => {
+  const w = world();
+  assert.equal(await code(w, input({ ...cookies({ outgoing: op('outgoing', 'otra-contrasena') }) })), 'AUTH_REQUIRED');
+  assert.equal(await code(w, input({ ...cookies({ outgoing: op('outgoing', 'secreto-operador', Date.parse(T0) - 13 * 3600_000) }) })), 'AUTH_REQUIRED');
+  const closed = world({ config: { operatorSecret: undefined, appOrigin: APP } });
+  assert.equal(await code(closed, input({ ...cookies({ outgoing: op('outgoing') }) })), 'AUTH_REQUIRED');
+});
+
+test('sesión de operador: el POST sigue exigiendo Origin exacto', async () => {
+  const w = world();
+  assert.equal(await code(w, input({ originHeader: 'https://otro.example', ...cookies({ outgoing: op('outgoing') }) })), 'ORIGIN_REJECTED');
+});
+
+test('Basic de respaldo: solo usuarios rodrigo o control con la contraseña de operador', async () => {
+  const w = world();
+  assert.equal(await code(w, input({ authorizationHeader: basic('rodrigo', 'secreto-operador') })), 'ok');
+  assert.equal(await code(w, input({ route: 'POST /api/reset', authorizationHeader: basic('control', 'secreto-operador') })), 'ok');
+  assert.equal(await code(w, input({ authorizationHeader: basic('tomas', 'secreto-operador') })), 'AUTH_INVALID');
 });

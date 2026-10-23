@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { isSessionProblem, loginErrorMessage } from "../../src/components/acceso/messages";
 import { test } from "node:test";
 import {
   buildSendBody, clockLabel, countWords, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
@@ -85,7 +86,19 @@ test("los errores explican qué se conserva", () => {
   assert.match(errorMessage("PROVIDER_FAILED", "suggest"), /conserva/);
   assert.match(errorMessage("VERSION_CONFLICT", "send"), /cambió/);
   assert.match(errorMessage("OPERATION_PENDING", "send"), /en curso/);
-  assert.match(errorMessage("AUTH_REQUIRED", "send"), /credencial/i);
+  assert.match(errorMessage("AUTH_REQUIRED", "send"), /Ingresa de nuevo/);
+  // Un origen rechazado no se presenta como problema de contraseña.
+  assert.doesNotMatch(errorMessage("ORIGIN_REJECTED", "send"), /contraseña|sesión/);
+  assert.match(errorMessage("ORIGIN_REJECTED", "send"), /APP_ORIGIN/);
+});
+
+test("ingreso: cada causa tiene su mensaje y el de origen nombra ambas direcciones", () => {
+  assert.match(loginErrorMessage("AUTH_INVALID", "outgoing"), /contraseña no coincide/);
+  assert.match(loginErrorMessage("AUTH_NOT_CONFIGURED", "control"), /OPERATOR_SECRET/);
+  assert.match(loginErrorMessage("ORIGIN_REJECTED", "control", { expected: null, received: "https://x.example" }), /APP_ORIGIN/);
+  const m = loginErrorMessage("ORIGIN_REJECTED", "outgoing", { expected: "https://relevo.example", received: "https://www.relevo.example" });
+  assert.match(m, /https:\/\/www\.relevo\.example/); assert.match(m, /https:\/\/relevo\.example\/rodrigo/);
+  assert.equal(isSessionProblem("AUTH_EXPIRED"), true); assert.equal(isSessionProblem("ORIGIN_REJECTED"), false);
 });
 
 test("fase: cierre hasta enviar; mañana solo con relevo enviado y escena de mañana", () => {

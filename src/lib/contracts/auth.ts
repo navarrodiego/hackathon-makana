@@ -11,6 +11,8 @@ export interface RecipientGrant {
   readonly executionId: ExecutionId; readonly actorId: ActorId; readonly scope: RecipientScope;
   readonly credentialHash: string; readonly issuedAt: Instant; readonly expiresAt: Instant;
 }
+/** Rol que fija la página donde se ingresa (/rodrigo → outgoing, /control → control). */
+export type OperatorRole = "outgoing" | "control";
 export type Principal =
   | { readonly kind: "outgoing"; readonly actorId: ActorId }
   | { readonly kind: "control"; readonly operatorId: "demo_control" }
@@ -27,6 +29,8 @@ export interface AuthorizationInput {
   readonly route: RouteKey | "read_outgoing" | "read_handoff" | "read_control" | "read_own_reports";
   readonly executionId: ExecutionId; readonly authorizationHeader: string | null;
   readonly sessionCookie: string | null; readonly originHeader: string | null;
+  /** Cookies de sesión de operador por rol; tienen prioridad sobre Basic. */
+  readonly operatorCookies?: { readonly outgoing: string | null; readonly control: string | null };
   readonly recipientLinkToken?: string;
   readonly entityId?: HandoffId | IncidentId;
   readonly attemptId?: HandoffAttemptId | IncidentAttemptId;
@@ -44,8 +48,11 @@ export const SECURITY = {
   sessionCookieName: "relevo_session", sameSite: "lax", httpOnly: true,
   tokenEntropyBytes: 32, credentialHash: "sha256", cacheControl: "no-store",
   referrerPolicy: "no-referrer", browserPostContentType: "application/json",
-  outgoingUsernameVariable: "RODRIGO_USERNAME", outgoingSecretVariable: "RODRIGO_SECRET",
-  controlUsernameVariable: "CONTROL_USERNAME", controlSecretVariable: "CONTROL_SECRET",
+  /** Una sola contraseña para /rodrigo y /control; el rol lo fija la página donde se ingresa. */
+  operatorSecretVariable: "OPERATOR_SECRET", operatorSecretMinLength: 12,
+  operatorCookieNames: { outgoing: "relevo_op_rodrigo", control: "relevo_op_control" },
+  /** Usuario Basic de respaldo para clientes sin navegador (pruebas, scripts); la contraseña es OPERATOR_SECRET. */
+  basicUsernames: { outgoing: "rodrigo", control: "control" },
   allowedOriginVariable: "APP_ORIGIN",
   /** Lo envía el formulario de /canal: con él, POST /api/messages solo acepta la cookie de sesión e ignora Basic. */
   publicSubmitHeader: "x-relevo-canal",

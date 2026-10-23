@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  type AuthorizationInput, type AuthorizationService, type CommandContext, type Principal,
+  SECURITY, type AuthorizationInput, type AuthorizationService, type CommandContext, type OperatorRole, type Principal,
   type RecipientGrant, type RecipientScope,
 } from "@/lib/contracts/auth";
 import { LIMITS, type ActorId, type CorrelationId, type ExecutionId, type Instant, type Origin } from "@/lib/contracts/core";
@@ -9,11 +9,11 @@ import type { ErrorCode, ServiceResult } from "@/lib/contracts/http";
 import type { CredentialReader, ExecutionReader } from "@/lib/contracts/repositories";
 import { checkOrigin } from "@/lib/server/http/origin";
 import { generateOpaqueToken, hashCredential, isWellFormedToken, parseBasic, parseBearer, secretsEqual } from "./credentials";
+import { verifyOperatorToken } from "./operator-session";
 
-export interface BasicCredential { readonly username: string; readonly secret: string }
 export interface AuthConfig {
-  readonly outgoing: BasicCredential | undefined;
-  readonly control: BasicCredential | undefined;
+  /** Única contraseña de operador; undefined si falta o es demasiado corta (falla cerrada). */
+  readonly operatorSecret: string | undefined;
   readonly appOrigin: string | undefined;
 }
 /** Lecturas de referencia de la ejecución; las respuestas nulas/falsas no revelan nada al cliente. */
@@ -68,26 +68,25 @@ export function narrativeNow(execution: Execution, operationalNow: Instant): Ins
   return new Date(t).toISOString() as Instant;
 }
 
-function matchBasic(header: string | null, config: AuthConfig): "outgoing" | "control" | "none" | "malformed" {
+/**
+ * Respaldo Basic para clientes sin navegador (C12): el usuario `rodrigo` o `control` elige el rol y la contraseña
+ * es OPERATOR_SECRET. Se compara siempre la contraseña, para no filtrar por tiempo si el usuario existía.
+ */
+function matchBasic(header: string | null, config: AuthConfig): OperatorRole | "none" | "malformed" {
   const parsed = parseBasic(header);
   if (!parsed) return "malformed";
-  const both = (c: BasicCredential | undefined) => {
-    // Se evalúan usuario y secreto siempre, para no filtrar cuál falló por tiempo.
-    const user = secretsEqual(parsed.username, c?.username), secret = secretsEqual(parsed.secret, c?.secret);
-    return user && secret;
-  };
-  const control = both(config.control), outgoing = both(config.outgoing);
-  return control ? "control" : outgoing ? "outgoing" : "none";
+  const secretOk = secretsEqual(parsed.secret, config.operatorSecret);
+  const role = (Object.keys(SECURITY.basicUsernames) as OperatorRole[]).find(r => SECURITY.basicUsernames[r] === parsed.username);
+  return secretOk && role ? role : "none";
 }
 
 /**
- * Filtro de páginas Basic para el proxy: si la credencial no corresponde a un rol permitido en la lectura, el proxy
- * responde 401 con desafío para que el navegador vuelva a pedirla en vez de reenviar una guardada que no sirve.
- * No sustituye a `authorize`, que sigue validando ejecución y actor al cargar la página.
+ * Roles con cookie de operador válida. Rodrigo primero: si en el mismo navegador hay ambas sesiones, las acciones
+ * de /rodrigo (las únicas rutas que admiten los dos roles y que control no usa) quedan atribuidas a Rodrigo.
  */
-export function basicPageAccess(route: "read_outgoing" | "read_control", header: string | null, config: AuthConfig): "pass" | "challenge" {
-  const who = matchBasic(header, config);
-  return who !== "malformed" && who !== "none" && RULES[route]?.roles.includes(who) ? "pass" : "challenge";
+function operatorRolesFromCookies(cookies: AuthorizationInput["operatorCookies"], config: AuthConfig, nowMs: number): OperatorRole[] {
+  if (!cookies) return [];
+  return (["outgoing", "control"] as const).filter(r => verifyOperatorToken(cookies[r], r, config.operatorSecret, nowMs));
 }
 
 /** Alcance coherente con la entidad; la concesión de incidente nunca abre un paquete de relevo. */
@@ -154,6 +153,11 @@ export function createAuthorizationService(deps: AuthDeps): AuthorizationService
   async function resolvePrincipal(input: AuthorizationInput, rule: Rule, header: string | null, bearerLike: boolean):
     Promise<ServiceResult<{ principal: Principal | "outgoing" }>> {
     if (bearerLike) return rule.roles.includes("recipient") ? recipientFromToken(input, rule, parseBearer(header)) : fail("FORBIDDEN");
+    // La cookie de operador gana: una credencial Basic vieja guardada por el navegador no tapa una sesión válida.
+    const cookieRoles = operatorRolesFromCookies(input.operatorCookies, deps.config, at(deps.now()));
+    const cookieRole = cookieRoles.find(r => rule.roles.includes(r));
+    if (cookieRole === "control") return { ok: true, value: { principal: { kind: "control", operatorId: "demo_control" } } };
+    if (cookieRole === "outgoing") return { ok: true, value: { principal: "outgoing" } };
     if (header !== null) {
       const who = matchBasic(header, deps.config);
       if (who === "malformed" || who === "none") return fail("AUTH_INVALID");
@@ -165,7 +169,8 @@ export function createAuthorizationService(deps: AuthDeps): AuthorizationService
       return recipientFromToken(input, rule, isWellFormedToken(input.recipientLinkToken) ? input.recipientLinkToken : null);
     }
     if (rule.roles.includes("session") && input.sessionCookie !== null) return sessionFromCookie(input.sessionCookie);
-    return fail("AUTH_REQUIRED");
+    // Hay una sesión válida, pero de otro rol (p. ej. Rodrigo abriendo control).
+    return fail(cookieRoles.length ? "FORBIDDEN" : "AUTH_REQUIRED");
   }
 
   async function recipientFromToken(input: AuthorizationInput, rule: Rule, token: string | null): Promise<ServiceResult<{ principal: Principal }>> {

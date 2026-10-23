@@ -1,20 +1,20 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { basicAs, loginAs } from "./support/acceso";
 
 /**
  * Fases de /rodrigo (cierre, seguimiento y resumen de la noche) contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
- * APP_ORIGIN igual al origen del servidor, RODRIGO_* y CONTROL_*. Los tests comparten una base: ejecutar con `--workers=1`.
+ * APP_ORIGIN igual al origen del servidor, OPERATOR_SECRET. Los tests comparten una base: ejecutar con `--workers=1`.
  * La nota guardada se inserta como fixture (no es una llamada en vivo a la IA); Regenerar con éxito requiere clave del proveedor.
  */
 try { process.loadEnvFile(".env"); } catch { /* sin .env: se usa el entorno del proceso */ }
 
 const env = process.env;
-const configured = Boolean(env.DATABASE_URL && env.APP_ORIGIN && env.RODRIGO_USERNAME && env.RODRIGO_SECRET && env.CONTROL_USERNAME && env.CONTROL_SECRET);
-const basic = (u?: string, s?: string) => `Basic ${Buffer.from(`${u}:${s}`).toString("base64")}`;
-const CONTROL = { Authorization: basic(env.CONTROL_USERNAME, env.CONTROL_SECRET), Origin: env.APP_ORIGIN ?? "", "Content-Type": "application/json" };
+const configured = Boolean(env.DATABASE_URL && env.APP_ORIGIN && env.OPERATOR_SECRET);
+const CONTROL = { Authorization: basicAs("control"), Origin: env.APP_ORIGIN ?? "", "Content-Type": "application/json" };
 
-test.use({ httpCredentials: { username: env.RODRIGO_USERNAME ?? "", password: env.RODRIGO_SECRET ?? "" } });
+test.beforeEach(async ({ context }) => { await loginAs(context, "outgoing", env.APP_ORIGIN!); });
 test.describe.configure({ mode: "serial" });
 test.skip(!configured, "BLOCKED: faltan variables de entorno del backend local");
 

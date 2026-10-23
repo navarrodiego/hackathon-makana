@@ -1,6 +1,6 @@
 import { devices, expect, test } from "@playwright/test";
 import {
-  CONTROL_CREDENTIALS, HAS_AI, ORIGIN, PRINTER, PRINTER_LABEL, RODRIGO_CREDENTIALS, eventsOf, expectNoSecrets, handoffNotice,
+  HAS_AI, ORIGIN, PRINTER, PRINTER_LABEL, loginAs, eventsOf, expectNoSecrets, handoffNotice,
   incidentNotice, pressNtfyAction, requireBackend, rows, state, waitNtfy, waitState, words,
 } from "./support/flow";
 
@@ -14,10 +14,14 @@ requireBackend();
 test("recorrido principal: Paula acepta, diferible en cola, crítico escala a Tomás y él lo toma", async ({ browser, request }, testInfo) => {
   test.setTimeout(240_000);
   const started = Date.now();
-  const open = async (options: Parameters<typeof browser.newContext>[0] = {}) => (await browser.newContext({ baseURL: ORIGIN, ...options })).newPage();
+  const open = async (role?: "outgoing" | "control", options: Parameters<typeof browser.newContext>[0] = {}) => {
+    const context = await browser.newContext({ baseURL: ORIGIN, ...options });
+    if (role) await loginAs(context, role, ORIGIN);
+    return context.newPage();
+  };
 
   // 1. Reset desde el control: RR abre la confirmación; el reinicio ocurre al confirmar.
-  const ctl = await open({ httpCredentials: CONTROL_CREDENTIALS });
+  const ctl = await open("control");
   await ctl.goto("/control");
   await expect(ctl.getByRole("heading", { name: "Control", exact: true })).toBeVisible();
   const before = await state(request);
@@ -40,7 +44,7 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   }
 
   // 2. Cierre de Rodrigo: la nota es editable y enviar no confirma cobertura (R01).
-  const rod = await open({ httpCredentials: RODRIGO_CREDENTIALS });
+  const rod = await open("outgoing");
   await rod.goto("/rodrigo");
   const nota = rod.getByLabel("Nota del relevo");
   if (HAS_AI) {
@@ -68,7 +72,7 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   expect((await state(request)).coverage.status, "aceptación anticipada no activa").toBe("scheduled");
 
   // 4. Proyector abierto (sus lecturas evalúan vencimientos). Control avanza a la ventana y abre el canal.
-  const proy = await open({ viewport: { width: 1920, height: 1080 } });
+  const proy = await open(undefined, { viewport: { width: 1920, height: 1080 } });
   await proy.goto("/proyector");
   await ctl.getByRole("button", { name: "Escena siguiente" }).click();
   await waitState(request, x => x.scene.label === "Canal" && x.coverage?.status === "active" && x.coverage.actor?.displayName === "Paula", "cobertura activa de Paula");

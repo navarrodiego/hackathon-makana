@@ -10,11 +10,11 @@ import { world } from './helpers';
 const APP = 'http://127.0.0.1:3000';
 const NOW = BASE_FIXTURE.operationalAt;
 const basic = (u: string, s: string) => `Basic ${Buffer.from(`${u}:${s}`).toString('base64')}`;
-const CONTROL = { authorization: basic('control', 'secreto-control') };
+const CONTROL = { authorization: basic('control', 'secreto-operador') };
 type W = Awaited<ReturnType<typeof world>>;
 
 function harness(w: W) {
-  const config = { outgoing: { username: 'rodrigo', secret: 'secreto-rodrigo' }, control: { username: 'control', secret: 'secreto-control' }, appOrigin: APP };
+  const config = { operatorSecret: 'secreto-operador', appOrigin: APP };
   const later: (() => Promise<unknown>)[] = [];
   const deps: ExecutionHttpDeps = {
     authorization: createPersistedAuthorization(w.store, config, () => NOW as Instant), service: w.execution,
@@ -64,7 +64,7 @@ test('POST /api/scene y /api/reset exigen control (S05)', async t => {
       assert.equal((await json(await h.post('POST /api/reset', body, { ...CONTROL, 'content-type': 'text/plain' }))).body.error.code, 'INVALID_INPUT');
       assert.equal((await json(await h.post('POST /api/reset', body))).body.error.code, 'AUTH_REQUIRED');
       assert.equal((await json(await h.post('POST /api/reset', body, { authorization: basic('control', 'mal') }))).body.error.code, 'AUTH_INVALID');
-      assert.equal((await json(await h.post('POST /api/reset', body, { authorization: basic('rodrigo', 'secreto-rodrigo') }))).body.error.code, 'FORBIDDEN');
+      assert.equal((await json(await h.post('POST /api/reset', body, { authorization: basic('rodrigo', 'secreto-operador') }))).body.error.code, 'FORBIDDEN');
       assert.equal((await json(await h.post('POST /api/reset', { ...body, extra: 1 }, CONTROL))).body.error.code, 'INVALID_INPUT');
       const after = await w.read.publicState(); assert.ok(after.ok);
       assert.equal(after.value.executionId, w.prepared.executionId, 'ningún rechazo reinició');
@@ -106,7 +106,7 @@ test('POST /api/scene y /api/reset exigen control (S05)', async t => {
       await Promise.all(h.later.map(work => work()));
       assert.equal(w.providerCalls.length, 1, 'el reintento no paga una segunda generación de nota');
       assert.equal((await json(await h.post('POST /api/reset', body))).status, 401, 'sin credencial no hay replay');
-      assert.equal((await json(await h.post('POST /api/reset', body, { authorization: basic('rodrigo', 'secreto-rodrigo') }))).status, 403);
+      assert.equal((await json(await h.post('POST /api/reset', body, { authorization: basic('rodrigo', 'secreto-operador') }))).status, 403);
       const other = await json(await h.post('POST /api/reset', { ...body, expectedVersion: body.expectedVersion + 1 }, CONTROL));
       assert.equal(other.body.error.code, 'IDEMPOTENCY_CONFLICT');
       const distinctKey = await json(await h.post('POST /api/reset', { ...body, idempotencyKey: 'r-otra' }, CONTROL));

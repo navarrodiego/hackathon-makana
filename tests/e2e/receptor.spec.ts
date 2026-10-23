@@ -2,19 +2,19 @@ import { createHash, randomBytes } from "node:crypto";
 import { config } from "dotenv";
 import { Client } from "pg";
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { basicAs } from "./support/acceso";
 
 // Requiere servidor de producción local con la base propia del worktree, APP_ORIGIN igual al origen de pruebas y
-// credenciales ficticias RODRIGO_*/CONTROL_*. Ejecutar con --workers=1: cada prueba crea su propia ejecución.
+// contraseña ficticia OPERATOR_SECRET. Ejecutar con --workers=1: cada prueba crea su propia ejecución.
 config({ quiet: true });
 const PORT = Number(process.env.E2E_PORT || 34137);
 const ORIGIN = `http://127.0.0.1:${PORT}`;
-const basic = (u?: string, p?: string) => `Basic ${Buffer.from(`${u}:${p}`).toString("base64")}`;
-const CONTROL = basic(process.env.CONTROL_USERNAME, process.env.CONTROL_SECRET);
-const RODRIGO = basic(process.env.RODRIGO_USERNAME, process.env.RODRIGO_SECRET);
-const configured = Boolean(process.env.DATABASE_URL && process.env.CONTROL_USERNAME && process.env.CONTROL_SECRET && process.env.RODRIGO_USERNAME && process.env.RODRIGO_SECRET && process.env.APP_ORIGIN === ORIGIN);
+const CONTROL = basicAs("control");
+const RODRIGO = basicAs("outgoing");
+const configured = Boolean(process.env.DATABASE_URL && process.env.OPERATOR_SECRET && process.env.APP_ORIGIN === ORIGIN);
 
 test.describe.configure({ mode: "serial" });
-test.skip(!configured, "BLOCKED: faltan DATABASE_URL, CONTROL_*, RODRIGO_* o APP_ORIGIN para el servidor de pruebas.");
+test.skip(!configured, "BLOCKED: faltan DATABASE_URL, OPERATOR_SECRET o APP_ORIGIN para el servidor de pruebas.");
 
 const json = { "content-type": "application/json", origin: ORIGIN };
 const key = () => `e2e.${randomBytes(8).toString("hex")}`;

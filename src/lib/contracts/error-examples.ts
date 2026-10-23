@@ -20,5 +20,6 @@ export const errorExamples = {
   QUOTA_EXCEEDED: { status: 429, body: { ok: false, error: { code: "QUOTA_EXCEEDED", message: "Se alcanzó el límite de reportes de la sesión o de esta ejecución." }, correlationId: "correlation_example" } },
   PROVIDER_FAILED: { status: 502, body: { ok: false, error: { code: "PROVIDER_FAILED", message: "No se pudo generar la sugerencia. Se conserva el borrador guardado." }, correlationId: "correlation_example" } },
   STORAGE_UNAVAILABLE: { status: 503, body: { ok: false, error: { code: "STORAGE_UNAVAILABLE", message: "No se pudo comprobar el guardado. Conserva la clave de la operación." }, correlationId: "correlation_example" } },
+  AUTH_NOT_CONFIGURED: { status: 503, body: { ok: false, error: { code: "AUTH_NOT_CONFIGURED", message: "Falta configurar OPERATOR_SECRET en el servidor." }, correlationId: "correlation_example" } },
   PROVIDER_TIMEOUT: { status: 504, body: { ok: false, error: { code: "PROVIDER_TIMEOUT", message: "Se agotó el tiempo para generar la sugerencia. Se conserva el borrador guardado." }, correlationId: "correlation_example" } },
 } as const satisfies { readonly [K in ErrorCode]: ApiFailure<K> };

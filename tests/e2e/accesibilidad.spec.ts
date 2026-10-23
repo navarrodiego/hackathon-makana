@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { config } from "dotenv";
+import { OPERATOR_SECRET, basicAs, loginAs } from "./support/acceso";
 
 config({ quiet: true });
 
@@ -8,12 +9,10 @@ config({ quiet: true });
  * Emulación en Chrome: no certifica WCAG ni sustituye una prueba con lector de pantalla o en el S26.
  * Ejecutar con --workers=1: /control reinicia la ejecución compartida.
  */
-const user = process.env.CONTROL_USERNAME ?? "";
-const secret = process.env.CONTROL_SECRET ?? "";
-const basic = `Basic ${Buffer.from(`${user}:${secret}`).toString("base64")}`;
+const basic = basicAs("control");
 
-test.skip(!user || !secret || !process.env.APP_ORIGIN, "Faltan APP_ORIGIN y las credenciales de control descartables");
-test.use({ httpCredentials: { username: user, password: secret } });
+test.skip(!OPERATOR_SECRET || !process.env.APP_ORIGIN, "Faltan APP_ORIGIN y las credenciales de control descartables");
+test.beforeEach(async ({ context, baseURL }) => { await loginAs(context, "control", baseURL!); });
 
 async function resetExecution(request: APIRequestContext, baseURL: string) {
   const s = (await (await request.get(`${baseURL}/api/state`)).json()).data as { executionId: string; version: number };

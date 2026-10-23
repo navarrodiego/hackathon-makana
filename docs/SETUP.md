@@ -45,7 +45,10 @@ Copia `.env.example` a `.env` y configura solo los servicios que vayas a comprob
 | `OPENROUTER_API_KEY` | Integración IA pendiente |
 | `NTFY_ENABLED` | `false` por defecto; integración pendiente |
 | `NTFY_BASE_URL`, `NTFY_TOPIC` | Proveedor y tópico privado; aún sin envíos |
-| `CONTROL_SECRET` | Reserva para autorización pendiente; no hay control implementado |
+| `OPERATOR_SECRET` | Contraseña única de operador para `/rodrigo` y `/control` (C12), mínimo 12 caracteres. Sin ella nadie ingresa. Cambiarla cierra todas las sesiones |
+| `APP_ORIGIN` | Origen exacto de la app (esquema, host y puerto, sin barra final). Todo POST del navegador lo exige |
+
+Diagnóstico de acceso: si el formulario dice «Abriste Relevo desde X, pero la dirección configurada es Y», corrige `APP_ORIGIN` en el entorno (por ejemplo, el dominio de producción en Vercel y no el de la vista previa) o abre la dirección Y. Si dice que falta `OPERATOR_SECRET`, configura la variable y vuelve a desplegar. Las variables `RODRIGO_USERNAME/SECRET` y `CONTROL_USERNAME/SECRET` ya no se usan; se pueden borrar del proveedor.
 
 `src/lib/server/db.ts` solo puede importarse en servidor. Crea el cliente bajo demanda, comparte un pool por proceso y limita conexiones a 3 por instancia; Vercel puede crear varias instancias. Usar la conexión pooled de Neon cuando se configure la demo, comprobar presupuesto global de conexiones y no desactivar validación TLS.
 
