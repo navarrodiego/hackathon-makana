@@ -1,0 +1,9 @@
+// Base técnica sin modelos de negocio. Acordar DTO y entidades antes de agregar tablas.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

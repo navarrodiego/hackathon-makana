@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+src/generated/prisma/
+*.tsbuildinfo
+playwright-report/
+test-results/
+.DS_Store
+.impeccable/review/
