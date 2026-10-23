@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { SECURITY } from "@/lib/contracts/auth";
 import type { ChannelViewDTO } from "@/lib/contracts/public";
 import { Button } from "@/components/ui/button";
 import { DegradedNotice, EmptyState, ErrorMessage } from "@/components/ui/feedback";
@@ -48,7 +49,7 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
     setConfirmation(null);
     try {
       const response = await fetch("/api/messages", {
-        method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
+        method: "POST", headers: { "content-type": "application/json", [SECURITY.publicSubmitHeader]: "1" }, cache: "no-store",
         body: JSON.stringify({ executionId: view.executionId, idempotencyKey: attempt.current.key, nickname: nickname.trim(), text: text.trim() }),
       });
       const body = await response.json().catch(() => null) as { ok?: boolean; error?: { message?: string } } | null;
