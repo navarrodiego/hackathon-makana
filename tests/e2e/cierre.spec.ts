@@ -74,10 +74,12 @@ test("sin credencial el navegador recibe el desafío Basic y una credencial err�
   const anonymous = await fetch(`${env.APP_ORIGIN}/rodrigo`);
   expect(anonymous.status).toBe(401);
   expect(anonymous.headers.get("www-authenticate")).toMatch(/^Basic/);
+  // Una credencial errónea vuelve a recibir el desafío, para que el navegador pida otra en vez de reenviarla.
   const context = await browser.newContext({ baseURL: env.APP_ORIGIN, httpCredentials: { username: "rodrigo", password: "incorrecta" } });
   const page = await context.newPage();
-  await page.goto("/rodrigo");
-  await expect(page.getByText("No se pudo confirmar tu acceso")).toBeVisible();
+  const response = await page.goto("/rodrigo");
+  expect(response?.status()).toBe(401);
+  expect(response?.headers()["www-authenticate"]).toMatch(/^Basic/);
   await expect(page.getByText("#481")).toHaveCount(0);
   await context.close();
 });
