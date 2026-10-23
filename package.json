@@ -23,6 +23,7 @@
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
     "test:db": "node --conditions=react-server --import tsx --test --test-concurrency=1 tests/db/*.test.ts",
     "test:handoff": "node --conditions=react-server --import tsx --test --test-concurrency=1 tests/handoff/*.test.ts",
+    "test:incidents": "node --conditions=react-server --import tsx --test --test-concurrency=1 tests/incidents/*.test.ts",
     "test": "pnpm test:unit && pnpm test:db",
     "db:prepare:local": "tsx scripts/db/provision.ts",
     "db:worktree": "tsx scripts/db/worktree.ts",
