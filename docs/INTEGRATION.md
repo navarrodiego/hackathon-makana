@@ -13,12 +13,12 @@ Registro operativo del 23-10-2026, zona America/Santiago. Fuentes: [TASKS §2](T
 
 ## Tareas y responsables
 
-T00 está versionada. T01 está implementada como contratos revisables en este checkout; permanece sin commit ni integración. Los demás carriles son responsabilidades previstas, no agentes asignados ni ramas activas. Las rutas de evidencia pendientes aún no existen.
+T00 está versionada. T01 está versionada e integrada en la rama base; cierre local y SHA comprobados abajo. Los demás carriles son responsabilidades previstas, no agentes asignados ni ramas activas. Las rutas de evidencia pendientes aún no existen.
 
 | Tarea | Rama prevista | Dependencias integradas necesarias | Responsable | Estado | Evidencia |
 |---|---|---|---|---|---|
 | T00 | `codex/t00-base-integracion` | — | Integrador T00 (Codex) | Implementada; cierre Git en entrega | [T00](evidence/T00.md) |
-| T01 | `codex/t01-contratos` | T00, SHA `afa61247727c76413717c86a0cb8804fc72999e8` | Integrador T01 (Codex) | Revisable; lint/tipos/Webpack PASS; Turbopack bloqueado; sin commit ni integración | [T01](evidence/T01.md) |
+| T01 | `codex/t01-contratos` | T00, SHA `afa61247727c76413717c86a0cb8804fc72999e8` | Integrador T01 (Codex) | INTEGRADA localmente; lint/tipos/Webpack PASS; Turbopack bloqueado por entorno | [T01](evidence/T01.md) |
 | T02 | `codex/t02-openrouter` | T01 | C; pendiente | PENDIENTE | `docs/evidence/T02.md` (no creada) |
 | T03 | `codex/t03-persistencia` | T01 | B; responsable único pendiente | PENDIENTE | `docs/evidence/T03.md` (no creada) |
 | T04 | `codex/t04-componentes` | T01 | A; pendiente | PENDIENTE | `docs/evidence/T04.md` (no creada) |
@@ -117,7 +117,7 @@ tsconfig.json
 
 Antes de integrar cada encargo: revisar diff, propiedad, dependencia y evidencia; ejecutar comandos reales de TASKS §2. No integrar datos entre bases. Las migraciones/seed comunes viajan por Git y su aplicación requiere destino y autorización acordados. Las pruebas externas bloqueadas se declaran por separado.
 
-T00 comprueba Base y smoke de la pantalla técnica estática; esto no acredita el recorrido funcional. El detalle está en [evidencia T00](evidence/T00.md). La puerta de distribución exige comprobar el contenido del commit final en un worktree nuevo. T01 fija contratos y propiedad funcional en este árbol; el desarrollo dependiente espera revisión e integración autorizada de un commit exacto, aún no creado.
+T00 comprueba Base y smoke de la pantalla técnica estática; esto no acredita el recorrido funcional. El detalle está en [evidencia T00](evidence/T00.md). La puerta de distribución exige comprobar el contenido del commit final en un worktree nuevo. T01 fija contratos y propiedad funcional; su commit exacto está integrado localmente según el cierre siguiente. No se han lanzado tareas dependientes.
 
 
 ## T01 · Base, asignación y reservas congeladas
@@ -167,4 +167,17 @@ Cada tarea conserva exclusivamente `docs/evidence/TXX.md`; esos archivos no se c
 
 ### Puerta de salida T01
 
-Revisar tipos, decisiones, ejemplos, límites y evidencia de Base. Sin commit final ni integración autorizados, T01 se entrega como cambios revisables: T02/T03/T04 no parten de esta rama móvil ni de archivos sin seguimiento. La evidencia histórica T00 de conectividad pertenece a su entorno; T01 no repite conexión ni habilita avisos. Pruebas DB, proveedores y dispositivo siguen separadas de la aceptación estática de contratos.
+Revisar tipos, decisiones, ejemplos, límites y evidencia de Base. La autorización posterior de Diego y el merge local comprobado cierran la puerta Git de T01: T02/T03/T04 pueden partir del SHA final de integración comunicado en la entrega, no de una rama móvil ni de archivos sin seguimiento. Sus encargos siguen pendientes. La evidencia histórica T00 de conectividad pertenece a su entorno; T01 no repite conexión ni habilita avisos. Pruebas DB, proveedores y dispositivo siguen separadas de la aceptación estática de contratos.
+
+
+## Cierre Git T01 · Integración local autorizada
+
+Diego solicitó explícitamente «Haz merge con la rama de integración base y commit». Esta autorización posterior permite el merge y el commit documental locales; no autoriza push, deploy, migraciones ni efectos externos.
+
+- T01 ya estaba versionada al iniciar esta solicitud: `7324f0addedf870d32ea5e86e4de4a872203d2a3`, con los 17 archivos del encargo. Ambos worktrees estaban limpios; no se duplicó ese commit.
+- Destino: `codex/t00-base-integracion`, worktree `/Users/diegonavarro/.codex/worktrees/t00-base-integracion/hackathon-makana`, previamente en `afa61247727c76413717c86a0cb8804fc72999e8`.
+- Merge local `--no-ff`: `c752f120433980dfdab7e8c56bce01eafce74b62`, sin conflictos. Sus padres son la base anterior y el commit T01; el árbol resultante coincide exactamente con T01.
+- Antes del merge se repitieron `pnpm lint`, `pnpm typecheck` y `pnpm build --webpack`: PASS. El build normal Turbopack conserva el bloqueo de entorno documentado; no se cambió configuración. Se restauró únicamente `next-env.d.ts` generado por los checks antes de cerrar el worktree fuente.
+- El commit posterior solo actualiza este registro y evidencia T01. Su SHA final se comunica tras obtenerlo, evitando autorreferencia. Se comprueba que el código integrado coincide con el commit T01 y ambos worktrees quedan limpios.
+
+No se hizo push ni se inició T02/T03/T04. Usar el SHA final local comunicado para los siguientes encargos; no asumir que el remoto ya contiene esta integración.
