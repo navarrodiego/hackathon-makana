@@ -51,6 +51,7 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 | Incidente aceptado por candidato vigente | «Tomado por Tomás»; origen escenario si se actuó desde control |
 | Envío ntfy aceptado | «Envío aceptado por ntfy»; no «Paula recibió el aviso» |
 | Reporte diferible registrado | «En cola»; mostrar próxima atención solo si está definida |
+| Reporte enviado desde /canal y aceptado por el servidor | «Reporte registrado. Su estado aparece en Tus reportes.» (T19); no promete clasificación ni atención |
 | Incidente ya notificado del mismo hecho | «Incidente ya avisado» |
 | Acción tardía tras derivación | Explicar que ya fue derivada; indicar destinatario actual solo si se conoce |
 | Sin conexión o persistencia fallida | Decir qué se pudo comprobar; no declarar acción guardada ni atribuir causa no observada |

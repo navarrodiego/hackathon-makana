@@ -21,6 +21,7 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   const attempt = useRef<{ content: string; key: string } | null>(null);
 
   // El estado lo manda el servidor: se relee mientras la pestaña está visible y se limpia al desmontar.
@@ -44,6 +45,7 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
     if (attempt.current?.content !== content) attempt.current = { content, key: newKey() };
     setSending(true);
     setProblem(null);
+    setConfirmation(null);
     try {
       const response = await fetch("/api/messages", {
         method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
@@ -53,6 +55,7 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
       if (response.ok && body?.ok) {
         setText("");
         attempt.current = null;
+        setConfirmation("Reporte registrado. Su estado aparece en Tus reportes.");
       } else {
         setProblem({ title: "No se recibió el reporte", detail: body?.error?.message ?? "El servidor respondió con un error. Revisa tu lista antes de reenviar." });
       }
@@ -88,6 +91,10 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
           label="Reporte" value={text} onChange={e => setText(e.target.value)} disabled={blocked} rows={4}
           hint={`${length} de ${MAX_TEXT} caracteres. Te quedan ${view.remainingSessionReports} de 5 envíos.`} error={textError}
         />
+        {/* Región persistente: anuncia el resultado una vez, sin mover el foco del formulario. */}
+        <div data-testid="canal-resultado" aria-live="polite" aria-atomic="true" className="empty:hidden">
+          {confirmation ? <p className="text-body font-semibold">{confirmation}</p> : null}
+        </div>
         {problem ? <ErrorMessage title={problem.title}><p>{problem.detail}</p></ErrorMessage> : null}
         <Button
           type="submit" variant="primary" loading={sending} loadingLabel="Enviando reporte…"

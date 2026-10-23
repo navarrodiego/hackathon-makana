@@ -35,6 +35,7 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
   const keys = useRef(new Map<string, string>());
   const shortcut = useRef<ShortcutState>({ armedAt: null, resetOpen: false });
   const busyRef = useRef<string | null>(null);
+  const restoreFocus = useRef<HTMLElement | null>(null);
 
   // Estado en refs para que el oyente de teclado sea uno solo y se limpie al desmontar.
   const latest = useRef<Record<string, () => void>>({});
@@ -61,6 +62,8 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
   const run = useCallback(async (intent: string, label: string, send: (key: string) => Promise<{ ok: boolean; code?: string }>) => {
     if (busyRef.current) return;
     busyRef.current = intent;
+    // Los botones se deshabilitan mientras corre la acción y el navegador suelta el foco: se devuelve al terminar.
+    const origin = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     setBusy(intent);
     setNotice(null);
     const key = keys.current.get(intent) ?? newKey();
@@ -75,6 +78,7 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
       setNotice({ tone: "error", text: failureMessage(result.code ?? "UNKNOWN") });
     }
     busyRef.current = null;
+    restoreFocus.current = origin;
     setBusy(null);
     router.refresh();
   }, [router]);
@@ -164,6 +168,13 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
     originLabel: e.origin === "scenario" ? "origen escenario" : e.channel === "ntfy" ? "ntfy" : undefined,
   }));
   const working = busy !== null;
+  // Con los botones ya habilitados de nuevo se devuelve el foco, salvo que la persona lo haya movido.
+  useEffect(() => {
+    const target = restoreFocus.current;
+    if (busy !== null || !target) return;
+    restoreFocus.current = null;
+    if (target.isConnected && document.activeElement === document.body) target.focus();
+  }, [busy]);
 
   return (
     <SurfaceShell title="Control">
@@ -174,10 +185,12 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
         {state.channelOpen ? "Canal abierto" : "Canal cerrado"}
         {view.preparation === "pending" ? " · Nota de relevo en preparación" : view.preparation === "failed" ? " · La nota de relevo no se generó" : " · Nota de relevo guardada"}
       </p>
-      {armed ? <p role="status" className="text-body font-semibold">Pulsa R otra vez para pedir el reinicio.</p> : null}
-      {notice ? (notice.tone === "error"
-        ? <ErrorMessage title="No se completó"><p>{notice.text}</p></ErrorMessage>
-        : <p role="status" className="text-body font-semibold">{notice.text}</p>) : null}
+      {/* La región existe antes del aviso: así los lectores de pantalla anuncian su contenido nuevo. */}
+      <div data-testid="control-avisos" aria-live="polite" aria-atomic="true" className="empty:hidden">
+        {armed ? <p className="text-body font-semibold">Pulsa R otra vez para pedir el reinicio.</p> : null}
+        {notice?.tone === "ok" ? <p className="text-body font-semibold">{notice.text}</p> : null}
+      </div>
+      {notice?.tone === "error" ? <ErrorMessage title="No se completó"><p>{notice.text}</p></ErrorMessage> : null}
 
       <section aria-labelledby="escenas" className="flex flex-col gap-3 border-t border-line pt-6">
         <h2 id="escenas" className="text-section font-semibold">Escenas</h2>
@@ -236,7 +249,15 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
         <Button id="reiniciar" variant="danger" disabled={working} onClick={() => setResetOpen(true)}>Reiniciar demostración</Button>
         {resetOpen ? (
           <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="reinicio-titulo" className="flex flex-col gap-3 border-2 border-danger p-4"
-            onKeyDown={e => { if (e.key === "Escape") closeReset(); }}>
+            onKeyDown={e => {
+              if (e.key === "Escape") { closeReset(); return; }
+              if (e.key !== "Tab") return;
+              const items = [...e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not([disabled])")];
+              const first = items[0], last = items[items.length - 1];
+              if (!first || !last) return;
+              if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+              else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }}>
             <h3 id="reinicio-titulo" className="text-body font-semibold">¿Reiniciar la demostración?</h3>
             <p className="text-body">Se pierde el avance de esta ejecución. Las respuestas pendientes y los enlaces anteriores dejan de valer.</p>
             <div className="flex flex-wrap gap-3">
