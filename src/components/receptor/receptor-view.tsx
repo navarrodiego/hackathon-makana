@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { HandoffResultDTO } from "@/lib/contracts/http";
 import type { HandoffPackageDTO } from "@/lib/contracts/private";
 import { ContinuityLine, continuityState } from "@/components/relevo/continuity-line";
@@ -34,6 +34,7 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
   const [busy, setBusy] = useState<RespondAction | null>(null);
   const [failure, setFailure] = useState<FailureView | null>(null);
   const inFlight = useRef(false);
+  const outcomeRef = useRef<HTMLDivElement>(null);
 
   const { handoff, coverage, outgoing } = pkg;
   const state = reviewState(pkg);
@@ -54,6 +55,8 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
   // Un relevo ya aceptado también se lee así tras recargar: el estado persistido manda, no el clic local.
   const accepted = decision === "accepted" || (decision === null && state !== "awaiting");
   const settled = accepted || decision === "rejected" || failure?.kind === "reassigned";
+  // Al responder desaparecen los botones: el foco pasa al resultado para no quedar en el vacío.
+  useEffect(() => { if (decision !== null) outcomeRef.current?.focus(); }, [decision]);
   const actions = settled ? undefined : (
     <div className="flex flex-col gap-3">
       <Button variant="primary" loading={busy === "accept"} loadingLabel="Enviando respuesta…" onClick={() => submit("accept")} disabled={busy === "reject"}>
@@ -72,7 +75,7 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
       </p>
 
       {accepted ? (
-        <div role="status" className="border-l-4 border-primary py-1 pl-4">
+        <div ref={outcomeRef} tabIndex={-1} role="status" className="border-l-4 border-primary py-1 pl-4">
           <p className="text-body font-semibold">
             {state === "active" ? "Aceptaste el relevo. Tu cobertura está activa" : `Aceptaste el relevo. Tu cobertura comienza a las ${startsAt}`}
           </p>
@@ -80,7 +83,7 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
         </div>
       ) : null}
       {decision === "rejected" ? (
-        <div role="status" className="border-l-4 border-primary py-1 pl-4">
+        <div ref={outcomeRef} tabIndex={-1} role="status" className="border-l-4 border-primary py-1 pl-4">
           <p className="text-body font-semibold">Indicaste que no puedes cubrir</p>
           <p className="mt-1 text-body">El relevo sigue el recorrido definido. Este enlace ya no permite otra respuesta.</p>
         </div>

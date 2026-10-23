@@ -18,7 +18,7 @@ export function EventLog({ entries, label = "Registro" }: { entries: readonly Lo
     <ol aria-label={label} className="divide-y divide-line border-y border-line">
       {entries.map((e) => (
         <li key={e.id} className="flex gap-4 py-3">
-          <time className="w-14 shrink-0 text-aux text-muted-foreground">{e.timeLabel}</time>
+          <time className="min-w-14 shrink-0 text-aux text-muted-foreground">{e.timeLabel}</time>
           <div className="min-w-0 break-words text-body">
             {e.text}
             {e.originLabel ? <span className="ml-2 text-aux text-muted-foreground">({e.originLabel})</span> : null}
