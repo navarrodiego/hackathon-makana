@@ -13,12 +13,12 @@ Registro operativo del 23-10-2026, zona America/Santiago. Fuentes: [TASKS §2](T
 
 ## Tareas y responsables
 
-Solo T00 está implementada. Los carriles son responsabilidades previstas, no agentes asignados ni ramas activas. Las rutas de evidencia pendientes aún no existen.
+T00 está versionada. T01 está implementada como contratos revisables en este checkout; permanece sin commit ni integración. Los demás carriles son responsabilidades previstas, no agentes asignados ni ramas activas. Las rutas de evidencia pendientes aún no existen.
 
 | Tarea | Rama prevista | Dependencias integradas necesarias | Responsable | Estado | Evidencia |
 |---|---|---|---|---|---|
 | T00 | `codex/t00-base-integracion` | — | Integrador T00 (Codex) | Implementada; cierre Git en entrega | [T00](evidence/T00.md) |
-| T01 | `codex/t01-contratos` | T00 | Integrador; asignación pendiente | PENDIENTE | `docs/evidence/T01.md` (no creada) |
+| T01 | `codex/t01-contratos` | T00, SHA `afa61247727c76413717c86a0cb8804fc72999e8` | Integrador T01 (Codex) | Revisable; lint/tipos/Webpack PASS; Turbopack bloqueado; sin commit ni integración | [T01](evidence/T01.md) |
 | T02 | `codex/t02-openrouter` | T01 | C; pendiente | PENDIENTE | `docs/evidence/T02.md` (no creada) |
 | T03 | `codex/t03-persistencia` | T01 | B; responsable único pendiente | PENDIENTE | `docs/evidence/T03.md` (no creada) |
 | T04 | `codex/t04-componentes` | T01 | A; pendiente | PENDIENTE | `docs/evidence/T04.md` (no creada) |
@@ -51,7 +51,7 @@ Máximo tres worktrees de tareas activos. No abrirlos todos por adelantado. El w
 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.env.example`, `.gitignore`, `.nvmrc`, configuración raíz, cliente DB compartido | Integrador | Un escritor a la vez; las tareas proponen cambios y el integrador los incorpora antes de dependientes |
 | AGENTS, PRODUCT, DESIGN, README, master, CONTRACTS, LANGUAGE, QA, DEMO y SETUP | Integrador | T00 no los modifica; T01 escribe CONTRACTS en su encargo serial; cambios posteriores se consolidan coordinadamente |
 | `prisma/`, futuras migraciones y seed | Único responsable de T03, aún sin asignar | Conserva propiedad después de T03; ningún otro encargo los altera por su cuenta |
-| Interfaces, directorios y archivos funcionales | T01 fija organización exacta | No congelar DTO ni crear módulos en T00 |
+| `src/lib/contracts/` | Integrador T01; después integrador con consumidores | Organización y reservas exactas abajo; cambios coordinados antes de dependientes |
 | `docs/evidence/TXX.md` | Responsable de TXX | Cada tarea informa pruebas y límites; integrador revisa antes de integrar |
 
 ## Recursos existentes y reservas
@@ -117,4 +117,54 @@ tsconfig.json
 
 Antes de integrar cada encargo: revisar diff, propiedad, dependencia y evidencia; ejecutar comandos reales de TASKS §2. No integrar datos entre bases. Las migraciones/seed comunes viajan por Git y su aplicación requiere destino y autorización acordados. Las pruebas externas bloqueadas se declaran por separado.
 
-T00 comprueba Base y smoke de la pantalla técnica estática; esto no acredita el recorrido funcional. El detalle está en [evidencia T00](evidence/T00.md). La puerta de distribución exige comprobar el contenido del commit final en un worktree nuevo. T01 todavía debe fijar contratos y propiedad funcional antes del desarrollo paralelo.
+T00 comprueba Base y smoke de la pantalla técnica estática; esto no acredita el recorrido funcional. El detalle está en [evidencia T00](evidence/T00.md). La puerta de distribución exige comprobar el contenido del commit final en un worktree nuevo. T01 fija contratos y propiedad funcional en este árbol; el desarrollo dependiente espera revisión e integración autorizada de un commit exacto, aún no creado.
+
+
+## T01 · Base, asignación y reservas congeladas
+
+Diego autorizó implementar el plan T01 el 23-10-2026, sin commit, merge, push ni efectos externos. Base exacta: `afa61247727c76413717c86a0cb8804fc72999e8`, que contiene los 35 archivos de T00 y su actualización documental de DB local. El checkout actual estaba limpio y detached en `51cc409`; se reutilizó tras crear `codex/t01-contratos` directamente desde la base acordada. No se abrió otro worktree ni se cambió el worktree T00 o el detached de otra herramienta. Esta asignación usa el puesto B como reserva lógica; T01 no arranca servidor ni DB y no ocupa sus puertos 34142/34143. Base propuesta `relevo_backend` sin crear; no se copia `.env` de integración.
+
+El integrador T01 es el único escritor de contratos y documentos de su encargo. Los responsables que siguen son dueños por tarea, no personas/agentes ya lanzados. Antes de cada encargo, registrar el responsable concreto, SHA integrado, puesto, puerto y base elegidos. Máximo tres worktrees de tareas activos, contando recursos existentes al asignar.
+
+### Módulos, pruebas y rutas
+
+Las rutas de API se refieren al `route.ts` bajo `src/app/api/`. Reservar un directorio padre no permite editar subrutas con otro dueño.
+
+| Dueño | Módulos y archivos exclusivos | Pruebas / evidencia |
+|---|---|---|
+| T01 / integrador | `src/lib/contracts/`, CONTRACTS y este registro | Ejemplos estáticos dentro de contracts; `docs/evidence/T01.md` |
+| T02 | `src/lib/server/providers/openrouter/` | `tests/providers/openrouter/` |
+| T03, responsable único permanente | `prisma/` (schema, migraciones, seed), `src/lib/server/repositories/`, `scripts/db/` (preparación y pruebas locales) | `tests/db/`, `tests/helpers/db/` (implementación de FixturePreparer) |
+| T04 | `src/components/ui/`, `src/components/relevo/`, `src/app/globals.css`, `src/app/layout.tsx` | Smoke existente solo si necesita ajuste coordinado; sin propiedad general de E2E |
+| T05 | `src/lib/server/auth/`, `src/lib/server/events/`, `src/lib/server/http/` | `tests/security/` |
+| T06 | `src/lib/server/handoff/`; API `handoff/route.ts`, `handoff/[id]/accept/route.ts`, `handoff/[id]/reject/route.ts` | `tests/handoff/` |
+| T07 | `src/lib/server/classification/`, `src/lib/server/policy/` | `tests/classification/`, `tests/fixtures/classification/` |
+| T08 | `src/lib/server/notifications/` | `tests/notifications/` |
+| T09 | `src/lib/server/handoff-note/`; API `handoff/suggest/route.ts` | `tests/handoff-note/` |
+| T10 | `src/lib/server/incidents/`; API `ack/[id]/route.ts` | `tests/incidents/` |
+| T11 | `src/lib/server/execution/`, `src/lib/server/state/` (ReadService y ensamblador); API `state/route.ts`, `scene/route.ts`, `reset/route.ts` | `tests/execution/` |
+| T12 | `src/app/rodrigo/`, `src/components/rodrigo/` hasta traspaso a T17 | `tests/e2e/cierre.spec.ts` |
+| T13 | `src/app/relevo/[id]/`, `src/components/receptor/` | `tests/e2e/receptor.spec.ts` |
+| T14 | `src/app/canal/`, `src/components/canal/`, `src/lib/server/messages/`; API `messages/route.ts` | `tests/messages/`, `tests/e2e/canal.spec.ts` |
+| T15 | `src/app/proyector/`, `src/components/proyector/`, `src/components/registro/`, `src/lib/client/state/` | `tests/e2e/proyector.spec.ts` |
+| T16 | `src/app/control/`, `src/components/control/` | `tests/e2e/control.spec.ts` |
+| T17 | Tras integrar T12: `src/app/rodrigo/`, `src/components/rodrigo/`, incluido `resumen/` | `tests/e2e/resumen.spec.ts` |
+| T18 | Reserva exclusiva temporal del archivo corregido; sin implementadores simultáneos en ese flujo | `tests/e2e/integracion/`, `tests/regression/` |
+| T19 | Reserva exclusiva por archivo de UI/regresión afectado, acordada antes de editar | Evidencia y regresiones en archivo reservado |
+| T20 | Configuración mínima de despliegue y SETUP, coordinados con integrador | Evidencia DB/S y smoke público |
+| T21 | Ajustes justificados de DEMO, reserva de archivos afectados por bugs | `tests/e2e/ensayo/`, artefactos locales ignorados |
+| T22 | README y consolidación QA/SETUP/DEMO/INTEGRATION, serial | Checks finales y evidencia |
+
+Cada tarea conserva exclusivamente `docs/evidence/TXX.md`; esos archivos no se crean hasta su encargo. `FixturePreparer` pertenece a T03; T06–T10 lo consumen sin crear un reset alternativo. T07 es dueño de la clave de equivalencia determinista; T03 del repositorio atómico; T10 del registro/deduplicación. T05 autoriza; T11 proyecta lecturas privadas/públicas; las pantallas no cambian permisos ni motores. T08 acepta un transporte de prueba conforme a la firma antes de la comprobación física. T11 conecta avisos de relevo cuando estén integrados T06 y T08.
+
+### Traspasos y archivos comunes
+
+- T04 puede crear únicamente estructura rotulada como pendiente de las cinco páginas C08. Al integrar, transfiere los directorios a T12–T16 y deja de escribirlos; no conserva propiedad sobre las pantallas. En ausencia de estructura, sus dueños crean los directorios según estos nombres. El resumen completo de Rodrigo se transfiere a T17 después de T12, sin edición simultánea.
+- T15 conserva registro visual y consumidor público para T16/T17. Esas tareas consumen sus exports; ajustes requieren coordinación, no copia de componentes/polling.
+- Integrador, un escritor a la vez: `package.json`, lockfile, `pnpm-workspace.yaml`, `.env.example`, `.gitignore`, `.nvmrc`, `prisma.config.ts`, `next.config.ts`, `tsconfig.json`, `next-env.d.ts`, `eslint.config.mjs`, `postcss.config.mjs`, `components.json`, `playwright.config.ts`, `scripts/check-db.ts`, `src/lib/server/db.ts`, `src/lib/utils.ts`, `src/app/page.tsx` y `tests/e2e/bootstrap.spec.ts`. T03 propone cambios de comandos/DB; T05 de variables privadas; el integrador incorpora antes de dependientes.
+- AGENTS, PRODUCT, DESIGN, README, master, CONTRACTS, LANGUAGE, QA, DEMO y SETUP: integrador. Las reservas documentales de T20–T22 se ejecutan serialmente; ningún agente cambia fuentes comunes por su cuenta. T01 no modifica LANGUAGE porque conserva terminología y mensajes aprobados.
+- Un componente nuevo fuera del directorio del dueño exige reserva concreta antes de crearlo. No hay escritor implícito de carpetas raíz ni autorización para editar Prisma desde motores.
+
+### Puerta de salida T01
+
+Revisar tipos, decisiones, ejemplos, límites y evidencia de Base. Sin commit final ni integración autorizados, T01 se entrega como cambios revisables: T02/T03/T04 no parten de esta rama móvil ni de archivos sin seguimiento. La evidencia histórica T00 de conectividad pertenece a su entorno; T01 no repite conexión ni habilita avisos. Pruebas DB, proveedores y dispositivo siguen separadas de la aceptación estática de contratos.
