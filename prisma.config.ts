@@ -3,6 +3,6 @@ import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
-  migrations: { path: "prisma/migrations" },
+  migrations: { path: "prisma/migrations", seed: "pnpm db:seed:local" },
   datasource: { url: process.env.DIRECT_URL || process.env.DATABASE_URL },
 });

@@ -13,12 +13,12 @@ Registro operativo del 23-10-2026, zona America/Santiago. Fuentes: [TASKS §2](T
 
 ## Tareas y responsables
 
-T00 está versionada. T01 está implementada como contratos revisables en este checkout; permanece sin commit ni integración. Los demás carriles son responsabilidades previstas, no agentes asignados ni ramas activas. Las rutas de evidencia pendientes aún no existen.
+T00 está versionada. T01 quedó versionada en `7324f0addedf870d32ea5e86e4de4a872203d2a3` e integrada según confirmación de Diego. Las anotaciones de su evidencia sin commit describen la entrega original, no el estado actual. Los demás carriles son responsabilidades previstas, no agentes asignados ni ramas activas. Las rutas de evidencia pendientes aún no existen.
 
 | Tarea | Rama prevista | Dependencias integradas necesarias | Responsable | Estado | Evidencia |
 |---|---|---|---|---|---|
 | T00 | `codex/t00-base-integracion` | — | Integrador T00 (Codex) | Implementada; cierre Git en entrega | [T00](evidence/T00.md) |
-| T01 | `codex/t01-contratos` | T00, SHA `afa61247727c76413717c86a0cb8804fc72999e8` | Integrador T01 (Codex) | Revisable; lint/tipos/Webpack PASS; Turbopack bloqueado; sin commit ni integración | [T01](evidence/T01.md) |
+| T01 | `codex/t01-contratos` | T00, SHA `afa61247727c76413717c86a0cb8804fc72999e8` | Integrador T01 (Codex) | Integrada por confirmación de Diego; SHA `7324f0a`; evidencia estática histórica conservada | [T01](evidence/T01.md) |
 | T02 | `codex/t02-openrouter` | T01 | C; pendiente | PENDIENTE | `docs/evidence/T02.md` (no creada) |
 | T03 | `codex/t03-persistencia` | T01 | B; responsable único pendiente | PENDIENTE | `docs/evidence/T03.md` (no creada) |
 | T04 | `codex/t04-componentes` | T01 | A; pendiente | PENDIENTE | `docs/evidence/T04.md` (no creada) |
@@ -50,7 +50,7 @@ Máximo tres worktrees de tareas activos. No abrirlos todos por adelantado. El w
 | `docs/INTEGRATION.md` | Integrador; T01 actualiza propiedad coordinadamente | Registrar SHA integrado, responsable, puesto, puerto, base y evidencia antes de lanzar cada tarea |
 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.env.example`, `.gitignore`, `.nvmrc`, configuración raíz, cliente DB compartido | Integrador | Un escritor a la vez; las tareas proponen cambios y el integrador los incorpora antes de dependientes |
 | AGENTS, PRODUCT, DESIGN, README, master, CONTRACTS, LANGUAGE, QA, DEMO y SETUP | Integrador | T00 no los modifica; T01 escribe CONTRACTS en su encargo serial; cambios posteriores se consolidan coordinadamente |
-| `prisma/`, futuras migraciones y seed | Único responsable de T03, aún sin asignar | Conserva propiedad después de T03; ningún otro encargo los altera por su cuenta |
+| `prisma/`, futuras migraciones y seed | Codex, responsable de T03; conserva la propiedad al terminar | Conserva propiedad después de T03; ningún otro encargo los altera por su cuenta |
 | `src/lib/contracts/` | Integrador T01; después integrador con consumidores | Organización y reservas exactas abajo; cambios coordinados antes de dependientes |
 | `docs/evidence/TXX.md` | Responsable de TXX | Cada tarea informa pruebas y límites; integrador revisa antes de integrar |
 
@@ -117,7 +117,7 @@ tsconfig.json
 
 Antes de integrar cada encargo: revisar diff, propiedad, dependencia y evidencia; ejecutar comandos reales de TASKS §2. No integrar datos entre bases. Las migraciones/seed comunes viajan por Git y su aplicación requiere destino y autorización acordados. Las pruebas externas bloqueadas se declaran por separado.
 
-T00 comprueba Base y smoke de la pantalla técnica estática; esto no acredita el recorrido funcional. El detalle está en [evidencia T00](evidence/T00.md). La puerta de distribución exige comprobar el contenido del commit final en un worktree nuevo. T01 fija contratos y propiedad funcional en este árbol; el desarrollo dependiente espera revisión e integración autorizada de un commit exacto, aún no creado.
+T00 comprueba Base y smoke de la pantalla técnica estática; esto no acredita el recorrido funcional. El detalle está en [evidencia T00](evidence/T00.md). La puerta de distribución exige comprobar el contenido del commit final en un worktree nuevo. T01 fija contratos y propiedad funcional en este árbol; la base disponible para tareas dependientes es `7324f0addedf870d32ea5e86e4de4a872203d2a3`, integrada según Diego.
 
 
 ## T01 · Base, asignación y reservas congeladas
@@ -167,4 +167,17 @@ Cada tarea conserva exclusivamente `docs/evidence/TXX.md`; esos archivos no se c
 
 ### Puerta de salida T01
 
-Revisar tipos, decisiones, ejemplos, límites y evidencia de Base. Sin commit final ni integración autorizados, T01 se entrega como cambios revisables: T02/T03/T04 no parten de esta rama móvil ni de archivos sin seguimiento. La evidencia histórica T00 de conectividad pertenece a su entorno; T01 no repite conexión ni habilita avisos. Pruebas DB, proveedores y dispositivo siguen separadas de la aceptación estática de contratos.
+Revisar tipos, decisiones, ejemplos, límites y evidencia de Base. La entrega original de T01 fue revisable y sin commit. Esa condición quedó superada: Diego confirmó su integración y Git acredita `7324f0addedf870d32ea5e86e4de4a872203d2a3`. T02/T03/T04 parten de un SHA que incluya ese contenido. La evidencia histórica T00 de conectividad pertenece a su entorno; T01 no repite conexión ni habilita avisos. Pruebas DB, proveedores y dispositivo siguen separadas de la aceptación estática de contratos.
+
+
+## T03 · Persistencia local
+
+Diego autorizó implementar el plan T03, incluidas tres bases dedicadas y roles locales. Base exacta: `7324f0addedf870d32ea5e86e4de4a872203d2a3`; rama `codex/t03-persistencia`, reutilizando este checkout. Sin commit, merge, push ni acciones remotas. No se lanzaron agentes ni se alteraron otros worktrees.
+
+Responsable único de Prisma/migraciones: Codex T03. Puesto B; desarrollo/E2E reservados 34142/34143. Recursos creados en PostgreSQL 17.10 existente: `relevo_backend`, `relevo_backend_test`, `relevo_backend_test_isolation`, cada una con roles `_migrate` y `_app` propios. App: límite 3 conexiones, sin administración ni DDL; sin acceso a las otras bases dedicadas ni al historial Prisma. Las conexiones están en `.env.t03`, ignorado, modo 0600; no se copia la configuración de integración.
+
+T03 reserva serialmente los cambios de `package.json`, `.env.example`, `prisma.config.ts`, SETUP/CONTRACTS y este registro. También corrige ESLint/TypeScript para excluir `.claude/worktrees`: los checks estaban recorriendo fuentes y builds ajenos dentro del checkout. No se modifican las fuentes de T04 ni sus procesos. Lockfile y cliente compartido no requieren cambios.
+
+Los consumidores utilizan `PostgresPersistence` con `getDb()`; los contratos de T01 conservan sus firmas. `FixturePreparer` vive en `tests/helpers/db/fixtures.ts`; no crea un endpoint de reset. Cada suite DB se ejecuta serialmente por base; las carreras se crean dentro de sus casos. T11 recibe repositorios de sucesora por `replaceExecution` en la misma transacción. Los actores/escenas de referencia conservan identidad al reset, con filas separadas por ejecución; ventanas y demás fixtures se insertan mediante los puertos existentes.
+
+Detalle de comandos, pruebas y límites en SETUP y evidencia T03. T03 aún necesita revisión e integración de sus cambios antes de distribuir T05; no hay SHA final ni prueba Neon/Vercel/S26.
