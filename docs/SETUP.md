@@ -51,6 +51,27 @@ Copia `.env.example` a `.env` y configura solo los servicios que vayas a comprob
 
 No se crea un segundo servidor PostgreSQL ni se modifican bases existentes. Cada entorno debe tener base/rol privados. `pnpm db:check` usa la URL explícita de aplicación y ejecuta `SELECT 1` dentro de una transacción, sin cambiar datos. El comando no muestra credenciales. No se ofrecen migraciones, seed ni reset hasta acordar el schema. Las migraciones remotas siguen requiriendo acción explícita y destino verificado.
 
+## Base propia por worktree
+
+Cada worktree creado desde esta base recibe sus propias bases locales y su `.env` privado. Usa el servidor PostgreSQL local existente (127.0.0.1:5432); no crea otro. Neon queda fuera.
+
+**Una vez por clon**: `scripts/worktree/install-hooks.sh` fija `core.hooksPath=.githooks`. La configuración vale para todos los worktrees; en ramas sin `.githooks/` no hace nada.
+
+**Al crear el worktree** (`git worktree add`, también si lo crea Claude, Codex o Kilo), `.githooks/post-checkout` ejecuta `scripts/worktree/db-up.sh`:
+- Crea `relevo_wt_<nombre>_<hash de la ruta>`, más `_test` y `_test_isolation`, y seis roles (`_app` con 3 conexiones, `_migrate` con 2), con los mismos permisos que `db:prepare:local`.
+- Escribe `.env` (0600) desde `.env.example` con `DATABASE_URL`, `DIRECT_URL` y las conexiones de prueba. No copia claves de otros `.env`; `OPENROUTER_API_KEY` y similares quedan vacías. Si ya hay `.env`, no hace nada.
+- Marca cada base con su ruta (`COMMENT ON DATABASE`). Esa marca decide qué se puede borrar: las bases `relevo_backend*`, `relevo_integracion` y las creadas a mano no se tocan.
+- No instala dependencias. Siguiente paso: `pnpm install --frozen-lockfile && pnpm db:worktree:setup` (migra las tres bases, siembra la de desarrollo y ejecuta `db:check`).
+
+**Administrador**: por defecto `postgresql://<usuario del sistema>@127.0.0.1:5432/postgres`. Para otro rol, define `RELEVO_PG_ADMIN_URL` o guárdala en `~/.config/relevo/admin.env`. Se rechaza cualquier destino que no sea loopback:5432/postgres.
+
+**Al borrar el worktree**:
+- Recomendado: `pnpm wt:remove <ruta> [--force]` borra bases y roles y luego el checkout.
+- Si se borra de otra forma (`git worktree remove`, la app, Codex, Kilo), las bases quedan huérfanas. `pnpm wt:db:prune` las lista y `pnpm wt:db:prune --yes` las borra. Solo cuenta como huérfana una base cuya ruta ya no está en `git worktree list` ni en disco. El hook de creación ejecuta esta limpieza, así que cada worktree nuevo recoge las huérfanas anteriores.
+- Git no tiene un hook de borrado: no hay baja automática en el mismo instante.
+
+`scripts/db/destination.ts` acepta estas bases (`relevo_wt_*`); la limpieza de pruebas exige el sufijo `_test` o `_test_isolation`.
+
 ## Verificación
 
 - `pnpm db:validate`: valida schema sin conectar a DB.

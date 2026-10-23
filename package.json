@@ -23,7 +23,11 @@
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
     "test:db": "node --conditions=react-server --import tsx --test --test-concurrency=1 tests/db/*.test.ts",
     "test": "pnpm test:unit && pnpm test:db",
-    "db:prepare:local": "tsx scripts/db/provision.ts"
+    "db:prepare:local": "tsx scripts/db/provision.ts",
+    "db:worktree:up": "bash scripts/worktree/db-up.sh",
+    "db:worktree:setup": "bash scripts/worktree/setup.sh",
+    "wt:db:prune": "bash scripts/worktree/db-prune.sh",
+    "wt:remove": "bash scripts/worktree/remove.sh"
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "5.3.0",

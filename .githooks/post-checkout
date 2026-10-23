@@ -1,0 +1,9 @@
+#!/bin/bash
+# Solo al crear un worktree (git worktree add: commit previo nulo). Un fallo aquí no
+# debe impedir el checkout.
+[ "$3" = 1 ] && [[ "$1" =~ ^0+$ ]] || exit 0
+root=$(git rev-parse --show-toplevel)
+[ -x "$root/scripts/worktree/db-up.sh" ] || exit 0
+"$root/scripts/worktree/db-up.sh" || echo "worktree-db: no se pudo preparar la base; repite con scripts/worktree/db-up.sh" >&2
+"$root/scripts/worktree/db-prune.sh" --yes || true
+exit 0
