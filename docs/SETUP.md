@@ -90,6 +90,10 @@ Para preparar un entorno local nuevo, configura privadamente `LOCAL_POSTGRES_ADM
 
 `.env.t03` está ignorado y contiene `RELEVO_BACKEND_URL` / `RELEVO_BACKEND_DIRECT_URL`, más los pares equivalentes para `RELEVO_BACKEND_TEST` y `RELEVO_BACKEND_TEST_ISOLATION`. No copiarlo a otros worktrees. Para otro entorno, provee sus conexiones privadas; el ejemplo no incluye valores. Las pruebas también admiten las dos variables de aplicación de prueba definidas en el entorno del proceso. No apuntarlas a desarrollo o integración.
 
+### Bases propias por worktree
+
+Un worktree enlazado no hereda `.env.t03` ni comparte las bases `relevo_backend*`. `pnpm db:worktree` crea, migra (sin seed) y registra en `.env.t03` y `.env` (0600, ignorados) tres bases y seis roles derivados de la ruta del worktree: `relevo_wt_<nombre>_<hash>`, `_test` y `_test_isolation`. Es idempotente (`--force` rota credenciales, `--drop` retira solo esos recursos), usa `LOCAL_POSTGRES_ADMIN_URL` o el usuario del sistema por loopback, y la guarda de destino acepta únicamente ese patrón cerrado. `pnpm worktree:setup` añade dependencias y cliente Prisma antes de lo anterior y no hace nada en el checkout principal. Registrar como automático al crear worktrees requiere un hook de sesión que debe habilitar el usuario; no está activado.
+
 ### Comandos
 
 Configura `DATABASE_URL` con el rol app y `DIRECT_URL` con el rol migrador **de la misma base local**. Puedes hacerlo en un `.env` privado o en el entorno del comando. Después:

@@ -22,3 +22,14 @@ test('preparación administrativa acepta solo postgres local y conserva las barr
   assert.equal(localAdminDestination('postgresql://owner@127.0.0.1:5432/postgres'), 'postgresql://owner@127.0.0.1:5432/postgres');
   for (const url of ['postgresql://owner@neon.tech/postgres', 'postgresql://owner@localhost/relevo_integracion', 'postgresql://owner@localhost/postgres?host=remote']) assert.throws(() => localAdminDestination(url));
 });
+
+test('bases propias de un worktree se admiten por patrón cerrado; las de prueba siguen separadas del desarrollo', () => {
+  const base = 'relevo_wt_t06_relevo_ab12cd';
+  assert.equal(localDestination(`postgresql://x@127.0.0.1/${base}`).database, base);
+  assert.equal(localDestination(`postgresql://x@127.0.0.1/${base}_test`, true).database, `${base}_test`);
+  assert.equal(localDestination(`postgresql://x@127.0.0.1/${base}_test_isolation`, true).database, `${base}_test_isolation`);
+  assert.throws(() => localDestination(`postgresql://x@127.0.0.1/${base}`, true), /Destino local no permitido/);
+  for (const name of ['relevo_wt_', 'relevo_wt_UPPER', 'relevo_wt_a-b', 'relevo_wt_a;drop', `relevo_wt_${'a'.repeat(60)}`, 'relevo_wt_x/../postgres']) {
+    assert.throws(() => localDestination(`postgresql://x@127.0.0.1/${name}`), /Destino local no permitido/);
+  }
+});

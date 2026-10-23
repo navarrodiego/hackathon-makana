@@ -2,7 +2,7 @@ import { Prisma } from '../../src/generated/prisma/client';
 import type { PrismaClient } from '../../src/generated/prisma/client';
 
 const bases = ['relevo_backend', 'relevo_backend_test', 'relevo_backend_test_isolation'];
-// Bases propias de un worktree: patrón cerrado, sin puntuación ni mayúsculas.
+// Bases propias de un worktree (scripts/db/worktree.ts): patrón cerrado, sin puntuación ni mayúsculas.
 const worktreeBase = /^relevo_wt_[a-z0-9_]{1,45}$/;
 const isTestName = (name: string) => name.endsWith('_test') || name.endsWith('_test_isolation');
 function allowedName(database: string, testOnly: boolean): boolean {
