@@ -11,12 +11,12 @@ const isPrefetch = (request: NextRequest) =>
  * credencial y reenviarla en la página y en sus POST. Solo comprueba presencia; la validación real ocurre
  * en el servicio de autorización (T05), que además falla cerrado si falta la configuración.
  */
-function outgoingAccess(request: NextRequest) {
+function basicAccess(request: NextRequest, message: string, realm: string) {
   if (request.headers.has("authorization")) return NextResponse.next();
-  return new NextResponse("Ingresa con la credencial de Rodrigo para abrir el cierre de turno.", {
+  return new NextResponse(message, {
     status: 401,
     headers: {
-      "WWW-Authenticate": 'Basic realm="Relevo · cierre de Rodrigo", charset="UTF-8"',
+      "WWW-Authenticate": `Basic realm="${realm}", charset="UTF-8"`,
       "Cache-Control": "no-store",
       "Content-Type": "text/plain; charset=utf-8",
     },
@@ -49,7 +49,11 @@ async function channelEntry(request: NextRequest) {
 
 /** Un solo proxy por proyecto: reparte por ruta. */
 export function proxy(request: NextRequest) {
-  return request.nextUrl.pathname === "/rodrigo" ? outgoingAccess(request) : channelEntry(request);
+  const path = request.nextUrl.pathname;
+  if (path === "/rodrigo") return basicAccess(request, "Ingresa con la credencial de Rodrigo para abrir el cierre de turno.", "Relevo · cierre de Rodrigo");
+  // Control usa su propia credencial (C12), distinta de la de Rodrigo.
+  if (path === "/control") return basicAccess(request, "Ingresa con la credencial de control para operar la demostración.", "Relevo · control");
+  return channelEntry(request);
 }
 
-export const config = { matcher: ["/rodrigo", "/canal"] };
+export const config = { matcher: ["/rodrigo", "/canal", "/control"] };
