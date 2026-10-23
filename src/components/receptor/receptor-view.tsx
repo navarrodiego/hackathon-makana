@@ -13,7 +13,6 @@ import { buildRespondRequest, failureView, formatClock, reviewState, type Failur
 
 type Decision = "accepted" | "rejected" | null;
 
-const DISPOSITION = { puede_esperar: "Puede esperar", transferir: "Transferir" } as const;
 
 async function respond(action: RespondAction, pkg: HandoffPackageDTO, token: string): Promise<{ ok: true; result: HandoffResultDTO } | { ok: false; failure: FailureView }> {
   const { url, init } = buildRespondRequest(action, pkg, token);
@@ -111,17 +110,19 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
         <p className="mt-2 text-body">De {startsAt} a {formatClock(coverage.endsAt)}. Una aceptación anticipada comienza a la hora prevista, no antes.</p>
       </section>
 
-      <section aria-labelledby="nota">
-        <h2 id="nota" className="text-section font-semibold">Nota de {outgoing.displayName}</h2>
-        <p className="mt-2 max-w-prose whitespace-pre-line break-words text-body">{pkg.note}</p>
-      </section>
+      {pkg.note.trim() ? (
+        <section aria-labelledby="nota">
+          <h2 id="nota" className="text-section font-semibold">Nota de {outgoing.displayName}</h2>
+          <p className="mt-2 max-w-prose whitespace-pre-line break-words text-body">{pkg.note}</p>
+        </section>
+      ) : null}
 
       <section aria-labelledby="pendientes">
-        <h2 id="pendientes" className="text-section font-semibold">Pendientes que se transfieren</h2>
+        <h2 id="pendientes" className="text-section font-semibold">Pendientes del turno</h2>
         <PendingList label="Pendientes del relevo">
           {pkg.tickets.map(t => (
             <PendingRow key={t.id} ticketId={t.reference} title={t.text}
-              proposal={<><span className="font-semibold">{DISPOSITION[t.disposition]}.</span> {t.reason}</>} />
+              proposal={t.disposition === "transferir" ? <><span className="font-semibold">Para seguimiento.</span> {t.reason}</> : null} />
           ))}
         </PendingList>
       </section>

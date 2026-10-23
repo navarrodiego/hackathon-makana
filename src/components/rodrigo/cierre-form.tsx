@@ -14,7 +14,7 @@ import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
 import { getState, postJson } from "./api";
 import {
-  buildSendBody, clockLabel, errorMessage, followUp, noteIssue, reasonIssue, sendPayloadKey,
+  buildSendBody, clockLabel, errorMessage, followUp, noteIssue, sendPayloadKey,
 } from "./model";
 import { NotaEditor } from "./nota-editor";
 import { Pendiente, type TicketDraft } from "./pendiente-card";
@@ -35,8 +35,8 @@ function initialTickets(view: RodrigoViewDTO): TicketDraft[] {
   return view.tickets.map(t => {
     const s = saved.find(x => x.ticketId === t.id);
     return s
-      ? { id: t.id, reference: t.reference, text: t.text, disposition: s.disposition, reason: s.reason, source: "ia" as const }
-      : { id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason, source: "base" as const };
+      ? { id: t.id, reference: t.reference, text: t.text, disposition: s.disposition, reason: s.reason }
+      : { id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason };
   });
 }
 
@@ -96,10 +96,6 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
   useStatePoll(sent || preparing, sent && handoff?.status === "awaiting_candidate" ? 1500 : 4000, onState, useCallback(() => setLost(true), []));
 
   const locked = sent || stale || busy !== "idle";
-  const edit = (id: string, change: Partial<Pick<TicketDraft, "disposition" | "reason">>) => {
-    setDirty(true);
-    setTickets(list => list.map(t => (t.id === id ? { ...t, ...change, source: "tuyo" } : t)));
-  };
 
   async function regenerate() {
     setBusy("regenerating"); setProblem(null);
@@ -119,14 +115,13 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
     setOrigin(`Regenerada en esta sesión a las ${clockLabel(saved.generatedAt)}.`);
     setTickets(list => list.map(t => {
       const s = saved.output.suggestions.find(x => x.ticketId === (t.id as TicketId));
-      return s ? { ...t, disposition: s.disposition as TicketDisposition, reason: s.reason, source: "ia" } : t;
+      return s ? { ...t, disposition: s.disposition as TicketDisposition, reason: s.reason } : t;
     }));
     setDirty(true);
   }
 
   async function send() {
-    const issues = [noteIssue(note), ...tickets.map(t => reasonIssue(t.reason))].filter(Boolean);
-    if (issues.length > 0) { setShowErrors(true); setProblem({ text: "Revisa la nota y las razones marcadas antes de enviar.", retryable: false }); return; }
+    if (noteIssue(note)) { setShowErrors(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
     setBusy("sending"); setProblem(null);
     const payload = sendPayloadKey({ version, note, tickets });
     if (attempt.current?.payload !== payload) attempt.current = { payload, key: crypto.randomUUID() };
@@ -170,7 +165,7 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
       ) : null}
       {lost ? <DegradedNotice title="Sin conexión con el estado">No se pudo comprobar el estado más reciente. Lo último que ves puede estar desactualizado.</DegradedNotice> : null}
       {view.note.status === "pending" && !sent ? <DegradedNotice title="La nota aún se está preparando">Puedes esperar unos segundos o escribirla tú. No es una nota guardada.</DegradedNotice> : null}
-      {view.note.status === "failed" && !dirty && !sent ? <DegradedNotice title="La nota no se generó">No hay propuesta de IA. Revisa los pendientes, escribe la nota o usa Regenerar.</DegradedNotice> : null}
+      {view.note.status === "failed" && !dirty && !sent ? <DegradedNotice title="La nota no se generó">No hay borrador de IA. Puedes enviar el relevo sin nota, escribirla o usar Regenerar.</DegradedNotice> : null}
       {problem ? <ErrorMessage title={problem.text}>{problem.retryable ? "Puedes volver a pulsar el botón." : null}</ErrorMessage> : null}
 
       {sent && follow ? (
@@ -195,12 +190,9 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
 
       <section aria-labelledby="pendientes" className="space-y-3">
         <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
-        <p className="text-aux text-muted-foreground">Transferir un pendiente entrega el contexto a quien entra; no lo convierte en urgente ni en aviso.</p>
+        <p className="text-aux text-muted-foreground">Quien entra recibe todos. La IA destaca los que necesitan seguimiento; eso no los vuelve urgentes ni genera avisos.</p>
         <PendingList label="Pendientes del turno">
-          {tickets.map(t => (
-            <Pendiente key={t.id} ticket={t} disabled={locked} showErrors={showErrors}
-              onChange={change => edit(t.id, change)} />
-          ))}
+          {tickets.map(t => <Pendiente key={t.id} ticket={t} />)}
         </PendingList>
       </section>
 
