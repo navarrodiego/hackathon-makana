@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { RodrigoViewDTO } from "@/lib/contracts/private";
 import type {
@@ -65,7 +65,7 @@ function useStatePoll(enabled: boolean, intervalMs: number, onState: (s: PublicS
   }, [enabled, intervalMs]);
 }
 
-export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffId: HandoffId }) {
+export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; handoffId: HandoffId; extra?: ReactNode }) {
   const router = useRouter();
   const [tickets, setTickets] = useState<TicketDraft[]>(() => initialTickets(view));
   const [note, setNote] = useState(view.note.saved?.output.note ?? "");
@@ -223,6 +223,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
         )}
         <p className="text-aux text-muted-foreground">Cerrar tu turno no vuelve a avisar un incidente ya avisado.</p>
       </section>
+      {extra}
     </SurfaceShell>
   );
 }
