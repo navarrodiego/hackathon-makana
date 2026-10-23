@@ -50,7 +50,7 @@ El registro y la cobertura del sistema son continuos, 24/7. No implica disponibi
 
 ### Alcance objetivo, no construido acreditado
 
-1. Revisión de pendientes y nota IA editable; propuestas Puede esperar / Transferir, sin convertir todo en urgencia.
+1. Cierre en un paso: Rodrigo ve sus pendientes y envía el relevo. No clasifica tickets ni escribe razones; la IA destaca los que necesitan seguimiento, sin convertir nada en urgencia. Nota IA opcional y editable. Decisión de Diego del 23-10-2026.
 2. Envío y aceptación/rechazo del relevo. Aceptación anticipada efectiva desde la ventana.
 3. Paula rechaza o no responde: Tomás; si también falla, aviso a Carla y Sin cobertura confirmada. No extensión automática de Rodrigo.
 4. Canal público QR de reportes ficticios; política visible sobre clasificación IA.

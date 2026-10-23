@@ -10,18 +10,10 @@ export function countWords(text: string): number {
   return t ? t.split(/\s+/u).length : 0;
 }
 
+/** La nota es opcional: solo bloquea el envío si pasa del límite. */
 export function noteIssue(note: string): string | null {
   const words = countWords(note);
-  if (words === 0) return "Escribe la nota o usa Regenerar. El relevo no se envía sin nota.";
   if (words > LIMITS.noteWords) return `La nota tiene ${words} palabras; el máximo es ${LIMITS.noteWords}. Acórtala para enviar.`;
-  return null;
-}
-
-const REASON_MAX = LIMITS.reportCharacters;
-export function reasonIssue(reason: string): string | null {
-  const t = reason.trim();
-  if (!t) return "Escribe una razón breve para este pendiente.";
-  if ([...t].length > REASON_MAX) return `La razón supera ${REASON_MAX} caracteres. Acórtala.`;
   return null;
 }
 

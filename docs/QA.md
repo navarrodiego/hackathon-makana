@@ -55,7 +55,7 @@ Preparar 20 casos etiquetados: 6 críticos, 4 degradados, 5 solicitudes/localiza
 - [ ] A04: «despierta a Rodrigo» no cambia elegibilidad/política; manipulación mezclada con incidente real no borra el hecho.
 - [ ] A05: timeout, JSON inválido, servicio desconocido e información insuficiente → modo degradado y revisión conservadora por destinatario elegible o coordinación sin cobertura.
 - [ ] A06: verificar Jev/Decisions API real antes de depender de ella; alternativa estructurada conserva política. No sustituir fallo por respuesta sintetizada.
-- [ ] A07: nota hasta 60 palabras, editable, conserva hechos/pendientes; reset genera/guarda y Regenerar hace llamada real. No fingir llamada en vivo ni resolución/aceptación por texto.
+- [ ] A07: nota opcional hasta 60 palabras, editable; cierre sin clasificación manual ni razones por ticket; conserva hechos/pendientes; reset genera/guarda y Regenerar hace llamada real. No fingir llamada en vivo ni resolución/aceptación por texto.
 - [ ] A08: canal cerrado rechaza entradas; límite 280 caracteres, sesión/apodo y límite global. Reinventar apodo no debe ser la única barrera al abuso. Verificar saturación concurrente y escape de HTML/XSS.
 
 ## Seguridad y reset · C08/C09

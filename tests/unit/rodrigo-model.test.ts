@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  buildSendBody, clockLabel, countWords, errorMessage, followUp, noteIssue, reasonIssue, sendPayloadKey,
+  buildSendBody, clockLabel, countWords, errorMessage, followUp, noteIssue, sendPayloadKey,
 } from "../../src/components/rodrigo/model";
 
 const instant = (s: string) => s as never;
@@ -24,16 +24,11 @@ test("cuenta palabras igual que el validador del servidor", () => {
   assert.equal(countWords("uno  dos\ntres"), 3);
 });
 
-test("la nota exige texto y hasta 60 palabras", () => {
-  assert.match(noteIssue("") ?? "", /Escribe la nota/);
+test("la nota es opcional y admite hasta 60 palabras", () => {
+  assert.equal(noteIssue(""), null);
+  assert.equal(noteIssue("   "), null);
   assert.equal(noteIssue("a ".repeat(60)), null);
   assert.match(noteIssue("a ".repeat(61)) ?? "", /61 palabras/);
-});
-
-test("la razón del pendiente no puede quedar vacía ni pasar de 280 caracteres", () => {
-  assert.ok(reasonIssue("  "));
-  assert.ok(reasonIssue("x".repeat(281)));
-  assert.equal(reasonIssue("Sin tóner; llega el lunes."), null);
 });
 
 test("el cuerpo de envío recorta textos y conserva el orden de los pendientes", () => {

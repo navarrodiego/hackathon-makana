@@ -22,7 +22,7 @@ Registrar por separado envío, aceptación, inicio efectivo de cobertura y fin d
 
 Cinco tickets sintéticos: #481 adjuntos de correo de una persona; #477 impresora administrativa sin tóner; #470 respaldo fallido y próximo intento a las 02:00; #466 VPN lenta de dos personas; #462 cuenta para el lunes. Todos pueden esperar según política del ejemplo salvo #470, que se transfiere para seguimiento sin urgencia inmediata.
 
-La IA propone `puede_esperar` / `transferir`, razón breve y nota de hasta 60 palabras. Rodrigo revisa y corrige; la nota es borrador editable. No inventar compromisos, causas o resolución. Generar y guardar al reiniciar; Regenerar hace llamada real. Si falla, no fingir generación. Cerrar no reavisa un incidente ya avisado, ni publica los tickets como mensajes del canal.
+La IA propone `puede_esperar` / `transferir`, razón breve y nota de hasta 60 palabras. Rodrigo no clasifica ni escribe razones (decisión de Diego, 23-10-2026): la lista es de solo lectura y solo `transferir` se muestra, como «Para seguimiento» con su razón, a Rodrigo y a quien entra. Sin propuesta guardada se usa la decisión base del ticket. Quien entra recibe todos los pendientes. La nota es un borrador editable y opcional: vacía no bloquea el envío; solo bloquea si pasa de 60 palabras. No inventar compromisos, causas o resolución. Generar y guardar al reiniciar; Regenerar hace llamada real. Si falla, no fingir generación. Cerrar no reavisa un incidente ya avisado, ni publica los tickets como mensajes del canal.
 
 ## C04 · Relevo y cobertura
 
@@ -146,7 +146,7 @@ Todos los POST usan JSON y llevan `executionId` e `idempotencyKey` en el cuerpo.
 |---|---|---|---|
 | POST messages | `nickname`, `text` | `ReportReceiptDTO` / 201 | Sesión pública o control |
 | GET state | Sin cuerpo | `PublicStateDTO` / 200 | Público |
-| POST handoff | `handoffId`, versión del borrador, `note`, cinco decisiones de tickets con razón | `HandoffResultDTO` / 201 | Saliente o control representándolo |
+| POST handoff | `handoffId`, versión del borrador, `note` (puede ir vacía), cinco decisiones de tickets con razón tomadas de la propuesta IA o la base | `HandoffResultDTO` / 201 | Saliente o control representándolo |
 | POST handoff/suggest | `handoffId`, versión del borrador | `SuggestionResultDTO` / 200 | Saliente o control representándolo |
 | POST handoff/[id]/accept | Versión del relevo, `attemptId` | `HandoffResultDTO` / 200 | Destinatario vigente o control representándolo |
 | POST handoff/[id]/reject | Versión del relevo, `attemptId` | `HandoffResultDTO` / 200 | Destinatario vigente o control representándolo |
@@ -154,7 +154,7 @@ Todos los POST usan JSON y llevan `executionId` e `idempotencyKey` en el cuerpo.
 | POST scene | Versión de ejecución, `sceneId`, `channelOpen` | `PublicStateDTO` / 200 | Control |
 | POST reset | Versión de ejecución | `ResetResultDTO` / 201 | Control |
 
-Enviar persiste las cinco decisiones revisadas y la nota de hasta 60 palabras; IDs exactos, únicos y de la ejecución, sin aceptar tickets arbitrarios. Las ediciones locales aún no enviadas se identifican como borrador sin guardar, sin inventar un endpoint de guardado. Sugerir regenera realmente, guarda propuestas/nota y aumenta la versión del borrador; el fallo conserva lo guardado. Reset responde con ejecución nueva `preparation=pending`, canal cerrado y nota aún no disponible; T11 prepara mediante T09 y pasa a `ready` o `failed`, sin fingir llamada en vivo posterior.
+Enviar persiste las cinco decisiones (propuesta IA o base, sin edición de Rodrigo) y la nota opcional de hasta 60 palabras; IDs exactos, únicos y de la ejecución, sin aceptar tickets arbitrarios. Las ediciones locales aún no enviadas se identifican como borrador sin guardar, sin inventar un endpoint de guardado. Sugerir regenera realmente, guarda propuestas/nota y aumenta la versión del borrador; el fallo conserva lo guardado. Reset responde con ejecución nueva `preparation=pending`, canal cerrado y nota aún no disponible; T11 prepara mediante T09 y pasa a `ready` o `failed`, sin fingir llamada en vivo posterior.
 
 GET state evalúa vencimientos/activación mediante T11 y devuelve revisión persistida. No acepta ni acusa por una persona. Toda respuesta de estado es `no-store`; consumidores descartan respuestas viejas por ejecución y revisión. Para una nueva ejecución se vuelve a cargar la lectura vigente; las operaciones de la anterior reciben conflicto.
 
