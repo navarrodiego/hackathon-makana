@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T00:00:00-03:00",
+  "title": "Design System: Relevo",
+  "extensions": {
+    "colorMeta": {
+      "petroleo-mate": { "role": "neutral", "displayName": "Petróleo mate", "canonical": "#102a2d", "tonalRamp": ["#050d0e", "#081516", "#0b1d1f", "#0e2628", "#283f42", "#707f81", "#b7bfc0", "#e7eaea"] },
+      "petroleo-elevado": { "role": "neutral", "displayName": "Petróleo elevado", "canonical": "#18383b", "tonalRamp": ["#071112", "#0c1c1e", "#112729", "#163235", "#2f4c4f", "#748889", "#bac3c4", "#e8ebeb"] },
+      "claro-verdoso": { "role": "neutral", "displayName": "Claro verdoso", "canonical": "#f1f3e8", "tonalRamp": ["#484946", "#787a74", "#a9aaa2", "#d9dbd1", "#f2f4ea", "#f7f8f1", "#fbfbf8", "#fefefd"] },
+      "verdoso-secundario": { "role": "neutral", "displayName": "Verdoso secundario", "canonical": "#95b8b4", "tonalRamp": ["#2d3736", "#4a5c5a", "#68817e", "#86a6a2", "#a0bfbc", "#bfd4d2", "#dfeae8", "#f4f8f8"] },
+      "linea-divisor": { "role": "neutral", "displayName": "Línea divisora", "canonical": "#5e8582", "tonalRamp": ["#1c2827", "#2f4241", "#425d5b", "#557875", "#6e918e", "#9eb6b4", "#cfdada", "#eff3f2"] },
+      "ocre-accion": { "role": "primary", "displayName": "Ocre de acción", "canonical": "#e9af66", "tonalRamp": ["#46341f", "#745833", "#a37a47", "#d29e5c", "#ebb775", "#f2cfa3", "#f8e7d1", "#fdf7f0"] },
+      "ocre-hover": { "role": "primary", "displayName": "Ocre al pasar el cursor", "canonical": "#f0bd80", "tonalRamp": ["#483926", "#785e40", "#a8845a", "#d8aa73", "#f2c48d", "#f6d7b3", "#faebd9", "#fef8f2"] },
+      "error-salmon": { "role": "tertiary", "displayName": "Error salmón", "canonical": "#ffb4a8", "tonalRamp": ["#4c3632", "#805a54", "#b27e76", "#e6a297", "#ffbcb1", "#ffd2cb", "#ffe8e5", "#fff8f6"] },
+      "aviso-amarillo": { "role": "tertiary", "displayName": "Aviso amarillo", "canonical": "#f2d27a", "tonalRamp": ["#493f25", "#79693d", "#a99355", "#dabd6e", "#f3d687", "#f7e4af", "#fbf2d7", "#fefaf2"] },
+      "confirmacion-verde": { "role": "tertiary", "displayName": "Confirmación verde", "canonical": "#a9ddb4", "tonalRamp": ["#334236", "#546e5a", "#769b7e", "#98c7a2", "#b2e0bc", "#cbebd2", "#e5f5e8", "#f6fcf8"] }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Título de tarea", "purpose": "Título breve de superficie; en proyector 3,5 rem." },
+      "people": { "displayName": "Personas", "purpose": "Saliente y entrante en la línea de continuidad." },
+      "section": { "displayName": "Sección", "purpose": "Agrupación funcional." },
+      "body": { "displayName": "Contenido", "purpose": "Pendientes, explicaciones y errores; medida de 65–75 caracteres." },
+      "label": { "displayName": "Etiqueta auxiliar", "purpose": "ID, hora y contexto; nunca la única explicación de un estado." },
+      "action": { "displayName": "Acción", "purpose": "Verbo y objeto en botones." }
+    },
+    "motion": [
+      { "name": "feedback", "value": "150ms color transition", "purpose": "Solo color en hover; con prefers-reduced-motion la duración baja a 0,01 ms." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "altura-accion-fija", "value": "min-height: 40rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de un paso, verbo y destinatario.",
+      "html": "<button class=\"ds-btn-primary\">Enviar relevo a Paula</button>",
+      "css": ".ds-btn-primary{min-height:3.5rem;padding:.75rem 1.25rem;border:1px solid #e9af66;border-radius:.625rem;background:#e9af66;color:#102a2d;font:600 1.125rem/1.3 'Public Sans Variable',system-ui,sans-serif;transition:background-color .15s}.ds-btn-primary:hover{background:#f0bd80}.ds-btn-primary:focus-visible{outline:3px solid #f1f3e8;outline-offset:3px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acción alternativa de 48 px.",
+      "html": "<button class=\"ds-btn-secondary\">Aceptar relevo</button>",
+      "css": ".ds-btn-secondary{min-height:3rem;padding:.75rem 1.25rem;border:1px solid #95b8b4;border-radius:.625rem;background:transparent;color:#f1f3e8;font:600 1.125rem/1.3 'Public Sans Variable',system-ui,sans-serif;transition:background-color .15s}.ds-btn-secondary:hover{background:#18383b}.ds-btn-secondary:focus-visible{outline:3px solid #f1f3e8;outline-offset:3px}"
+    },
+    {
+      "name": "Unavailable Button",
+      "kind": "button",
+      "refersTo": "button-unavailable",
+      "description": "Deshabilitado o en curso; borde discontinuo y texto legible.",
+      "html": "<button class=\"ds-btn-off\" aria-disabled=\"true\">Enviando relevo…</button>",
+      "css": ".ds-btn-off{min-height:3rem;padding:.75rem 1.25rem;border:1px dashed #5e8582;border-radius:.625rem;background:#18383b;color:#95b8b4;font:600 1.125rem/1.3 'Public Sans Variable',system-ui,sans-serif;cursor:not-allowed}.ds-btn-off:focus-visible{outline:3px solid #f1f3e8;outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Etiqueta visible, ayuda y control de 48 px.",
+      "html": "<div><label class=\"ds-field-label\" for=\"ds-f\">Apodo</label><p class=\"ds-field-hint\">Se muestra junto a tu reporte.</p><input id=\"ds-f\" class=\"ds-field\"></div>",
+      "css": ".ds-field-label{display:block;font:600 1rem/1.5 'Public Sans Variable',system-ui,sans-serif;color:#f1f3e8}.ds-field-hint{margin:.25rem 0 0;font:400 .875rem/1.4 'Public Sans Variable',system-ui,sans-serif;color:#95b8b4}.ds-field{display:block;width:100%;min-height:3rem;margin-top:.5rem;padding:.75rem 1rem;border:1px solid #95b8b4;border-radius:.625rem;background:#18383b;color:#f1f3e8;font:400 1rem/1.5 'Public Sans Variable',system-ui,sans-serif}.ds-field:focus-visible{outline:3px solid #f1f3e8;outline-offset:3px}"
+    },
+    {
+      "name": "Status",
+      "kind": "chip",
+      "refersTo": "status",
+      "description": "Marca geométrica más texto; ejemplo Programado.",
+      "html": "<span class=\"ds-status\"><span class=\"ds-status-mark\" aria-hidden=\"true\"></span>Paula aceptó. Su cobertura comienza a las 22:10</span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;gap:.5rem;color:#f2d27a;font:600 1rem/1.5 'Public Sans Variable',system-ui,sans-serif}.ds-status-mark{width:.75rem;height:.75rem;border:2px solid #f2d27a;border-radius:50%}"
+    },
+    {
+      "name": "Continuity Line",
+      "kind": "custom",
+      "refersTo": "continuity-line",
+      "description": "Saliente → entrante; cortada hasta que haya aceptación.",
+      "html": "<div class=\"ds-cont\"><span class=\"ds-p\">Rodrigo</span><svg aria-hidden=\"true\" viewBox=\"0 0 64 12\" preserveAspectRatio=\"none\" class=\"ds-line\"><line x1=\"0\" y1=\"6\" x2=\"26\" y2=\"6\" stroke=\"currentColor\" stroke-width=\"2\"/><line x1=\"38\" y1=\"6\" x2=\"64\" y2=\"6\" stroke=\"currentColor\" stroke-width=\"2\" stroke-dasharray=\"2 4\"/></svg><span class=\"ds-p\">Paula</span></div><p class=\"ds-cont-text\">Esperando aceptación de Paula</p>",
+      "css": ".ds-cont{display:flex;align-items:center;gap:.75rem;color:#f1f3e8}.ds-p{font:600 1.5625rem/1.25 'Public Sans Variable',system-ui,sans-serif}.ds-line{flex:1;min-width:2.5rem;height:.75rem}.ds-cont-text{margin:.75rem 0 0;color:#f1f3e8;font:600 1rem/1.5 'Public Sans Variable',system-ui,sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La continuidad",
+    "overview": "Una emisión termina y la siguiente tiene nombre y hora. Relevo toma de la programación de radio nocturna su continuidad, su precisión horaria y su lectura serena, no la apariencia de una radio. Es una herramienta de trabajo: botones, campos, listas y navegación web reconocibles.",
+    "keyCharacteristics": [
+      "Jerarquía por tipografía, espacios y alineación, no por cajas dentro de cajas.",
+      "Una acción primaria por paso; interacción convencional antes que expresión visual.",
+      "Un único gesto de identidad: continuidad entre saliente y entrante, sin fingir cobertura."
+    ],
+    "rules": [
+      { "name": "Regla de continuidad honesta", "body": "Enviar no cierra el traspaso visual. La cobertura efectiva solo se muestra al comenzar su ventana; una línea unida nunca prueba por sí sola cobertura activa.", "section": "overview" },
+      { "name": "Regla del ocre escaso", "body": "La acción primaria debe seguir siendo lo más fácil de encontrar; no colorear de ocre cada fila ni cada estado.", "section": "colors" },
+      { "name": "Regla de estado explícito", "body": "Los estados se distinguen por etiquetas y estructura; la confirmación verde solo aparece tras un evento de aceptación o cobertura efectiva.", "section": "colors" }
+    ],
+    "dos": [
+      "Do mantener Public Sans, petróleo mate, texto claro y ocre concentrado en acción.",
+      "Do terminar cada operación en el estado observado, incluso si es Sin cobertura confirmada."
+    ],
+    "donts": [
+      "Don't usar Inter, gradientes morados, brillo, transparencias ornamentales o bajo contraste.",
+      "Don't mostrar un chip verde, una línea cerrada o «Todo listo» por el mero envío del relevo.",
+      "Don't confundir Aceptar relevo con Tomar incidente ni acuse con resolución."
+    ]
+  }
+}

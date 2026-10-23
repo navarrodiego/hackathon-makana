@@ -1,9 +1,91 @@
 ---
 name: Relevo
 description: La continuidad — una interfaz de relevo serena, legible y explícita sobre quién sigue.
+colors:
+  petroleo-mate: "#102a2d"
+  petroleo-elevado: "#18383b"
+  claro-verdoso: "#f1f3e8"
+  verdoso-secundario: "#95b8b4"
+  linea-divisor: "#5e8582"
+  ocre-accion: "#e9af66"
+  ocre-hover: "#f0bd80"
+  error-salmon: "#ffb4a8"
+  aviso-amarillo: "#f2d27a"
+  confirmacion-verde: "#a9ddb4"
+typography:
+  title:
+    fontFamily: "Public Sans Variable, system-ui, sans-serif"
+    fontSize: "2rem"
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: "-0.02em"
+  people:
+    fontFamily: "Public Sans Variable, system-ui, sans-serif"
+    fontSize: "1.5625rem"
+    fontWeight: 600
+    lineHeight: 1.25
+  section:
+    fontFamily: "Public Sans Variable, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 600
+    lineHeight: 1.4
+  body:
+    fontFamily: "Public Sans Variable, system-ui, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: 1.5
+  label:
+    fontFamily: "Public Sans Variable, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.4
+  action:
+    fontFamily: "Public Sans Variable, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 600
+    lineHeight: 1.3
+rounded:
+  control: "10px"
+spacing:
+  touch-min: "48px"
+  touch-primary: "56px"
+components:
+  button-primary:
+    backgroundColor: "{colors.ocre-accion}"
+    textColor: "{colors.petroleo-mate}"
+    typography: "{typography.action}"
+    rounded: "{rounded.control}"
+    height: "{spacing.touch-primary}"
+    padding: "12px 20px"
+  button-primary-hover:
+    backgroundColor: "{colors.ocre-hover}"
+  button-secondary:
+    backgroundColor: "transparent"
+    textColor: "{colors.claro-verdoso}"
+    typography: "{typography.action}"
+    rounded: "{rounded.control}"
+    height: "{spacing.touch-min}"
+    padding: "12px 20px"
+  button-danger:
+    backgroundColor: "transparent"
+    textColor: "{colors.error-salmon}"
+    typography: "{typography.action}"
+    rounded: "{rounded.control}"
+    height: "{spacing.touch-min}"
+  button-unavailable:
+    backgroundColor: "{colors.petroleo-elevado}"
+    textColor: "{colors.verdoso-secundario}"
+    rounded: "{rounded.control}"
+  field:
+    backgroundColor: "{colors.petroleo-elevado}"
+    textColor: "{colors.claro-verdoso}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    height: "{spacing.touch-min}"
+    padding: "12px 16px"
 ---
 
-<!-- SEED: dirección visual elegida con el usuario antes de implementación. Volver a ejecutar $impeccable document cuando exista código para extraer tokens/componentes reales y generar el sidecar. -->
+<!-- Implementado en T04 (23-10-2026): tokens en src/app/globals.css, primitives en src/components/ui/ y src/components/relevo/. La dirección de abajo sigue siendo la aprobada; los valores de estas cabeceras salen del código. El sidecar está en .impeccable/design.json. -->
 
 ## Overview
 
@@ -25,7 +107,7 @@ La escena prioritaria es Rodrigo revisando el relevo en el teléfono bajo cansan
 
 **Regla de continuidad honesta.** Enviar no cierra el traspaso visual. Una aceptación puede confirmar al receptor, pero la cobertura efectiva solo se muestra al comenzar su ventana. El texto siempre explica el estado; una línea unida nunca prueba por sí sola cobertura activa.
 
-Este es un documento direccional previo a implementación, no una extracción de CSS ni una biblioteca construida. Los valores siguientes proceden del boceto elegido; los detalles no establecidos quedan para implementación y verificación. No se crea un sidecar de componentes ficticiamente extraídos.
+Este documento combina la dirección aprobada con los tokens y componentes que T04 implementó (23-10-2026). Los valores de las cabeceras y la sección Components salen del código; la prosa conserva la dirección. Eso no acredita el recorrido operativo, un ensayo en S26 ni una certificación de accesibilidad.
 
 ## Colors
 
@@ -41,11 +123,11 @@ Petróleo y claros verdosos sostienen la lectura; ocre cálido concentra la acci
 | Texto secundario verdoso | `#95B8B4` | Contexto auxiliar, IDs y separaciones de alta visibilidad |
 | Texto sobre acción | `#102A2D` | Etiqueta del botón ocre; no blanco sobre ocre |
 
-Son valores aprobados de dirección, todavía no nombres de variables CSS ni tokens extraídos. Durante la implementación darles un único origen y documentar allí los estados reales; no mantener definiciones paralelas divergentes.
+Origen único: variables `--background`, `--foreground`, `--primary`, `--muted-foreground` y afines en `src/app/globals.css`; no mantener definiciones paralelas. Añadidos por T04 y medidos sobre el fondo petróleo (y sobre `#18383b`): ocre de hover `#f0bd80`; error `#ffb4a8` 8,87:1 (7,40:1); aviso `#f2d27a` 10,26:1 (8,56:1); confirmación `#a9ddb4` 9,84:1 (8,21:1). El divisor `#5e8582` (3,70:1) vale solo para separaciones; los bordes de controles usan `#95b8b4` (7,04:1).
 
 **Regla del ocre escaso.** La acción primaria debe seguir siendo lo más fácil de encontrar. No colorear de ocre cada fila, cada icono y cada estado. El boceto usa ocre en propuestas de tickets: al implementar comprobar que no compitan con el botón principal ni parezcan confirmación de urgencia.
 
-**Regla de estado explícito.** Pendiente, programado, activo, derivado y sin cobertura se distinguen por etiquetas y estructura. No inventar verde de éxito antes de aceptar ni comunicar error solo en rojo. La paleta semántica de error/advertencia/confirmación debe resolverse y medirse durante implementación; no se hereda automáticamente la anterior.
+**Regla de estado explícito.** Pendiente, programado, activo, derivado y sin cobertura se distinguen por etiquetas y estructura. No inventar verde de éxito antes de aceptar ni comunicar error solo en rojo. Error, aviso y confirmación existen como tokens, siempre con texto y forma; la confirmación (verde) solo aparece tras un evento de aceptación o cobertura efectiva.
 
 ### Contraste comprobado de colores sólidos
 
@@ -93,9 +175,9 @@ Una columna para tareas móviles. Ancho de lectura contenido para cierre/recepto
 
 Acción principal cercana al pulgar. Si se fija abajo, reservar su espacio y safe area, evitar que tape campos y conservar el foco visible. Acciones táctiles de al menos 48 px; botón primario de 56 px en el boceto. No empequeñecer acciones secundarias críticas para que quepan en la primera pantalla.
 
-La lista de pendientes tiene filas abiertas: ID, título y propuesta. No envolverla en tarjetas anidadas. En texto largo, permitir que la propuesta baje de línea antes de truncar el significado. La razón y la corrección de la propuesta deben ser alcanzables con controles convencionales; no solo deslizando.
+La lista de pendientes tiene filas abiertas de solo lectura: ID, título y, solo en los destacados, «Para seguimiento» con su razón. No envolverla en tarjetas anidadas. En texto largo, permitir que el destacado baje de línea antes de truncar el significado.
 
-La nota IA editable es una parte real del recorrido, aunque el boceto de primera pantalla solo muestra su etiqueta. Colocarla en la continuación del flujo sin ocultarla detrás del botón de envío. No confundir una miniatura aprobada con una especificación exhaustiva de campos y estados.
+La nota IA editable y opcional es una parte real del recorrido, aunque el boceto de primera pantalla solo muestra su etiqueta. Colocarla en la continuación del flujo sin ocultarla detrás del botón de envío. No confundir una miniatura aprobada con una especificación exhaustiva de campos y estados.
 
 En proyector, priorizar responsable y estado antes que un registro exhaustivo. Registro y cadena son áreas distintas, no tarjetas dentro de tarjetas. No exponer controles privilegiados. La desconexión y el alcance de los plazos deben seguir visibles según CONTRACTS.
 
@@ -114,6 +196,30 @@ Formas convencionales, contenidas y funcionales. Botón primario con esquinas su
 La línea de continuidad es información, no decoración: conserva un corte o separación mientras no haya aceptación, y su etiqueta distingue aceptación programada de cobertura efectiva. El boceto muestra una flecha tipográfica como esquema; en producción debe resolverse como geometría/SVG o icono consistente, con semántica textual equivalente. No usar símbolos Unicode o emojis como sustituto de un sistema de iconos.
 
 Campos y botones requieren default, hover donde exista, foco, pressed, disabled y loading según aplique. Respuestas de error/vencimiento se muestran junto a la acción sin afirmar éxito. Referencia de foco del boceto: contorno claro de 3 px, separado 3 px; comprobar visibilidad sobre cada fondo, incluido el botón ocre. No bajar toda la interfaz de opacidad para señalar un control deshabilitado ni hacer ilegible su explicación.
+
+## Components
+
+Implementados en `src/components/ui/` y `src/components/relevo/`; sin dependencias de UI externas. El diálogo no existe todavía.
+
+### Buttons
+- **Primario:** ocre `#e9af66` con texto petróleo, 56 px de alto, esquinas de 10 px, acción en 18 px / 600; hover `#f0bd80`. Uno por paso.
+- **Secundario:** transparente, borde `#95b8b4`, 48 px; hover sobre `#18383b`. **Peligro:** mismo trazo, texto y borde `#ffb4a8`.
+- **No disponible / cargando:** fondo `#18383b`, borde discontinuo, texto `#95b8b4` (5,87:1), sin bajar opacidad. Cargando usa `aria-disabled`, conserva el foco y la etiqueta cambia («Enviando relevo…»).
+
+### Inputs / Fields
+- Etiqueta visible encima, ayuda y error enlazados con `aria-describedby`; control de 48 px, fondo `#18383b`, borde `#95b8b4` (error: `#ffb4a8` más el texto «Error:»). Foco: contorno claro de 3 px con separación de 3 px.
+
+### Status
+- Marca geométrica más texto, nunca solo color: Pendiente (círculo discontinuo), Programado (círculo ámbar), Activo (círculo verde), Derivado (rombo), Sin cobertura confirmada (rombo salmón).
+
+### Continuity line (componente de identidad)
+- Saliente, línea y entrante en una fila. Cortada con puntos mientras se espera; discontinua al haber aceptación; continua solo con cobertura efectiva. Siempre con el mensaje de estado debajo. El estado se deriva de los DTO de contratos y enviar el relevo no la cierra.
+
+### Feedback y registro
+- Error (borde izquierdo salmón, `role="alert"`), aviso o desconexión (borde ámbar, `role="status"`), carga y vacío con texto. Registro y pendientes en filas abiertas con divisores `#5e8582`, sin tarjetas anidadas. El contador visual es `aria-hidden` y su texto accesible no cambia cada segundo.
+
+### Superficies
+- `SurfaceShell`: columna de 42 rem para móvil con acción primaria fija abajo (solo si la altura útil supera 40 rem) y safe area; variante `data-surface="projector"` con escala 56 / 44 / 32 / 24 / 20 px.
 
 ## Do's and Don'ts
 
@@ -136,4 +242,4 @@ Campos y botones requieren default, hover donde exista, foco, pressed, disabled 
 - Fuente, color, tamaño o componentes anteriores mezclados por comodidad con esta dirección.
 - Presentar el boceto, estos cálculos o la revisión de Impeccable como aplicación construida, ensayo en S26, validación con usuarios o certificación WCAG.
 
-Al implementar, ejecutar `$impeccable document` sobre el código para capturar tokens, componentes y sidecar reales. Hasta entonces este seed registra la dirección elegida, no una biblioteca extraída.
+Volver a ejecutar `$impeccable document` cuando cambien los tokens o componentes, y regenerar `.impeccable/design.json`.

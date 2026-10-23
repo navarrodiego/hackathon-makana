@@ -329,6 +329,7 @@ Implementa T17 en codex/t17-resumen; aplica docs/TASKS.md §2 y verifica T12/T15
 Lee AGENTS, PRODUCT, CONTRACTS C02/C07, DESIGN, LANGUAGE, DEMO 3:25–3:50 y QA E03/U06. Usa impeccable Operate, vercel-react-best-practices y relevo-lenguaje-claro; TDD para cálculos nuevos.
 Propiedad: src/app/rodrigo/, src/components/rodrigo/resumen/ y tests/e2e/resumen.spec.ts. T12 ya terminó; no editar simultáneamente sus archivos. Consume registro compartido T15 y lecturas autorizadas T11 sin modificarlos.
 Añade vista de mañana como filtro del registro continuo y resumen de hechos observados. Presenta consulta profesional por ronquido fuerte sin diagnóstico/medicación y sin condicionar la consulta al éxito de la app. No recojas salud/sueño reales.
+Actualización del 23-10-2026 (decisión de Diego): `/rodrigo` muestra una fase a la vez (cierre, seguimiento, resumen de la noche en la escena de mañana); el registro y los conteos quedan solo en el proyector y la consulta por ronquido sale de la app.
 Aceptación: incidente tomado no se presenta resuelto, cobertura y acuse diferenciados, conteos solo de ejecución vigente y datos reales del registro. Sin prometer sueño extra ni anonimato no comprobado; sin módulo separado de jefatura.
 Pruebas: perfiles Base/Navegador, ejecución vacía/con eventos/reset, render móvil/proyector relevante y revisión editorial.
 Entrega evidencia E03/U06 y capturas. Detente si el resumen necesita hechos no registrados; no los inventes para completar el pitch.

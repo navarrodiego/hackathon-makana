@@ -16,8 +16,8 @@ El eslogan **Entrega el turno. Recupera la noche.** es aprobado, no una garantí
 | Relevo | Transferencia del paquete; enviarlo no equivale a aceptarlo |
 | Cobertura | Responsabilidad aceptada para una ventana; una aceptación anticipada comienza a la hora prevista |
 | Pendiente | Trabajo por continuar; transferirlo no lo hace urgente |
-| Puede esperar | Va a próxima atención según política; no se borra |
-| Transferir | Entregar contexto/seguimiento a quien entra, sin alarma automática |
+| Para seguimiento | Pendiente que la IA destaca para quien entra (`transferir` en código); no lo hace urgente ni genera aviso |
+| Puede esperar | Valor interno (`puede_esperar`) de los pendientes sin destacar; no se muestra como etiqueta en el cierre |
 | Incidente | Hecho que requiere atención; su responsable puede diferir del titular del turno |
 | Tomar incidente | Acuse explícito y responsabilidad de atender ese incidente; no significa resolver |
 | Escalar | Derivar según elegibilidad y plazo; no avisar a todos ni cambiar toda la cobertura |
@@ -31,8 +31,10 @@ El eslogan **Entrega el turno. Recupera la noche.** es aprobado, no una garantí
 - **Enviar relevo**; en contexto, **Enviar relevo a Paula**.
 - **Aceptar relevo** / **No puedo cubrir**.
 - **Tomar incidente** en web y ntfy. No usar la etiqueta anterior «Lo tomo».
-- **Puede esperar** / **Transferir** en tickets. No «No puede esperar» como equivalente automático a transferir.
+- **Para seguimiento** en el pendiente que la IA destaca; los demás se listan sin etiqueta. No usar «Transferir» como etiqueta visible: quien entra recibe todos los pendientes.
 - **Regenerar** para una nueva llamada IA; no simularla con una espera artificial.
+
+- **Ingresar al cierre de turno** / **Ingresar a control** con el campo «Contraseña de operador»; **Cerrar sesión** para salir. Decir «contraseña de operador», no «credencial» ni «usuario».
 
 No usar Aceptar/Confirmar/OK si ocultan cuál de estas acciones ocurre.
 
@@ -51,15 +53,20 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 | Incidente aceptado por candidato vigente | «Tomado por Tomás»; origen escenario si se actuó desde control |
 | Envío ntfy aceptado | «Envío aceptado por ntfy»; no «Paula recibió el aviso» |
 | Reporte diferible registrado | «En cola»; mostrar próxima atención solo si está definida |
+| Reporte enviado desde /canal y aceptado por el servidor | «Reporte registrado. Su estado aparece en Tus reportes.» (T19); no promete clasificación ni atención |
 | Incidente ya notificado del mismo hecho | «Incidente ya avisado» |
 | Acción tardía tras derivación | Explicar que ya fue derivada; indicar destinatario actual solo si se conoce |
+| Contraseña de operador incorrecta | «La contraseña no coincide. Revísala y vuelve a intentarlo.» |
+| Sesión de operador ausente o vencida durante una acción | «Tu sesión terminó o ya no es válida. Ingresa de nuevo con la contraseña de operador; tus cambios no se enviaron y se conservan.» |
+| Origen rechazado | Nombrar la dirección usada y la configurada (`APP_ORIGIN`); no presentarlo como problema de contraseña |
+| Falta `OPERATOR_SECRET` en el servidor | Decir que nadie puede ingresar hasta configurarla; nunca mostrar su valor |
 | Sin conexión o persistencia fallida | Decir qué se pudo comprobar; no declarar acción guardada ni atribuir causa no observada |
 
 Una explicación de error incluye qué falló, qué se conserva y cómo recuperarse cuando esos hechos se saben. Evitar «Intenta de nuevo» si reintentar puede duplicar una operación sin idempotencia comprobada.
 
 ## IA
 
-«Borrador de IA · revisa antes de enviar». Nota editable, hasta 60 palabras según CONTRACTS, con razones breves. No añade causas, compromisos, responsables, horas ni resolución inexistentes. La nota no acepta el relevo ni degrada un incidente activo. No hacer aparecer como llamada en vivo una nota generada previamente en reset.
+«Borrador de IA · puedes enviarla tal cual, editarla o dejarla vacía». Nota opcional y editable, hasta 60 palabras según CONTRACTS. No añade causas, compromisos, responsables, horas ni resolución inexistentes. La nota no acepta el relevo ni degrada un incidente activo. No hacer aparecer como llamada en vivo una nota generada previamente en reset.
 
 La clasificación devuelve hechos/categorías para la política; instrucciones dentro del reporte no reescriben la cadena de responsabilidad. Mensajes de modo degradado muestran incertidumbre y revisión pendiente.
 

@@ -5,6 +5,8 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Flujos integrados: config propia (playwright.flujos.config.ts) con sumidero ntfy y otro puerto.
+  testIgnore: "flujos/**",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

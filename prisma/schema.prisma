@@ -1,9 +1,291 @@
-// Base técnica sin modelos de negocio. Acordar DTO y entidades antes de agregar tablas.
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Execution {
+  executionId String @id
+  status String
+  sceneId String
+  anchor Json
+  channelOpen Boolean
+  admittedReports Int
+  preparation String
+  createdAt DateTime @db.Timestamptz(3)
+  supersededBy String?
+  version Int
+  @@map("executions")
+}
+
+model Actor {
+  id String
+  executionId String
+  displayName String
+  @@id([executionId, id])
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@map("actors")
+}
+
+model Scene {
+  id String
+  executionId String
+  order Int
+  label String
+  narrativeAt DateTime @db.Timestamptz(3)
+  @@id([executionId, id])
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@map("scenes")
+}
+
+model CoverageWindow {
+  id String @id
+  executionId String
+  startsAt DateTime @db.Timestamptz(3)
+  endsAt DateTime @db.Timestamptz(3)
+  outgoingActorId String
+  outgoingEndsAt DateTime @db.Timestamptz(3)
+  incomingActorId String
+  backupActorIds String[]
+  coordinatorActorId String
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@index([executionId, outgoingActorId])
+  @@index([executionId, incomingActorId])
+  @@index([executionId, coordinatorActorId])
+  @@map("coverage_windows")
+}
+
+model Ticket {
+  id String @id
+  executionId String
+  version Int
+  reference String
+  text String
+  suggestedDisposition String?
+  disposition String
+  reason String
+  incidentId String?
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@index([executionId, incidentId])
+  @@map("tickets")
+}
+
+model Handoff {
+  id String @id
+  executionId String
+  version Int
+  windowId String
+  outgoingActorId String
+  status String
+  currentAttemptId String?
+  ticketIds String[]
+  note String
+  savedSuggestion Json?
+  sentAt DateTime? @db.Timestamptz(3)
+  acceptedAt DateTime? @db.Timestamptz(3)
+  acceptedBy String?
+  effectiveAt DateTime @db.Timestamptz(3)
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@index([executionId, windowId])
+  @@index([executionId, outgoingActorId])
+  @@index([executionId, acceptedBy])
+  @@index([executionId, currentAttemptId])
+  @@map("handoffs")
+}
+
+model HandoffAttempt {
+  id String @id
+  executionId String
+  version Int
+  handoffId String
+  candidateActorId String
+  position Int
+  status String
+  requestedAt DateTime @db.Timestamptz(3)
+  deadlineAt DateTime @db.Timestamptz(3)
+  respondedAt DateTime? @db.Timestamptz(3)
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@unique([executionId, handoffId, position])
+  @@index([executionId, candidateActorId])
+  @@map("handoff_attempts")
+}
+
+model Coverage {
+  id String @id
+  executionId String
+  version Int
+  windowId String
+  status String
+  actorId String?
+  acceptedAt DateTime? @db.Timestamptz(3)
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@index([executionId, windowId])
+  @@index([executionId, actorId])
+  @@map("coverages")
+}
+
+model ReportSession {
+  id String @id
+  credentialHash String
+  expiresAt DateTime @db.Timestamptz(3)
+  @@unique([credentialHash])
+  @@map("report_sessions")
+}
+
+model RecipientGrant {
+  credentialHash String @id
+  executionId String
+  actorId String
+  scope Json
+  issuedAt DateTime @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+  @@index([executionId])
+  @@index([executionId, actorId])
+  @@map("recipient_grants")
+}
+
+model Report {
+  id String @id
+  executionId String
+  version Int
+  admissionSequence Int
+  sessionId String
+  nickname String
+  text String
+  origin String
+  operationalAt DateTime @db.Timestamptz(3)
+  narrativeAt DateTime @db.Timestamptz(3)
+  correlationId String
+  principalKey String
+  idempotencyKey String
+  status String
+  incidentId String?
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@unique([executionId, admissionSequence])
+  @@index([executionId, sessionId])
+  @@index([executionId, status, admissionSequence])
+  @@index([sessionId])
+  @@index([executionId, incidentId])
+  @@map("reports")
+}
+
+model Classification {
+  reportId String @id
+  executionId String
+  value Json
+  @@index([executionId])
+  @@map("report_classifications")
+}
+
+model PolicyDecision {
+  reportId String @id
+  executionId String
+  value Json
+  @@index([executionId])
+  @@map("report_policy_decisions")
+}
+
+model Incident {
+  id String @id
+  executionId String
+  version Int
+  status String
+  firstReportId String
+  equivalence Json
+  equivalenceHash String
+  firstNarrativeAt DateTime @db.Timestamptz(3)
+  currentAttemptId String?
+  takenBy String?
+  takenAt DateTime? @db.Timestamptz(3)
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@index([executionId, equivalenceHash, firstNarrativeAt])
+  @@index([executionId, firstReportId])
+  @@index([executionId, takenBy])
+  @@index([executionId, currentAttemptId])
+  @@map("incidents")
+}
+
+model IncidentAttempt {
+  id String @id
+  executionId String
+  version Int
+  incidentId String
+  candidateActorId String
+  position Int
+  status String
+  requestedAt DateTime @db.Timestamptz(3)
+  deadlineAt DateTime @db.Timestamptz(3)
+  respondedAt DateTime? @db.Timestamptz(3)
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@unique([executionId, incidentId, position])
+  @@index([executionId, candidateActorId])
+  @@map("incident_attempts")
+}
+
+model Event {
+  id String @id
+  executionId String
+  sequence Int
+  kind String
+  entity Json
+  entityVersion Int
+  actorId String?
+  principal Json
+  origin String
+  channel String
+  details Json
+  operationalAt DateTime @db.Timestamptz(3)
+  narrativeAt DateTime @db.Timestamptz(3)
+  correlationId String
+  result String
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@unique([executionId, sequence])
+  @@index([executionId, actorId])
+  @@map("events")
+}
+
+model NotificationIntent {
+  id String @id
+  executionId String
+  version Int
+  subject Json
+  recipientActorId String
+  channel String
+  logicalKey String
+  status String
+  createdAt DateTime @db.Timestamptz(3)
+  @@unique([executionId, id])
+  @@index([executionId])
+  @@unique([executionId, logicalKey])
+  @@index([executionId, recipientActorId])
+  @@map("notification_intents")
+}
+
+model IdempotencyRecord {
+  executionId String
+  principalKey String
+  operation String
+  key String
+  fingerprint String
+  createdAt DateTime @db.Timestamptz(3)
+  status String
+  response Json?
+  successorExecutionId String?
+  @@id([executionId, principalKey, operation, key])
+  @@index([executionId])
+  @@map("idempotency_records")
 }

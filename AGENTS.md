@@ -29,6 +29,7 @@ Entorno: Node 24 (`.nvmrc`), pnpm 12 (`packageManager`). Comandos reales:
 - E2E: `pnpm exec playwright install chromium`, `pnpm build`, `pnpm test:e2e` (puerto 34137).
 - Prisma sin acceso a DB: `pnpm db:validate`, `pnpm db:generate`.
 - Conexión/transacción de solo lectura: `pnpm db:check`; requiere `DATABASE_URL` privada en `.env`. No acredita conectividad hasta ejecutarlo contra el entorno elegido.
+- Base propia por worktree: `scripts/worktree/install-hooks.sh` (una vez por clon) hace que `git worktree add` cree las bases y el `.env` del worktree. Después `pnpm install --frozen-lockfile && pnpm db:worktree:setup`. Para borrar: `pnpm wt:remove <ruta>`; huérfanas: `pnpm wt:db:prune`. Detalle en `docs/SETUP.md`.
 
 No hay suite unitaria de reglas todavía. No hay comandos de migración/seed/reset porque no existen modelos acordados. No usar `db push` ni reset de Prisma para completar la inicialización. Resultados y límites en `docs/SETUP.md`.
 

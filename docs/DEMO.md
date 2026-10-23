@@ -29,9 +29,9 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 | 0:00–0:15 | Abrir con el cierre 23:58 de Rodrigo; QR pequeño disponible. Audio breve opcional. |
 | 0:15–0:45 | Contrastar dos observaciones: cierre 23:58/4 h 20 de sueño y 22:10/6 h 40. Coincidencia, no causalidad probada. |
 | 0:45–1:15 | Situación multifactorial: turnos, café 19:20, normalización y ronquido. Elegimos la dificultad para terminar el trabajo, sin declararla causa principal. |
-| 1:15–1:55 | Revisar pendientes y nota; enviar relevo. Paula lo acepta desde S26 antes de su plazo. Mostrar aceptación/ventana efectiva y que Rodrigo no es respaldo. |
+| 1:15–1:55 | Mostrar pendientes con #470 destacado para seguimiento y la nota opcional; enviar relevo en un paso. Paula lo acepta desde S26 antes de su plazo. Mostrar aceptación/ventana efectiva y que Rodrigo no es respaldo. |
 | 1:55–3:25 | Abrir canal y QR grande: «Intenten despertar a Rodrigo». Diferible queda en cola. Facturación caída avisa a Paula. Pedir que no pulse Tomar incidente. Esperar 30 s reales; escala a Tomás y el presentador registra su acuse desde control. Origen escenario visible. |
-| 3:25–3:50 | Registro y vista de mañana: «El incidente tiene responsable». No afirmar resolución. Tarjeta de consulta por ronquido fuerte, sin diagnóstico. |
+| 3:25–3:50 | Control pasa a la escena de mañana; `/rodrigo` muestra el resumen de la noche: avisos a Rodrigo, cobertura e «El incidente tiene responsable». No afirmar resolución. El registro completo queda en el proyector. |
 | 3:50–4:20 | Mecanismo de continuidad: menos revisión, receptor confirmado y evidencia de responsabilidad. No afirmar más sueño medido ni adopción real. |
 | 4:20–4:45 | Mostrar En la demo / Fuera de esta demo: canal simulado, solo un teléfono físico y condiciones empresariales hipotéticas. |
 | 4:45–5:00 | «Para dormir, primero necesita poder dejar de trabajar». Relevo · Entrega el turno. Recupera la noche. |
@@ -56,6 +56,8 @@ Si a los 20 s de abrir canal hay menos de tres participantes, inyectar reportes 
 | R R | Reset escénico protegido |
 
 No ejecutar atajos al escribir en un input/textarea. Control invoca los mismos contratos que UI/ntfy; nunca pone un resultado ficticio solo en pantalla. Ningún atajo acorta deadlines sin hacerlo visible; el pitch principal usa espera real.
+
+Si R R muestra «El estado cambió mientras actuabas», un reporte terminó de clasificarse justo antes del reinicio y no se reinició nada. Repetir R R. Decisión del 23-10-2026: el control no reintenta solo.
 
 ## Ramas para preguntas y QA, fuera del pitch principal
 
