@@ -57,6 +57,8 @@ Si a los 20 s de abrir canal hay menos de tres participantes, inyectar reportes 
 
 No ejecutar atajos al escribir en un input/textarea. Control invoca los mismos contratos que UI/ntfy; nunca pone un resultado ficticio solo en pantalla. Ningún atajo acorta deadlines sin hacerlo visible; el pitch principal usa espera real.
 
+Si R R muestra «El estado cambió mientras actuabas», un reporte terminó de clasificarse justo antes del reinicio y no se reinició nada. Repetir R R. Decisión del 23-10-2026: el control no reintenta solo.
+
 ## Ramas para preguntas y QA, fuera del pitch principal
 
 1. Paula rechaza: Tomás recibe solicitud inmediatamente.

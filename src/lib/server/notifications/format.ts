@@ -42,7 +42,8 @@ export interface IncidentActionInput {
 export function incidentMessage(headline: IncidentHeadline, input: IncidentActionInput): NtfyMessage {
   const body: TakeIncident = {
     executionId: input.executionId, expectedVersion: input.expectedVersion,
-    attemptId: input.attemptId, idempotencyKey: `ack:${input.notificationId}`,
+    // Clave C13: solo alfanuméricos, punto, guion y guion bajo; el validador del ack rechaza cualquier otro carácter.
+    attemptId: input.attemptId, idempotencyKey: `ack.${input.notificationId}`,
   };
   return {
     title: incidentTitle(headline), priority: 5,

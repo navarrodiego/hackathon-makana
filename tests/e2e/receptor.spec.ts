@@ -20,7 +20,7 @@ const json = { "content-type": "application/json", origin: ORIGIN };
 const key = () => `e2e.${randomBytes(8).toString("hex")}`;
 
 async function db<T>(work: (c: Client) => Promise<T>): Promise<T> {
-  const c = new Client({ connectionString: process.env.DATABASE_URL });
+  const c = new Client({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL }); // el rol de la app ya ocupa su límite
   await c.connect();
   try { return await work(c); } finally { await c.end(); }
 }
