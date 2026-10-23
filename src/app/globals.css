@@ -1,17 +1,54 @@
 @import "tailwindcss";
 
+/*
+ * Único origen de tokens. Valores de DESIGN.md; los semánticos (danger,
+ * warning, success) son de T04, medidos con luminancia relativa sRGB:
+ *   par                 / --background (#102a2d) · / --muted (#18383b)
+ *   foreground           13,46 · 11,23
+ *   muted-foreground      7,04 ·  5,87
+ *   danger                8,87 ·  7,40
+ *   warning              10,26 ·  8,56
+ *   success               9,84 ·  8,21
+ *   primary-foreground / primary: 7,76
+ * --line (#5e8582) mide 3,70 / 3,09: solo divisores. Los controles usan --input.
+ * success solo tras un evento de aceptación; enviar un relevo no lo activa.
+ */
 :root {
   color-scheme: dark;
   --background: #102a2d;
   --foreground: #f1f3e8;
   --primary: #e9af66;
   --primary-foreground: #102a2d;
+  --primary-hover: #f0bd80;
   --muted: #18383b;
   --muted-foreground: #95b8b4;
   --border: #95b8b4;
+  --line: #5e8582;
   --input: #95b8b4;
   --ring: #f1f3e8;
+  --danger: #ffb4a8;
+  --warning: #f2d27a;
+  --success: #a9ddb4;
   --radius: 0.625rem;
+
+  --fs-title: 2rem;
+  --fs-people: 1.5625rem;
+  --fs-section: 1.125rem;
+  --fs-body: 1rem;
+  --fs-aux: 0.875rem;
+  --fs-action: 1.125rem;
+  --touch: 3rem;
+}
+
+/* Proyector: misma gramática, escala de lectura a distancia. Se activa en el contenedor de la superficie. */
+[data-surface="projector"] {
+  --fs-title: 3.5rem;
+  --fs-people: 2.75rem;
+  --fs-section: 2rem;
+  --fs-body: 1.5rem;
+  --fs-aux: 1.25rem;
+  --fs-action: 1.5rem;
+  --touch: 3.5rem;
 }
 
 @theme inline {
@@ -19,14 +56,35 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-line: var(--line);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
   --font-sans: "Public Sans Variable", system-ui, sans-serif;
   --radius-lg: var(--radius);
+
+  --text-title: var(--fs-title);
+  --text-title--line-height: 1.1;
+  --text-people: var(--fs-people);
+  --text-people--line-height: 1.25;
+  --text-section: var(--fs-section);
+  --text-section--line-height: 1.4;
+  --text-body: var(--fs-body);
+  --text-body--line-height: 1.5;
+  --text-aux: var(--fs-aux);
+  --text-aux--line-height: 1.4;
+  --text-action: var(--fs-action);
+  --text-action--line-height: 1.3;
 }
+
+/* La barra de acción fija de SurfaceShell no debe tapar el elemento enfocado. */
+html { scroll-padding-bottom: 7rem; }
 
 body {
   background: var(--background);
@@ -37,3 +95,12 @@ body {
 
 ::selection { background: var(--primary); color: var(--primary-foreground); }
 :focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
