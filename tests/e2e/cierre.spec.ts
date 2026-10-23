@@ -27,7 +27,8 @@ async function control(request: APIRequestContext, path: string, body: Json) {
   const response = await request.post(path, { headers: CONTROL, data: { idempotencyKey: randomUUID(), ...body } });
   return { status: response.status(), body: await response.json() };
 }
-const psql = (sql: string) => execFileSync("psql", [env.DATABASE_URL!, "-At", "-F", "|", "-c", sql], { encoding: "utf8" }).trim();
+// DIRECT_URL: el rol de la app ya ocupa su límite de conexiones con el servidor.
+const psql = (sql: string) => execFileSync("psql", [env.DIRECT_URL ?? env.DATABASE_URL!, "-At", "-F", "|", "-c", sql], { encoding: "utf8" }).trim();
 
 /** Reinicia la ejecución por la ruta de control y espera a que termine la preparación de la nota (sin proveedor: failed). */
 async function resetExecution(request: APIRequestContext): Promise<Json> {

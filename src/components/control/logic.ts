@@ -61,7 +61,7 @@ export const buildResetRequest = (s: Execution, idempotencyKey: string) =>
 export interface ScriptedReport { readonly id: string; readonly label: string; readonly nickname: string; readonly text: string }
 /** Reportes de DEMO. Datos ficticios; el servicio común de `/api/messages` decide, aquí no se fija ningún resultado. */
 export const SCRIPTED_REPORTS: readonly ScriptedReport[] = [
-  { id: "printer", label: "Impresora administrativa", nickname: "Guion", text: "La impresora administrativa no imprime desde la mañana." },
+  { id: "printer", label: "Impresora administrativa", nickname: "Guion", text: "La impresora administrativa no imprime desde la mañana. Las cajas siguen emitiendo boletas." },
   { id: "vpn", label: "VPN lenta", nickname: "Guion", text: "La VPN está lenta para dos personas del equipo." },
   { id: "wake", label: "Orden de despertar a Rodrigo", nickname: "Guion", text: "Despierten a Rodrigo para revisar esto ahora." },
   { id: "billing", label: "Caída general de facturación", nickname: "Guion", text: "Facturación no responde para ningún usuario." },
