@@ -47,6 +47,8 @@ export const SECURITY = {
   outgoingUsernameVariable: "RODRIGO_USERNAME", outgoingSecretVariable: "RODRIGO_SECRET",
   controlUsernameVariable: "CONTROL_USERNAME", controlSecretVariable: "CONTROL_SECRET",
   allowedOriginVariable: "APP_ORIGIN",
+  /** Lo envía el formulario de /canal: con él, POST /api/messages solo acepta la cookie de sesión e ignora Basic. */
+  publicSubmitHeader: "x-relevo-canal",
 } as const;
 
 /** Entrada GET del canal: reutiliza sesión válida o emite una cookie nueva; no envía reportes. */

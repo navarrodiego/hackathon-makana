@@ -84,3 +84,22 @@ test('control envía con Basic y origen escenario; Rodrigo no puede (C12)', asyn
     assert.equal(asOutgoing.body.error.code, 'FORBIDDEN');
   } finally { await w.close(); }
 });
+
+test('canal: una credencial Basic guardada por el navegador no cambia a quién se atribuye el reporte (C12)', async () => {
+  const w = await world();
+  try {
+    const h = await harness(w);
+    const canal = { 'x-relevo-canal': '1' };
+    const withControl = await json(await h.post(h.body('Local 7 caja 2 no emite boletas', 'k-c1'), { ...canal, authorization: basic('control', 'secreto-control') }));
+    assert.equal(withControl.status, 201, JSON.stringify(withControl.body));
+    assert.equal(withControl.body.data.audience, 'reporter');
+    const [report] = (await w.snapshot()).reports;
+    assert.equal(report.origin, 'web');
+    assert.equal(report.sessionId, h.entered.sessionId, 'queda en la sesión de la cookie, no en la de escenario');
+    const withOutgoing = await json(await h.post(h.body('Local 8 caja 1 no emite boletas', 'k-c2'), { ...canal, authorization: basic('rodrigo', 'secreto-rodrigo') }));
+    assert.equal(withOutgoing.status, 201, JSON.stringify(withOutgoing.body));
+    const noCookie = await json(await h.post(h.body('Local 9 caja 3 no emite boletas', 'k-c3'), { ...canal, cookie: '', authorization: basic('control', 'secreto-control') }));
+    assert.equal(noCookie.body.error.code, 'AUTH_REQUIRED', 'sin cookie no cae en control');
+    assert.equal((await w.snapshot()).reports.length, 2);
+  } finally { await w.close(); }
+});
