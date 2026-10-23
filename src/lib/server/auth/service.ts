@@ -80,6 +80,16 @@ function matchBasic(header: string | null, config: AuthConfig): "outgoing" | "co
   return control ? "control" : outgoing ? "outgoing" : "none";
 }
 
+/**
+ * Filtro de páginas Basic para el proxy: si la credencial no corresponde a un rol permitido en la lectura, el proxy
+ * responde 401 con desafío para que el navegador vuelva a pedirla en vez de reenviar una guardada que no sirve.
+ * No sustituye a `authorize`, que sigue validando ejecución y actor al cargar la página.
+ */
+export function basicPageAccess(route: "read_outgoing" | "read_control", header: string | null, config: AuthConfig): "pass" | "challenge" {
+  const who = matchBasic(header, config);
+  return who !== "malformed" && who !== "none" && RULES[route]?.roles.includes(who) ? "pass" : "challenge";
+}
+
 /** Alcance coherente con la entidad; la concesión de incidente nunca abre un paquete de relevo. */
 function validScope(scope: RecipientScope): boolean {
   if (!scope.actions.length) return false;

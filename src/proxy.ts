@@ -1,18 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SECURITY } from "@/lib/contracts/auth";
 import { LIMITS, type Instant } from "@/lib/contracts/core";
+import { loadAuthConfig } from "@/lib/server/auth/config";
+import { basicPageAccess } from "@/lib/server/auth/service";
 import { runtime } from "@/lib/server/messages/runtime";
 
 const isPrefetch = (request: NextRequest) =>
   request.headers.has("next-router-prefetch") || request.headers.get("purpose") === "prefetch";
 
 /**
- * C12: Rodrigo entra con HTTP Basic. Sin cabecera, el navegador necesita un 401 con desafío para pedir la
- * credencial y reenviarla en la página y en sus POST. Solo comprueba presencia; la validación real ocurre
- * en el servicio de autorización (T05), que además falla cerrado si falta la configuración.
+ * C12: Rodrigo y control entran con HTTP Basic. Sin credencial válida para el rol de la página, el navegador
+ * necesita un 401 con desafío para volver a pedirla; si no, reenvía la que tiene guardada (incluida la de otro rol)
+ * y la página solo muestra el acceso denegado. La autorización completa sigue ocurriendo al cargar la página (T05).
  */
-function basicAccess(request: NextRequest, message: string, realm: string) {
-  if (request.headers.has("authorization")) return NextResponse.next();
+function basicAccess(request: NextRequest, route: "read_outgoing" | "read_control", message: string, realm: string) {
+  if (basicPageAccess(route, request.headers.get("authorization"), loadAuthConfig()) === "pass") return NextResponse.next();
   return new NextResponse(message, {
     status: 401,
     headers: {
@@ -50,9 +52,9 @@ async function channelEntry(request: NextRequest) {
 /** Un solo proxy por proyecto: reparte por ruta. */
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  if (path === "/rodrigo") return basicAccess(request, "Ingresa con la credencial de Rodrigo para abrir el cierre de turno.", "Relevo · cierre de Rodrigo");
+  if (path === "/rodrigo") return basicAccess(request, "read_outgoing", "Ingresa con la credencial de Rodrigo para abrir el cierre de turno.", "Relevo · cierre de Rodrigo");
   // Control usa su propia credencial (C12), distinta de la de Rodrigo.
-  if (path === "/control") return basicAccess(request, "Ingresa con la credencial de control para operar la demostración.", "Relevo · control");
+  if (path === "/control") return basicAccess(request, "read_control", "Ingresa con la credencial de control para operar la demostración.", "Relevo · control");
   return channelEntry(request);
 }
 
