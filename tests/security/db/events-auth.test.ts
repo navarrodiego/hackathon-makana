@@ -57,7 +57,7 @@ test('intenciones concurrentes con la misma clave lógica crean una sola intenci
 
 test('concesión real: se guarda solo el hash, autoriza su alcance y no otra ejecución', async () => {
   const { db, fixtures, store } = setup(); const p = await fixtures.prepare(ACCEPTED_FIXTURE); const c = system(p.executionId);
-  const auth = createPersistedAuthorization(store, { outgoing: { username: 'rodrigo', secret: 'sr' }, control: { username: 'control', secret: 'sc' }, appOrigin: APP }, () => NOW);
+  const auth = createPersistedAuthorization(store, { operatorSecret: 'secreto-operador', appOrigin: APP }, () => NOW);
   const candidate = p.handoff.acceptedBy!, handoffId = p.handoff.id, attemptId = p.handoff.currentAttemptId!;
   try {
     const issued = await auth.issueRecipientGrant(c, candidate, { entity: 'handoff', entityId: handoffId, attemptId, actions: ['read_handoff', 'accept_handoff', 'reject_handoff'] });
@@ -72,9 +72,9 @@ test('concesión real: se guarda solo el hash, autoriza su alcance y no otra eje
     assert.ok(ok.ok); assert.equal(ok.value.actorId, candidate); assert.equal(ok.value.principal.kind, 'recipient');
     assert.deepEqual(await auth.authorize({ ...input, entityId: 'handoff_ajeno' }), { ok: false, code: 'AUTH_INVALID' });
     assert.deepEqual(await auth.authorize({ ...input, executionId: 'execution_retirada' }), { ok: false, code: 'AUTH_INVALID' }, 'token cruzado con otra ejecución');
-    const basicRodrigo = 'Basic ' + Buffer.from('rodrigo:sr').toString('base64');
+    const basicRodrigo = 'Basic ' + Buffer.from('rodrigo:secreto-operador').toString('base64');
     assert.deepEqual(await auth.authorize({ route: 'POST /api/handoff', executionId: 'execution_retirada', authorizationHeader: basicRodrigo, sessionCookie: null, originHeader: APP }), { ok: false, code: 'EXECUTION_STALE' });
-    const rodrigo = await auth.authorize({ route: 'POST /api/handoff', executionId: p.executionId, authorizationHeader: 'Basic ' + Buffer.from('rodrigo:sr').toString('base64'), sessionCookie: null, originHeader: APP });
+    const rodrigo = await auth.authorize({ route: 'POST /api/handoff', executionId: p.executionId, authorizationHeader: 'Basic ' + Buffer.from('rodrigo:secreto-operador').toString('base64'), sessionCookie: null, originHeader: APP });
     assert.ok(rodrigo.ok); assert.equal(rodrigo.value.actorId, p.handoff.outgoingActorId);
     const directory = persistenceDirectory(store);
     assert.equal(await directory.outgoingActorId(p.executionId), p.handoff.outgoingActorId);

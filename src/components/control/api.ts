@@ -4,7 +4,7 @@ export type ApiResult<T> =
 
 interface Envelope<T> { ok: boolean; data?: T; error?: { code?: string } }
 
-/** POST de navegador: JSON, mismo origen y la credencial Basic que el navegador ya guarda para /control. */
+/** POST de navegador: JSON, mismo origen y la cookie de sesión de control. */
 export async function postJson<T>(url: string, body: unknown): Promise<ApiResult<T>> {
   try {
     const response = await fetch(url, {
@@ -36,10 +36,12 @@ const MESSAGES: Readonly<Record<string, string>> = {
   CANDIDATE_STALE: "El incidente ya pasó a otra persona. Se actualizó la vista.",
   ACTION_EXPIRED: "El plazo de esta acción ya venció. Se actualizó la vista.",
   OPERATION_PENDING: "La operación anterior sigue en curso. Espera unos segundos y revisa el registro.",
-  AUTH_REQUIRED: "Falta la credencial de control. Recarga la página e ingrésala.",
-  AUTH_INVALID: "La credencial de control no es válida. Recarga la página e ingrésala.",
-  AUTH_EXPIRED: "La credencial de control expiró. Recarga la página e ingrésala.",
-  FORBIDDEN: "Control no puede hacer esa acción.", ORIGIN_REJECTED: "Origen rechazado. Abre /control desde la dirección oficial.",
+  AUTH_REQUIRED: "Tu sesión de control terminó. Ingresa de nuevo con la contraseña de operador; no se registró nada.",
+  AUTH_INVALID: "Tu sesión de control ya no es válida. Ingresa de nuevo con la contraseña de operador; no se registró nada.",
+  AUTH_EXPIRED: "Tu sesión de control venció. Ingresa de nuevo con la contraseña de operador; no se registró nada.",
+  AUTH_NOT_CONFIGURED: "El servidor no tiene configurada la contraseña de operador (OPERATOR_SECRET). No se registró nada.",
+  FORBIDDEN: "Control no puede hacer esa acción.",
+  ORIGIN_REJECTED: "El servidor rechazó la dirección desde la que abriste control. Abre la dirección oficial o revisa APP_ORIGIN.",
   NETWORK: "No se pudo comprobar si la acción quedó registrada. Revisa el registro antes de repetirla; un reintento no duplica la operación.",
   STORAGE_UNAVAILABLE: "El almacenamiento no respondió. No hay confirmación de que se haya guardado; revisa el registro.",
 };

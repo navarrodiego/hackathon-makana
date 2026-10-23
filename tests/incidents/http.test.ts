@@ -15,7 +15,7 @@ type W = Awaited<ReturnType<typeof world>>;
 
 function harness(w: W) {
   const clock = { now: NOW as Instant };
-  const config = { outgoing: { username: 'rodrigo', secret: 'secreto-rodrigo' }, control: { username: 'control', secret: 'secreto-control' }, appOrigin: APP };
+  const config = { operatorSecret: 'secreto-operador', appOrigin: APP };
   const authorization = createPersistedAuthorization(w.store, config, () => clock.now);
   const deps = { authorization, service: w.service, validator: createRequestValidator(), now: () => clock.now };
   const post = (body: unknown, headers: Record<string, string>, params: unknown, raw?: string) =>
@@ -74,7 +74,7 @@ test('acuse tardío por HTTP: 410, y la escalada queda registrada sin esperar un
 test('control debe indicar a quién representa y deja origen escenario (S01)', async () => {
   const w = await world(ACCEPTED_FIXTURE);
   try {
-    const h = harness(w); const s = await opened(w); const control = { authorization: basic('control', 'secreto-control') };
+    const h = harness(w); const s = await opened(w); const control = { authorization: basic('control', 'secreto-operador') };
     const body = { executionId: w.prepared.executionId, idempotencyKey: 'c1', expectedVersion: s.incidents[0].version, attemptId: s.attempts[0].id };
     const params = { id: s.incidents[0].id };
     assert.equal((await json(await h.post(body, control, params))).body.error.code, 'INVALID_INPUT');

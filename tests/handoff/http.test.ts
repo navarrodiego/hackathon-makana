@@ -15,7 +15,7 @@ type W = Awaited<ReturnType<typeof world>>;
 
 function harness(w: W) {
   const clock = { now: NOW as Instant };
-  const config = { outgoing: { username: 'rodrigo', secret: 'secreto-rodrigo' }, control: { username: 'control', secret: 'secreto-control' }, appOrigin: APP };
+  const config = { operatorSecret: 'secreto-operador', appOrigin: APP };
   const authorization = createPersistedAuthorization(w.store, config, () => clock.now);
   const deps = { store: w.store, authorization, service: w.service, validator: createRequestValidator(), now: () => clock.now };
   const post = (route: Parameters<typeof handleHandoffRequest>[1], body: unknown, headers: Record<string, string> = {}, params: unknown = null, raw?: string) =>
@@ -33,7 +33,7 @@ test('enviar por HTTP exige origen, JSON válido y credencial del saliente; resp
   const w = await world(BASE_FIXTURE);
   try {
     const h = harness(w); const body = await sendBody(w);
-    const rodrigo = { authorization: basic('rodrigo', 'secreto-rodrigo') };
+    const rodrigo = { authorization: basic('rodrigo', 'secreto-operador') };
     const noOrigin = await json(await h.post('POST /api/handoff', body, { ...rodrigo, origin: 'https://evil.example' }));
     assert.equal(noOrigin.status, 403); assert.equal(noOrigin.body.error.code, 'ORIGIN_REJECTED');
     assert.equal((await json(await h.post('POST /api/handoff', body, rodrigo, null, '{no json'))).body.error.code, 'INVALID_INPUT');
@@ -52,7 +52,7 @@ test('Paula acepta con su enlace limitado; el token de otro intento o sin origen
   const w = await world(BASE_FIXTURE);
   try {
     const h = harness(w);
-    assert.equal((await json(await h.post('POST /api/handoff', await sendBody(w), { authorization: basic('rodrigo', 'secreto-rodrigo') }))).status, 201);
+    assert.equal((await json(await h.post('POST /api/handoff', await sendBody(w), { authorization: basic('rodrigo', 'secreto-operador') }))).status, 201);
     const s = await w.snapshot(); const attemptId = s.attempts[0].id;
     const issued = await h.authorization.issueRecipientGrant(w.ctx({ kind: 'system' }, null, NOW, BEFORE, 'system'), w.ids.Paula,
       { entity: 'handoff', entityId: s.handoff.id, attemptId, actions: ['read_handoff', 'accept_handoff', 'reject_handoff'] });
@@ -76,7 +76,7 @@ test('Paula acepta con su enlace limitado; el token de otro intento o sin origen
 test('control debe indicar a quién representa; un intento vencido responde 410 y la derivación queda registrada', async () => {
   const w = await world(BASE_FIXTURE);
   try {
-    const h = harness(w); const control = { authorization: basic('control', 'secreto-control') };
+    const h = harness(w); const control = { authorization: basic('control', 'secreto-operador') };
     assert.equal((await json(await h.post('POST /api/handoff', await sendBody(w), control))).status, 201);
     const s = await w.snapshot();
     const body = { executionId: w.prepared.executionId, idempotencyKey: 'c1', expectedVersion: s.handoff.version, attemptId: s.attempts[0].id };

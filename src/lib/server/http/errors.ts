@@ -21,6 +21,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   QUOTA_EXCEEDED: "Se alcanzó el límite de reportes. No se recibió este reporte.",
   PROVIDER_FAILED: "El servicio de sugerencias falló. Se conserva lo guardado antes.",
   STORAGE_UNAVAILABLE: "No se pudo guardar ni leer ahora. No se sabe si el cambio quedó registrado; revisa el estado antes de repetir.",
+  AUTH_NOT_CONFIGURED: "El acceso de operador no está configurado en el servidor. No se guardó ningún cambio.",
   PROVIDER_TIMEOUT: "El servicio de sugerencias tardó demasiado. Se conserva lo guardado antes.",
 };
 

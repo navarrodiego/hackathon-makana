@@ -3,6 +3,8 @@ import { config } from "dotenv";
 import { Client } from "pg";
 import { expect, test, type APIRequestContext, type APIResponse } from "@playwright/test";
 import { SCRIPTED_REPORTS } from "../../../../src/components/control/logic";
+import { basicAs } from "../../support/acceso";
+export { loginAs } from "../../support/acceso";
 
 /**
  * Ayudas de los flujos integrados. Toda acción pasa por las rutas reales (control, Rodrigo, enlaces del aviso);
@@ -14,16 +16,13 @@ const env = process.env;
 export const ORIGIN = env.APP_ORIGIN ?? "";
 export const SINK = env.E2E_NTFY_URL ?? "";
 export const HAS_AI = Boolean(env.OPENROUTER_API_KEY);
-const basic = (u?: string, s?: string) => `Basic ${Buffer.from(`${u}:${s}`).toString("base64")}`;
-export const CONTROL_AUTH = basic(env.CONTROL_USERNAME, env.CONTROL_SECRET);
-export const RODRIGO_AUTH = basic(env.RODRIGO_USERNAME, env.RODRIGO_SECRET);
-export const CONTROL_CREDENTIALS = { username: env.CONTROL_USERNAME ?? "", password: env.CONTROL_SECRET ?? "" };
-export const RODRIGO_CREDENTIALS = { username: env.RODRIGO_USERNAME ?? "", password: env.RODRIGO_SECRET ?? "" };
+export const CONTROL_AUTH = basicAs("control");
+export const RODRIGO_AUTH = basicAs("outgoing");
 
 /** Omite el archivo completo si el entorno no permite ejercer el backend real. */
 export function requireBackend() {
-  const ok = Boolean(env.DATABASE_URL && env.DIRECT_URL && env.CONTROL_USERNAME && env.CONTROL_SECRET && env.RODRIGO_USERNAME && env.RODRIGO_SECRET && ORIGIN && SINK);
-  test.skip(!ok, "BLOCKED: faltan DATABASE_URL/DIRECT_URL, RODRIGO_*, CONTROL_* o el sumidero ntfy");
+  const ok = Boolean(env.DATABASE_URL && env.DIRECT_URL && env.OPERATOR_SECRET && ORIGIN && SINK);
+  test.skip(!ok, "BLOCKED: faltan DATABASE_URL/DIRECT_URL, OPERATOR_SECRET o el sumidero ntfy");
   // Los contextos creados a mano viven con el worker: un proyector abierto seguiría leyendo el estado (y evaluando
   // vencimientos) durante la prueba siguiente.
   test.afterEach(async ({ browser }) => { await Promise.all(browser.contexts().map(c => c.close())); });

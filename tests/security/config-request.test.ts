@@ -6,20 +6,14 @@ import { jsonResponse } from '../../src/lib/server/http/response';
 import { failure, success } from '../../src/lib/server/http/errors';
 
 const env = (o: Record<string, string>) => o as NodeJS.ProcessEnv;
-const full = { RODRIGO_USERNAME: 'rodrigo', RODRIGO_SECRET: 'sr', CONTROL_USERNAME: 'control', CONTROL_SECRET: 'sc', APP_ORIGIN: 'https://relevo.example' };
+const full = { OPERATOR_SECRET: 'secreto-operador', APP_ORIGIN: 'https://relevo.example' };
 
-test('configuración completa se carga; la ausencia de un par desactiva solo ese rol', () => {
-  assert.deepEqual(loadAuthConfig(env(full)), { outgoing: { username: 'rodrigo', secret: 'sr' }, control: { username: 'control', secret: 'sc' }, appOrigin: 'https://relevo.example' });
-  assert.equal(loadAuthConfig(env({ ...full, RODRIGO_SECRET: '' })).outgoing, undefined);
-  assert.equal(loadAuthConfig(env({ ...full, CONTROL_USERNAME: ' ' })).control, undefined);
-  assert.equal(loadAuthConfig(env({})).outgoing, undefined);
-});
-
-test('roles que comparten usuario o secreto se desactivan (no se adivina cuál es cuál)', () => {
-  const same = loadAuthConfig(env({ ...full, CONTROL_USERNAME: 'rodrigo' }));
-  assert.equal(same.outgoing, undefined); assert.equal(same.control, undefined);
-  const sameSecret = loadAuthConfig(env({ ...full, CONTROL_SECRET: 'sr' }));
-  assert.equal(sameSecret.outgoing, undefined); assert.equal(sameSecret.control, undefined);
+test('contraseña de operador: se carga recortada; ausente o corta deja el acceso cerrado', () => {
+  assert.deepEqual(loadAuthConfig(env(full)), { operatorSecret: 'secreto-operador', appOrigin: 'https://relevo.example' });
+  assert.equal(loadAuthConfig(env({ ...full, OPERATOR_SECRET: '  secreto-operador\n' })).operatorSecret, 'secreto-operador', 'salto de línea pegado');
+  assert.equal(loadAuthConfig(env({ ...full, OPERATOR_SECRET: 'corta' })).operatorSecret, undefined);
+  assert.equal(loadAuthConfig(env({ ...full, OPERATOR_SECRET: '   ' })).operatorSecret, undefined);
+  assert.equal(loadAuthConfig(env({})).operatorSecret, undefined);
 });
 
 test('APP_ORIGIN: solo origen exacto; https, o http únicamente en loopback', () => {
@@ -33,8 +27,11 @@ test('APP_ORIGIN: solo origen exacto; https, o http únicamente en loopback', ()
 
 test('cabeceras de autenticación: Authorization, Origin y solo la cookie relevo_session', () => {
   const req = new Request('https://relevo.example/api/handoff', { method: 'POST', headers: { authorization: 'Bearer abc', origin: 'https://relevo.example', cookie: 'a=1; relevo_session=tok; b=2' } });
-  assert.deepEqual(authHeaders(req), { authorizationHeader: 'Bearer abc', originHeader: 'https://relevo.example', sessionCookie: 'tok' });
-  assert.deepEqual(authHeaders(new Request('https://relevo.example/x')), { authorizationHeader: null, originHeader: null, sessionCookie: null });
+  const none = { outgoing: null, control: null };
+  assert.deepEqual(authHeaders(req), { authorizationHeader: 'Bearer abc', originHeader: 'https://relevo.example', sessionCookie: 'tok', operatorCookies: none });
+  assert.deepEqual(authHeaders(new Request('https://relevo.example/x')), { authorizationHeader: null, originHeader: null, sessionCookie: null, operatorCookies: none });
+  const ops = authHeaders(new Request('https://relevo.example/x', { headers: { cookie: 'relevo_op_rodrigo=r1; relevo_op_control=c1; relevo_op_control=c2' } }));
+  assert.deepEqual(ops.operatorCookies, { outgoing: 'r1', control: null }, 'cookie de operador duplicada es ambigua');
   assert.equal(authHeaders(new Request('https://relevo.example/x', { headers: { cookie: 'relevo_session=a; relevo_session=b' } })).sessionCookie, null, 'cookie duplicada es ambigua');
 });
 

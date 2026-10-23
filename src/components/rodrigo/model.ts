@@ -50,7 +50,7 @@ export function clockLabel(instant: string): string {
 }
 
 type Action = "suggest" | "send" | "refresh";
-const ACCESS = "No se reconoció tu credencial. Abre la página de nuevo e ingresa con la credencial de Rodrigo.";
+const SESSION = "Tu sesión terminó o ya no es válida. Ingresa de nuevo con la contraseña de operador; tus cambios no se enviaron y se conservan.";
 
 /** Qué falló y qué se conserva; nunca afirma que algo se guardó si no se sabe. */
 export function errorMessage(code: string, action: Action): string {
@@ -70,9 +70,13 @@ export function errorMessage(code: string, action: Action): string {
     case "AUTH_REQUIRED":
     case "AUTH_INVALID":
     case "AUTH_EXPIRED":
+      return SESSION;
     case "FORBIDDEN":
+      return "Tu sesión no permite esta acción. No se envió nada. Cierra la sesión e ingresa desde el cierre de turno.";
     case "ORIGIN_REJECTED":
-      return ACCESS;
+      return "El servidor rechazó la dirección desde la que abriste Relevo. No se envió nada. Abre la dirección oficial o revisa APP_ORIGIN.";
+    case "AUTH_NOT_CONFIGURED":
+      return "El servidor no tiene configurada la contraseña de operador (OPERATOR_SECRET). No se envió nada.";
     case "INVALID_INPUT":
       return "El servidor no aceptó el contenido. Revisa la nota (hasta 60 palabras) y las razones de cada pendiente.";
     case "STORAGE_UNAVAILABLE":

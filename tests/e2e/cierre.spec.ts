@@ -1,20 +1,20 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { basicAs, loginAs } from "./support/acceso";
 
 /**
  * Cierre de Rodrigo contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
- * APP_ORIGIN igual al origen del servidor, RODRIGO_* y CONTROL_*. Los tests comparten una base: ejecutar con `--workers=1`.
+ * APP_ORIGIN igual al origen del servidor, OPERATOR_SECRET. Los tests comparten una base: ejecutar con `--workers=1`.
  * La nota guardada se inserta como fixture (no es una llamada en vivo a la IA); Regenerar con éxito requiere clave del proveedor.
  */
 try { process.loadEnvFile(".env"); } catch { /* sin .env: se usa el entorno del proceso */ }
 
 const env = process.env;
-const configured = Boolean(env.DATABASE_URL && env.APP_ORIGIN && env.RODRIGO_USERNAME && env.RODRIGO_SECRET && env.CONTROL_USERNAME && env.CONTROL_SECRET);
-const basic = (u?: string, s?: string) => `Basic ${Buffer.from(`${u}:${s}`).toString("base64")}`;
-const CONTROL = { Authorization: basic(env.CONTROL_USERNAME, env.CONTROL_SECRET), Origin: env.APP_ORIGIN ?? "", "Content-Type": "application/json" };
+const configured = Boolean(env.DATABASE_URL && env.APP_ORIGIN && env.OPERATOR_SECRET);
+const CONTROL = { Authorization: basicAs("control"), Origin: env.APP_ORIGIN ?? "", "Content-Type": "application/json" };
 
-test.use({ httpCredentials: { username: env.RODRIGO_USERNAME ?? "", password: env.RODRIGO_SECRET ?? "" } });
+test.beforeEach(async ({ context }) => { await loginAs(context, "outgoing", env.APP_ORIGIN!); });
 test.describe.configure({ mode: "serial" });
 test.skip(!configured, "BLOCKED: faltan variables de entorno del backend local");
 
@@ -70,18 +70,52 @@ async function openCierre(page: Page) {
 const sendButton = (page: Page) => page.getByRole("button", { name: "Enviar relevo" });
 const noScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
-test("sin credencial el navegador recibe el desafío Basic y una credencial errónea no muestra pendientes", async ({ browser }) => {
-  // fetch de Node: sin las credenciales por defecto del contexto de Playwright.
-  const anonymous = await fetch(`${env.APP_ORIGIN}/rodrigo`);
-  expect(anonymous.status).toBe(401);
-  expect(anonymous.headers.get("www-authenticate")).toMatch(/^Basic/);
-  // Una credencial errónea vuelve a recibir el desafío, para que el navegador pida otra en vez de reenviarla.
-  const context = await browser.newContext({ baseURL: env.APP_ORIGIN, httpCredentials: { username: "rodrigo", password: "incorrecta" } });
+test("ingreso: contraseña errónea se corrige sin recargar, abre el cierre y cerrar sesión vuelve al ingreso", async ({ browser }) => {
+  // Contexto propio, sin la sesión que el beforeEach deja en `page`.
+  const context = await browser.newContext({ baseURL: env.APP_ORIGIN });
   const page = await context.newPage();
-  const response = await page.goto("/rodrigo");
-  expect(response?.status()).toBe(401);
-  expect(response?.headers()["www-authenticate"]).toMatch(/^Basic/);
+  await page.goto("/rodrigo");
   await expect(page.getByText("#481")).toHaveCount(0);
+  const password = page.getByLabel("Contraseña de operador");
+  await password.fill("incorrecta");
+  await page.getByRole("button", { name: "Ingresar al cierre de turno" }).click();
+  await expect(page.getByText("La contraseña no coincide. Revísala y vuelve a intentarlo.")).toBeVisible();
+  await expect(password).toHaveAttribute("aria-invalid", "true");
+  await password.fill(env.OPERATOR_SECRET!);
+  await page.getByRole("button", { name: "Ingresar al cierre de turno" }).click();
+  await expect(page.getByRole("list", { name: "Pendientes del turno" })).toBeVisible();
+  const cookies = await context.cookies();
+  const session = cookies.find(c => c.name === "relevo_op_rodrigo");
+  expect(session?.httpOnly).toBe(true);
+  expect(session?.value).not.toContain(env.OPERATOR_SECRET!);
+  // La sesión de Rodrigo no abre control: pide ingresar a control, en el mismo navegador.
+  await page.goto("/control");
+  await expect(page.getByText("Tu sesión actual es del cierre de turno y no abre control.", { exact: false })).toBeVisible();
+  await page.getByLabel("Contraseña de operador").fill(env.OPERATOR_SECRET!);
+  await page.getByRole("button", { name: "Ingresar a control" }).click();
+  await expect(page.getByRole("heading", { name: "Escenas" })).toBeVisible();
+  // Ambas sesiones conviven: el cierre sigue abierto.
+  await page.goto("/rodrigo");
+  await expect(page.getByRole("list", { name: "Pendientes del turno" })).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByLabel("Contraseña de operador")).toBeVisible();
+  await expect(page.getByText("#481")).toHaveCount(0);
+  await context.close();
+});
+
+test("ingreso sin JavaScript: el formulario hace POST, la contraseña no queda en la URL y el error se muestra", async ({ browser }) => {
+  const context = await browser.newContext({ baseURL: env.APP_ORIGIN, javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/rodrigo");
+  await page.getByLabel("Contraseña de operador").fill("incorrecta-123");
+  await page.getByRole("button", { name: "Ingresar al cierre de turno" }).click();
+  await expect(page.getByText("La contraseña no coincide. Revísala y vuelve a intentarlo.")).toBeVisible();
+  expect(page.url()).not.toContain("incorrecta");
+  await page.getByLabel("Contraseña de operador").fill(env.OPERATOR_SECRET!);
+  await page.getByRole("button", { name: "Ingresar al cierre de turno" }).click();
+  await expect(page.getByRole("list", { name: "Pendientes del turno" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/rodrigo");
+  expect(page.url()).not.toContain(env.OPERATOR_SECRET!);
   await context.close();
 });
 

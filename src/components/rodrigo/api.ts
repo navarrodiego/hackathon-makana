@@ -16,7 +16,7 @@ async function parse<T>(response: Response): Promise<ApiResult<T>> {
   }
 }
 
-/** POST de navegador: JSON, mismo origen y la credencial Basic que el navegador ya guarda para esta página. */
+/** POST de navegador: JSON, mismo origen y la cookie de sesión de operador. */
 export async function postJson<T>(url: string, body: unknown): Promise<ApiResult<T>> {
   try {
     const response = await fetch(url, {

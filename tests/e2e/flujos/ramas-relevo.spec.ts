@@ -1,6 +1,6 @@
 import { devices, expect, test } from "@playwright/test";
 import {
-  BILLING, ORIGIN, RODRIGO_CREDENTIALS, acceptAs, handoffNotice, requireBackend, reset, rows, scene, scriptedReport,
+  BILLING, ORIGIN, loginAs, acceptAs, handoffNotice, requireBackend, reset, rows, scene, scriptedReport,
   sendHandoff, sinkMessages, state, waitNtfy, waitState, type State,
 } from "./support/flow";
 
@@ -32,7 +32,9 @@ test("Paula no puede cubrir: Tomás recibe la solicitud de inmediato y la respue
   expect(ownWindow, `Tomás tiene su plazo completo (${ownWindow} ms)`).toBeGreaterThan(24_000);
   await waitState(request, x => inAppTo(x, "Tomás"), "aviso in-app a Tomás");
 
-  const rod = await (await browser.newContext({ baseURL: ORIGIN, httpCredentials: RODRIGO_CREDENTIALS })).newPage();
+  const rodContext = await browser.newContext({ baseURL: ORIGIN });
+  await loginAs(rodContext, "outgoing", ORIGIN);
+  const rod = await rodContext.newPage();
   await rod.goto("/rodrigo");
   // Rodrigo ve el candidato vigente sin tener que reenviar nada.
   await expect(rod.getByText("Esperando aceptación de Tomás")).toBeVisible();
@@ -64,7 +66,9 @@ test("Paula y Tomás no responden: sin cobertura confirmada, aviso a Carla, turn
   expect(s.coverage.outgoingEndsAt, "el fin del turno de Rodrigo no se extiende").toBe(outgoingEndsAt);
   await waitState(request, x => inAppTo(x, "Carla"), "aviso de coordinación a Carla");
 
-  const rod = await (await browser.newContext({ baseURL: ORIGIN, httpCredentials: RODRIGO_CREDENTIALS })).newPage();
+  const rodContext = await browser.newContext({ baseURL: ORIGIN });
+  await loginAs(rodContext, "outgoing", ORIGIN);
+  const rod = await rodContext.newPage();
   await rod.goto("/rodrigo");
   await expect(rod.getByText("Sin cobertura confirmada. Aviso a jefatura registrado en la aplicación.")).toBeVisible();
   await expect(rod.getByText(/descansar/i)).toHaveCount(0);

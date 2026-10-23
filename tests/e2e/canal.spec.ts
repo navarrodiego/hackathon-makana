@@ -1,17 +1,17 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { config } from "dotenv";
 import { Client } from "pg";
+import { OPERATOR_SECRET, basicAs } from "./support/acceso";
 
 config({ quiet: true });
 
 /**
  * Recorrido del canal público contra el servidor real y la base local del worktree.
  * Lee solo el id de escena con DIRECT_URL: el rol de la app ya ocupa su límite de conexiones con el servidor.
- * Necesita APP_ORIGIN igual a la URL de pruebas y CONTROL_USERNAME/CONTROL_SECRET (credenciales descartables).
+ * Necesita APP_ORIGIN igual a la URL de pruebas y OPERATOR_SECRET (contraseña descartable).
  * Sin OPENROUTER_API_KEY la clasificación cae en modo degradado: es la ruta que se verifica aquí, no la IA real.
  */
-const control = { user: process.env.CONTROL_USERNAME ?? "", secret: process.env.CONTROL_SECRET ?? "" };
-const basic = `Basic ${Buffer.from(`${control.user}:${control.secret}`).toString("base64")}`;
+const basic = basicAs("control");
 
 async function sceneId(label: string): Promise<string> {
   const db = new Client({ connectionString: process.env.DIRECT_URL });
@@ -31,7 +31,7 @@ async function state(request: APIRequestContext, baseURL: string) {
   return (await (await request.get(`${baseURL}/api/state`)).json()).data as { executionId: string; version: number };
 }
 
-test.skip(!control.user || !control.secret || !process.env.APP_ORIGIN, "Faltan APP_ORIGIN y las credenciales de control descartables");
+test.skip(!OPERATOR_SECRET || !process.env.APP_ORIGIN, "Faltan APP_ORIGIN y las credenciales de control descartables");
 
 test("canal: cerrado, abre sin recargar, recibe reportes propios, escapa HTML y respeta el límite de 5", async ({ page, request, baseURL }) => {
   const origin = baseURL!;

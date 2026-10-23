@@ -1,29 +1,28 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { config } from "dotenv";
+import { OPERATOR_SECRET, basicAs, loginAs } from "./support/acceso";
 
 config({ quiet: true });
 
 /**
  * Control protegido contra el servidor real y la base local del worktree (ejecutar con --workers=1).
- * Necesita APP_ORIGIN igual a la URL de pruebas y CONTROL_USERNAME/CONTROL_SECRET descartables.
+ * Necesita APP_ORIGIN igual a la URL de pruebas y OPERATOR_SECRET descartable.
  */
-const user = process.env.CONTROL_USERNAME ?? "";
-const secret = process.env.CONTROL_SECRET ?? "";
-const basic = `Basic ${Buffer.from(`${user}:${secret}`).toString("base64")}`;
-const configured = Boolean(user && secret && process.env.APP_ORIGIN);
+const basic = basicAs("control");
+const configured = Boolean(OPERATOR_SECRET && process.env.APP_ORIGIN);
 
 test.describe.configure({ mode: "serial" });
 
-test("sin credencial /control responde 401 con desafío Basic y sin acciones", async ({ request }) => {
-  const response = await request.get("/control");
-  expect(response.status()).toBe(401);
-  expect(response.headers()["www-authenticate"]).toMatch(/^Basic /);
-  expect(await response.text()).not.toMatch(/Reiniciar|Escena/);
+test("sin sesión /control muestra el ingreso y ninguna acción", async ({ page }) => {
+  await page.goto("/control");
+  await expect(page.getByLabel("Contraseña de operador")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ingresar a control" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Reiniciar|Escena/ })).toHaveCount(0);
 });
 
 test.describe("con credencial de control", () => {
   test.skip(!configured, "Faltan APP_ORIGIN y las credenciales de control descartables");
-  test.use({ httpCredentials: { username: user, password: secret } });
+  test.beforeEach(async ({ context, baseURL }) => { await loginAs(context, "control", baseURL!); });
 
   async function state(request: APIRequestContext, baseURL: string) {
     return (await (await request.get(`${baseURL}/api/state`)).json()).data as { executionId: string; version: number };

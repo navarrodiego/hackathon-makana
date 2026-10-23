@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
-  BILLING, CONTROL_CREDENTIALS, HAS_AI, ORIGIN, WAKE, activeCoverage, eventsOf, incidentNotice, pressNtfyAction,
+  BILLING, HAS_AI, loginAs, ORIGIN, WAKE, activeCoverage, eventsOf, incidentNotice, pressNtfyAction,
   requireBackend, rows, scriptedReport, state, tokenOf, waitNtfy, waitState,
 } from "./support/flow";
 
@@ -40,7 +40,9 @@ test("Paula toma el incidente desde la acción del aviso; GET y token cruzado no
   expect(taken[0].origin, "origen distinto de escenario").not.toBe("scenario");
   expect(s.events.filter((e: { kind: string }) => e.kind === "incident_escalated"), "tomar a tiempo detiene la escalada").toEqual([]);
 
-  const ctl = await (await browser.newContext({ baseURL: ORIGIN, httpCredentials: CONTROL_CREDENTIALS })).newPage();
+  const ctlContext = await browser.newContext({ baseURL: ORIGIN });
+  await loginAs(ctlContext, "control", ORIGIN);
+  const ctl = await ctlContext.newPage();
   await ctl.goto("/control");
   await expect(ctl.getByRole("button", { name: "Tomar incidente como Tomás" })).toBeDisabled();
   const proy = await (await browser.newContext({ baseURL: ORIGIN })).newPage();
