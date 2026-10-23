@@ -26,7 +26,11 @@
     "test": "pnpm test:unit && pnpm test:db",
     "db:prepare:local": "tsx scripts/db/provision.ts",
     "db:worktree": "tsx scripts/db/worktree.ts",
-    "worktree:setup": "sh scripts/worktree-setup.sh"
+    "worktree:setup": "sh scripts/worktree-setup.sh",
+    "db:worktree:up": "bash scripts/worktree/db-up.sh",
+    "db:worktree:setup": "bash scripts/worktree/setup.sh",
+    "wt:db:prune": "bash scripts/worktree/db-prune.sh",
+    "wt:remove": "bash scripts/worktree/remove.sh"
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "5.3.0",
