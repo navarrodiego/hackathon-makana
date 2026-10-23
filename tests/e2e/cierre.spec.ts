@@ -149,11 +149,10 @@ test("enviar muestra espera de aceptación, bloquea la edición y no reaviza inc
   await expect(page.getByText(/Cobertura activa|Programado/)).toHaveCount(0);
   await expect(sendButton(page)).toHaveCount(0);
   await expect(page.getByLabel("Nota del relevo")).toBeDisabled();
-  await expect(page.getByText("Enviar el relevo no confirma cobertura.")).toBeVisible();
-  // El estado del relevo queda arriba: Rodrigo no debe recorrer los campos bloqueados para verlo.
-  const estado = await page.getByRole("heading", { name: "Estado del relevo" }).boundingBox();
-  const pendientes = await page.getByRole("heading", { name: "Pendientes que dejas" }).boundingBox();
-  expect(estado!.y).toBeLessThan(pendientes!.y);
+  // El estado del relevo manda: pendientes y nota quedan plegados bajo «Lo que dejaste».
+  await expect(page.getByRole("heading", { name: "Estado del relevo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pendientes que dejas" })).toBeHidden();
+  await expect(page.getByText(/^Lo que dejaste: 5 pendientes y una nota$/)).toBeVisible();
   await page.screenshot({ path: `.impeccable/review/cierre-enviado-${testInfo.project.name}.png`, fullPage: true });
   const after = await state(request);
   expect(after.handoff.status).toBe("awaiting_candidate");
