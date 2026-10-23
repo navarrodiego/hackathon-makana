@@ -50,7 +50,7 @@ Máximo tres worktrees de tareas activos. No abrirlos todos por adelantado. El w
 | `docs/INTEGRATION.md` | Integrador; T01 actualiza propiedad coordinadamente | Registrar SHA integrado, responsable, puesto, puerto, base y evidencia antes de lanzar cada tarea |
 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.env.example`, `.gitignore`, `.nvmrc`, configuración raíz, cliente DB compartido | Integrador | Un escritor a la vez; las tareas proponen cambios y el integrador los incorpora antes de dependientes |
 | AGENTS, PRODUCT, DESIGN, README, master, CONTRACTS, LANGUAGE, QA, DEMO y SETUP | Integrador | T00 no los modifica; T01 escribe CONTRACTS en su encargo serial; cambios posteriores se consolidan coordinadamente |
-| `prisma/`, futuras migraciones y seed | Único responsable de T03, aún sin asignar | Conserva propiedad después de T03; ningún otro encargo los altera por su cuenta |
+| `prisma/`, futuras migraciones y seed | Codex, responsable de T03; conserva la propiedad al terminar | Conserva propiedad después de T03; ningún otro encargo los altera por su cuenta |
 | `src/lib/contracts/` | Integrador T01; después integrador con consumidores | Organización y reservas exactas abajo; cambios coordinados antes de dependientes |
 | `docs/evidence/TXX.md` | Responsable de TXX | Cada tarea informa pruebas y límites; integrador revisa antes de integrar |
 
@@ -181,3 +181,16 @@ Diego solicitó explícitamente «Haz merge con la rama de integración base y c
 - El commit posterior solo actualiza este registro y evidencia T01. Su SHA final se comunica tras obtenerlo, evitando autorreferencia. Se comprueba que el código integrado coincide con el commit T01 y ambos worktrees quedan limpios.
 
 No se hizo push ni se inició T02/T03/T04. Usar el SHA final local comunicado para los siguientes encargos; no asumir que el remoto ya contiene esta integración.
+
+
+## T03 · Persistencia local
+
+Diego autorizó implementar el plan T03, incluidas tres bases dedicadas y roles locales. Base exacta: `7324f0addedf870d32ea5e86e4de4a872203d2a3`; rama `codex/t03-persistencia`, reutilizando este checkout. Versionada en la rama T03 e integrada localmente en esta rama base; sin push ni acciones remotas. No se lanzaron agentes ni se alteraron otros worktrees.
+
+Responsable único de Prisma/migraciones: Codex T03. Puesto B; desarrollo/E2E reservados 34142/34143. Recursos creados en PostgreSQL 17.10 existente: `relevo_backend`, `relevo_backend_test`, `relevo_backend_test_isolation`, cada una con roles `_migrate` y `_app` propios. App: límite 3 conexiones, sin administración ni DDL; sin acceso a las otras bases dedicadas ni al historial Prisma. Las conexiones están en `.env.t03`, ignorado, modo 0600; no se copia la configuración de integración.
+
+T03 reserva serialmente los cambios de `package.json`, `.env.example`, `prisma.config.ts`, SETUP/CONTRACTS y este registro. También corrige ESLint/TypeScript para excluir `.claude/worktrees`: los checks estaban recorriendo fuentes y builds ajenos dentro del checkout. No se modifican las fuentes de T04 ni sus procesos. Lockfile y cliente compartido no requieren cambios.
+
+Los consumidores utilizan `PostgresPersistence` con `getDb()`; los contratos de T01 conservan sus firmas. `FixturePreparer` vive en `tests/helpers/db/fixtures.ts`; no crea un endpoint de reset. Cada suite DB se ejecuta serialmente por base; las carreras se crean dentro de sus casos. T11 recibe repositorios de sucesora por `replaceExecution` en la misma transacción. Los actores/escenas de referencia conservan identidad al reset, con filas separadas por ejecución; ventanas y demás fixtures se insertan mediante los puertos existentes.
+
+Detalle de comandos, pruebas y límites en SETUP y evidencia T03. Sin prueba Neon/Vercel/S26; el SHA final del merge se comunica en la entrega.
