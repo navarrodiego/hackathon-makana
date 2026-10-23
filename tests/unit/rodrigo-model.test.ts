@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { isSessionProblem, loginErrorMessage } from "../../src/components/acceso/messages";
 import { test } from "node:test";
 import {
-  buildSendBody, clockLabel, countWords, errorMessage, followUp, noteIssue, reasonIssue, sendPayloadKey,
+  buildSendBody, clockLabel, countWords, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
 } from "../../src/components/rodrigo/model";
 
 const instant = (s: string) => s as never;
@@ -25,16 +25,11 @@ test("cuenta palabras igual que el validador del servidor", () => {
   assert.equal(countWords("uno  dos\ntres"), 3);
 });
 
-test("la nota exige texto y hasta 60 palabras", () => {
-  assert.match(noteIssue("") ?? "", /Escribe la nota/);
+test("la nota es opcional y admite hasta 60 palabras", () => {
+  assert.equal(noteIssue(""), null);
+  assert.equal(noteIssue("   "), null);
   assert.equal(noteIssue("a ".repeat(60)), null);
   assert.match(noteIssue("a ".repeat(61)) ?? "", /61 palabras/);
-});
-
-test("la razón del pendiente no puede quedar vacía ni pasar de 280 caracteres", () => {
-  assert.ok(reasonIssue("  "));
-  assert.ok(reasonIssue("x".repeat(281)));
-  assert.equal(reasonIssue("Sin tóner; llega el lunes."), null);
 });
 
 test("el cuerpo de envío recorta textos y conserva el orden de los pendientes", () => {
@@ -104,4 +99,18 @@ test("ingreso: cada causa tiene su mensaje y el de origen nombra ambas direccion
   const m = loginErrorMessage("ORIGIN_REJECTED", "outgoing", { expected: "https://relevo.example", received: "https://www.relevo.example" });
   assert.match(m, /https:\/\/www\.relevo\.example/); assert.match(m, /https:\/\/relevo\.example\/rodrigo/);
   assert.equal(isSessionProblem("AUTH_EXPIRED"), true); assert.equal(isSessionProblem("ORIGIN_REJECTED"), false);
+});
+
+test("fase: cierre hasta enviar; mañana solo con relevo enviado y escena de mañana", () => {
+  assert.equal(phaseOf(false, "Cierre"), "closing");
+  assert.equal(phaseOf(false, "Registro de mañana"), "closing");
+  assert.equal(phaseOf(true, null), "following");
+  assert.equal(phaseOf(true, "Registro de noche"), "following");
+  assert.equal(phaseOf(true, "Registro de mañana"), "morning");
+});
+
+test("lo que dejaste: singular/plural y nota solo si existe", () => {
+  assert.equal(leftSummary(5, "Revisar #470"), "Lo que dejaste: 5 pendientes y una nota");
+  assert.equal(leftSummary(1, ""), "Lo que dejaste: 1 pendiente");
+  assert.equal(leftSummary(2, "   "), "Lo que dejaste: 2 pendientes");
 });

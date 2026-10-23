@@ -10,18 +10,10 @@ export function countWords(text: string): number {
   return t ? t.split(/\s+/u).length : 0;
 }
 
+/** La nota es opcional: solo bloquea el envío si pasa del límite. */
 export function noteIssue(note: string): string | null {
   const words = countWords(note);
-  if (words === 0) return "Escribe la nota o usa Regenerar. El relevo no se envía sin nota.";
   if (words > LIMITS.noteWords) return `La nota tiene ${words} palabras; el máximo es ${LIMITS.noteWords}. Acórtala para enviar.`;
-  return null;
-}
-
-const REASON_MAX = LIMITS.reportCharacters;
-export function reasonIssue(reason: string): string | null {
-  const t = reason.trim();
-  if (!t) return "Escribe una razón breve para este pendiente.";
-  if ([...t].length > REASON_MAX) return `La razón supera ${REASON_MAX} caracteres. Acórtala.`;
   return null;
 }
 
@@ -117,4 +109,21 @@ export function followUp(p: {
     derivedNotice: derived ? `Relevo enviado a ${p.handoff!.candidate!.displayName}; no necesitas reenviarlo.` : null,
     coverageNotice,
   };
+}
+
+/** Etiqueta de la escena de mañana del seed (`BASE_FIXTURE.scenes`): los ids cambian en cada ejecución, la etiqueta no. */
+const MORNING_SCENE_LABEL = "Registro de mañana";
+
+export type Phase = "closing" | "following" | "morning";
+
+/** Qué momento muestra el cierre. La mañana exige un relevo enviado: sin él no hay noche que resumir. */
+export function phaseOf(sent: boolean, sceneLabel: string | null): Phase {
+  if (!sent) return "closing";
+  return sceneLabel === MORNING_SCENE_LABEL ? "morning" : "following";
+}
+
+/** Rótulo del plegable con lo entregado, p. ej. «Lo que dejaste: 5 pendientes y una nota». */
+export function leftSummary(tickets: number, note: string): string {
+  const items = `${tickets} ${tickets === 1 ? "pendiente" : "pendientes"}`;
+  return `Lo que dejaste: ${items}${note.trim() ? " y una nota" : ""}`;
 }

@@ -16,8 +16,8 @@ El eslogan **Entrega el turno. Recupera la noche.** es aprobado, no una garantí
 | Relevo | Transferencia del paquete; enviarlo no equivale a aceptarlo |
 | Cobertura | Responsabilidad aceptada para una ventana; una aceptación anticipada comienza a la hora prevista |
 | Pendiente | Trabajo por continuar; transferirlo no lo hace urgente |
-| Puede esperar | Va a próxima atención según política; no se borra |
-| Transferir | Entregar contexto/seguimiento a quien entra, sin alarma automática |
+| Para seguimiento | Pendiente que la IA destaca para quien entra (`transferir` en código); no lo hace urgente ni genera aviso |
+| Puede esperar | Valor interno (`puede_esperar`) de los pendientes sin destacar; no se muestra como etiqueta en el cierre |
 | Incidente | Hecho que requiere atención; su responsable puede diferir del titular del turno |
 | Tomar incidente | Acuse explícito y responsabilidad de atender ese incidente; no significa resolver |
 | Escalar | Derivar según elegibilidad y plazo; no avisar a todos ni cambiar toda la cobertura |
@@ -31,7 +31,7 @@ El eslogan **Entrega el turno. Recupera la noche.** es aprobado, no una garantí
 - **Enviar relevo**; en contexto, **Enviar relevo a Paula**.
 - **Aceptar relevo** / **No puedo cubrir**.
 - **Tomar incidente** en web y ntfy. No usar la etiqueta anterior «Lo tomo».
-- **Puede esperar** / **Transferir** en tickets. No «No puede esperar» como equivalente automático a transferir.
+- **Para seguimiento** en el pendiente que la IA destaca; los demás se listan sin etiqueta. No usar «Transferir» como etiqueta visible: quien entra recibe todos los pendientes.
 - **Regenerar** para una nueva llamada IA; no simularla con una espera artificial.
 
 - **Ingresar al cierre de turno** / **Ingresar a control** con el campo «Contraseña de operador»; **Cerrar sesión** para salir. Decir «contraseña de operador», no «credencial» ni «usuario».
@@ -66,7 +66,7 @@ Una explicación de error incluye qué falló, qué se conserva y cómo recupera
 
 ## IA
 
-«Borrador de IA · revisa antes de enviar». Nota editable, hasta 60 palabras según CONTRACTS, con razones breves. No añade causas, compromisos, responsables, horas ni resolución inexistentes. La nota no acepta el relevo ni degrada un incidente activo. No hacer aparecer como llamada en vivo una nota generada previamente en reset.
+«Borrador de IA · puedes enviarla tal cual, editarla o dejarla vacía». Nota opcional y editable, hasta 60 palabras según CONTRACTS. No añade causas, compromisos, responsables, horas ni resolución inexistentes. La nota no acepta el relevo ni degrada un incidente activo. No hacer aparecer como llamada en vivo una nota generada previamente en reset.
 
 La clasificación devuelve hechos/categorías para la política; instrucciones dentro del reporte no reescriben la cadena de responsabilidad. Mensajes de modo degradado muestran incertidumbre y revisión pendiente.
 

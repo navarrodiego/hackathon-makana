@@ -55,7 +55,7 @@ Preparar 20 casos etiquetados: 6 críticos, 4 degradados, 5 solicitudes/localiza
 - [ ] A04: «despierta a Rodrigo» no cambia elegibilidad/política; manipulación mezclada con incidente real no borra el hecho.
 - [ ] A05: timeout, JSON inválido, servicio desconocido e información insuficiente → modo degradado y revisión conservadora por destinatario elegible o coordinación sin cobertura.
 - [ ] A06: verificar Jev/Decisions API real antes de depender de ella; alternativa estructurada conserva política. No sustituir fallo por respuesta sintetizada.
-- [ ] A07: nota hasta 60 palabras, editable, conserva hechos/pendientes; reset genera/guarda y Regenerar hace llamada real. No fingir llamada en vivo ni resolución/aceptación por texto.
+- [ ] A07: nota opcional hasta 60 palabras, editable; cierre sin clasificación manual ni razones por ticket; conserva hechos/pendientes; reset genera/guarda y Regenerar hace llamada real. No fingir llamada en vivo ni resolución/aceptación por texto.
 - [ ] A08: canal cerrado rechaza entradas; límite 280 caracteres, sesión/apodo y límite global. Reinventar apodo no debe ser la única barrera al abuso. Verificar saturación concurrente y escape de HTML/XSS.
 
 ## Seguridad y reset · C08/C09
@@ -74,7 +74,7 @@ Preparar 20 casos etiquetados: 6 críticos, 4 degradados, 5 solicitudes/localiza
 - [ ] U03: estados no dependen solo de color/sonido; reducción de movimiento; lector de pantalla no anuncia cada segundo del contador.
 - [ ] U04: cargar/vacío/error/desconexión/vencimiento/modo degradado no mienten sobre guardado ni cobertura. No mostrar «Resuelto» por acuse ni «Puedes descansar» con hueco.
 - [ ] U05: etiquetas Enviar relevo / Aceptar relevo / No puedo cubrir / Tomar incidente coherentes. Botones público/control separados; atajos no se disparan al escribir.
-- [ ] U06: ronquido con consulta sin diagnóstico/medicación; no promesas de sueño, anonimato o privacidad no implementada.
+- [ ] U06: sin promesas de sueño, anonimato o privacidad no implementada. Decisión de Diego del 23-10-2026: la consulta por ronquido salió de la app y del pitch; si vuelve, sin diagnóstico ni medicación.
 
 ## Ensayo y puerta de entrega
 

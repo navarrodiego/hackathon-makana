@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RodrigoViewDTO } from "@/lib/contracts/private";
 import type {
@@ -17,10 +17,11 @@ import { isSessionProblem } from "@/components/acceso/messages";
 import { SignOutButton } from "@/components/acceso/sign-out-button";
 import { getState, postJson } from "./api";
 import {
-  buildSendBody, clockLabel, errorMessage, followUp, noteIssue, reasonIssue, sendPayloadKey,
+  buildSendBody, clockLabel, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
 } from "./model";
 import { NotaEditor } from "./nota-editor";
 import { Pendiente, type TicketDraft } from "./pendiente-card";
+import { ResumenNoche } from "./resumen/resumen-noche";
 
 type Busy = "idle" | "regenerating" | "sending";
 interface Problem { readonly text: string; readonly retryable: boolean; readonly relogin?: boolean }
@@ -38,8 +39,8 @@ function initialTickets(view: RodrigoViewDTO): TicketDraft[] {
   return view.tickets.map(t => {
     const s = saved.find(x => x.ticketId === t.id);
     return s
-      ? { id: t.id, reference: t.reference, text: t.text, disposition: s.disposition, reason: s.reason, source: "ia" as const }
-      : { id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason, source: "base" as const };
+      ? { id: t.id, reference: t.reference, text: t.text, disposition: s.disposition, reason: s.reason }
+      : { id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason };
   });
 }
 
@@ -68,7 +69,7 @@ function useStatePoll(enabled: boolean, intervalMs: number, onState: (s: PublicS
   }, [enabled, intervalMs]);
 }
 
-export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; handoffId: HandoffId; extra?: ReactNode }) {
+export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffId: HandoffId }) {
   const router = useRouter();
   const [tickets, setTickets] = useState<TicketDraft[]>(() => initialTickets(view));
   const [note, setNote] = useState(view.note.saved?.output.note ?? "");
@@ -99,10 +100,6 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
   useStatePoll(sent || preparing, sent && handoff?.status === "awaiting_candidate" ? 1500 : 4000, onState, useCallback(() => setLost(true), []));
 
   const locked = sent || stale || busy !== "idle";
-  const edit = (id: string, change: Partial<Pick<TicketDraft, "disposition" | "reason">>) => {
-    setDirty(true);
-    setTickets(list => list.map(t => (t.id === id ? { ...t, ...change, source: "tuyo" } : t)));
-  };
 
   async function regenerate() {
     setBusy("regenerating"); setProblem(null);
@@ -122,14 +119,13 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
     setOrigin(`Regenerada en esta sesión a las ${clockLabel(saved.generatedAt)}.`);
     setTickets(list => list.map(t => {
       const s = saved.output.suggestions.find(x => x.ticketId === (t.id as TicketId));
-      return s ? { ...t, disposition: s.disposition as TicketDisposition, reason: s.reason, source: "ia" } : t;
+      return s ? { ...t, disposition: s.disposition as TicketDisposition, reason: s.reason } : t;
     }));
     setDirty(true);
   }
 
   async function send() {
-    const issues = [noteIssue(note), ...tickets.map(t => reasonIssue(t.reason))].filter(Boolean);
-    if (issues.length > 0) { setShowErrors(true); setProblem({ text: "Revisa la nota y las razones marcadas antes de enviar.", retryable: false }); return; }
+    if (noteIssue(note)) { setShowErrors(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
     setBusy("sending"); setProblem(null);
     const payload = sendPayloadKey({ version, note, tickets });
     if (attempt.current?.payload !== payload) attempt.current = { payload, key: crypto.randomUUID() };
@@ -154,7 +150,8 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
   const follow = sent ? followUp({
     handoff, coverage, outgoing, firstCandidateId: firstCandidate, events: snapshot?.events ?? [],
   }) : null;
-  const incidents = snapshot ? null : view.activeIncidents;
+  const active = snapshot?.incidents.filter(i => i.status !== "taken") ?? view.activeIncidents;
+  const phase = phaseOf(sent, snapshot?.scene.label ?? null);
 
   const action = sent ? undefined : (
     <Button variant="primary" className="w-full" loading={busy === "sending"} loadingLabel="Enviando relevo…"
@@ -163,8 +160,22 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
     </Button>
   );
 
+  const pendientes = (
+    <>
+      <section aria-labelledby="pendientes" className="space-y-3">
+        <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
+        <p className="text-aux text-muted-foreground">Quien entra recibe todos. La IA destaca los que necesitan seguimiento; eso no los vuelve urgentes.</p>
+        <PendingList label="Pendientes del turno">
+          {tickets.map(t => <Pendiente key={t.id} ticket={t} />)}
+        </PendingList>
+      </section>
+      <NotaEditor note={note} origin={origin} disabled={locked} regenerating={busy === "regenerating"} showErrors={showErrors}
+        onChange={value => { setNote(value); setDirty(true); }} onRegenerate={regenerate} />
+    </>
+  );
+
   return (
-    <SurfaceShell title="Cierre de turno" action={action}>
+    <SurfaceShell title={phase === "morning" ? "Resumen de la noche" : "Cierre de turno"} action={action}>
       {stale ? (
         <DegradedNotice title="Esta vista quedó desactualizada">
           <p>El relevo cambió o se reinició la demostración. Tus cambios locales no se enviaron.</p>
@@ -173,63 +184,56 @@ export function CierreForm({ view, handoffId, extra }: { view: RodrigoViewDTO; h
       ) : null}
       {lost ? <DegradedNotice title="Sin conexión con el estado">No se pudo comprobar el estado más reciente. Lo último que ves puede estar desactualizado.</DegradedNotice> : null}
       {view.note.status === "pending" && !sent ? <DegradedNotice title="La nota aún se está preparando">Puedes esperar unos segundos o escribirla tú. No es una nota guardada.</DegradedNotice> : null}
-      {view.note.status === "failed" && !dirty && !sent ? <DegradedNotice title="La nota no se generó">No hay propuesta de IA. Revisa los pendientes, escribe la nota o usa Regenerar.</DegradedNotice> : null}
+      {view.note.status === "failed" && !dirty && !sent ? <DegradedNotice title="La nota no se generó">No hay borrador de IA. Puedes enviar el relevo sin nota, escribirla o usar Regenerar.</DegradedNotice> : null}
       {problem ? <ErrorMessage title={problem.text}>{problem.retryable ? "Puedes volver a pulsar el botón." : null}</ErrorMessage> : null}
       {problem?.relogin ? (
         <OperatorLogin role="outgoing" onSuccess={() => setProblem({ text: "Ingresaste de nuevo. Tu borrador se conserva; vuelve a pulsar el botón.", retryable: false })} />
       ) : null}
 
-      {sent && follow ? (
-        <section aria-labelledby="estado" className="space-y-4 border-b border-line pb-6">
+      {phase === "morning" && snapshot && follow ? <ResumenNoche state={snapshot} follow={follow} outgoing={outgoing} /> : null}
+
+      {phase === "following" && follow ? (
+        <section aria-labelledby="estado" className="space-y-4">
           <h2 id="estado" className="text-section font-semibold">Estado del relevo</h2>
           <ContinuityLine outgoing={outgoing} incoming={follow.incoming} state={follow.state} startsAtLabel={follow.startsAtLabel} />
           {follow.derivedNotice ? <p role="status" className="text-body">{follow.derivedNotice}</p> : null}
           {follow.coverageNotice ? <p role="status" className="text-body">{follow.coverageNotice}</p> : null}
           <dl className="grid gap-x-6 gap-y-2 text-body sm:grid-cols-[auto_1fr]">
             <dt className="text-muted-foreground">Tu turno termina</dt>
-            <dd>{coverage ? `${clockLabel(coverage.outgoingEndsAt)} (hora del escenario)` : "Sin dato"}</dd>
-            {snapshot ? <><dt className="text-muted-foreground">Hora del escenario</dt><dd>{clockLabel(snapshot.clocks.narrativeNow)}</dd></> : null}
+            <dd>{coverage ? clockLabel(coverage.outgoingEndsAt) : "Sin dato"}</dd>
             {handoff?.status === "awaiting_candidate" && handoff.deadlineAt && handoff.candidate ? (
               <><dt className="text-muted-foreground">Plazo real de {handoff.candidate.displayName}</dt>
                 <dd><Countdown deadlineAt={handoff.deadlineAt} label={`Plazo de aceptación de ${handoff.candidate.displayName} hasta las ${clockLabel(handoff.deadlineAt)}`} /></dd></>
             ) : null}
-
           </dl>
-          <p className="text-aux text-muted-foreground">Enviar el relevo no confirma cobertura. Aceptar, empezar la cobertura y terminar tu turno son hechos distintos.</p>
         </section>
       ) : null}
 
-      <section aria-labelledby="pendientes" className="space-y-3">
-        <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
-        <p className="text-aux text-muted-foreground">Transferir un pendiente entrega el contexto a quien entra; no lo convierte en urgente ni en aviso.</p>
-        <PendingList label="Pendientes del turno">
-          {tickets.map(t => (
-            <Pendiente key={t.id} ticket={t} disabled={locked} showErrors={showErrors}
-              onChange={change => edit(t.id, change)} />
-          ))}
-        </PendingList>
-      </section>
-
-      <NotaEditor note={note} origin={origin} disabled={locked} regenerating={busy === "regenerating"} showErrors={showErrors}
-        onChange={value => { setNote(value); setDirty(true); }} onRegenerate={regenerate} />
-
-      <section aria-labelledby="incidentes" className="space-y-2 border-t border-line pt-6">
-        <h2 id="incidentes" className="text-section font-semibold">Incidentes activos</h2>
-        {(snapshot?.incidents.filter(i => i.status !== "taken") ?? incidents ?? []).length === 0 ? (
-          <p className="text-body">No hay incidentes activos registrados.</p>
-        ) : (
+      {active.length > 0 ? (
+        <section aria-labelledby="incidentes" className="space-y-2">
+          <h2 id="incidentes" className="text-section font-semibold">Incidentes activos</h2>
           <ul className="divide-y divide-line border-y border-line">
-            {(snapshot?.incidents.filter(i => i.status !== "taken") ?? incidents ?? []).map(i => (
+            {active.map(i => (
               <li key={i.id} className="py-3 text-body">
                 <span className="font-semibold">{SERVICE_LABEL[i.service] ?? i.service}</span>: {INCIDENT_LABEL[i.status]}
                 {i.candidate ? ` · ${i.candidate.displayName}` : ""}
               </li>
             ))}
           </ul>
-        )}
-        <p className="text-aux text-muted-foreground">Cerrar tu turno no vuelve a avisar un incidente ya avisado.</p>
-      </section>
-      {extra}
+        </section>
+      ) : null}
+
+      {sent ? (
+        <details className="group border-t border-line pt-4">
+          <summary className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg text-body font-semibold marker:content-none [&::-webkit-details-marker]:hidden">
+            <svg aria-hidden="true" viewBox="0 0 12 12" className="size-3 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none">
+              <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+            {leftSummary(tickets.length, note)}
+          </summary>
+          <div className="mt-4 flex flex-col gap-8">{pendientes}</div>
+        </details>
+      ) : pendientes}
       <SignOutButton />
     </SurfaceShell>
   );

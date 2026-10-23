@@ -175,9 +175,9 @@ Una columna para tareas móviles. Ancho de lectura contenido para cierre/recepto
 
 Acción principal cercana al pulgar. Si se fija abajo, reservar su espacio y safe area, evitar que tape campos y conservar el foco visible. Acciones táctiles de al menos 48 px; botón primario de 56 px en el boceto. No empequeñecer acciones secundarias críticas para que quepan en la primera pantalla.
 
-La lista de pendientes tiene filas abiertas: ID, título y propuesta. No envolverla en tarjetas anidadas. En texto largo, permitir que la propuesta baje de línea antes de truncar el significado. La razón y la corrección de la propuesta deben ser alcanzables con controles convencionales; no solo deslizando.
+La lista de pendientes tiene filas abiertas de solo lectura: ID, título y, solo en los destacados, «Para seguimiento» con su razón. No envolverla en tarjetas anidadas. En texto largo, permitir que el destacado baje de línea antes de truncar el significado.
 
-La nota IA editable es una parte real del recorrido, aunque el boceto de primera pantalla solo muestra su etiqueta. Colocarla en la continuación del flujo sin ocultarla detrás del botón de envío. No confundir una miniatura aprobada con una especificación exhaustiva de campos y estados.
+La nota IA editable y opcional es una parte real del recorrido, aunque el boceto de primera pantalla solo muestra su etiqueta. Colocarla en la continuación del flujo sin ocultarla detrás del botón de envío. No confundir una miniatura aprobada con una especificación exhaustiva de campos y estados.
 
 En proyector, priorizar responsable y estado antes que un registro exhaustivo. Registro y cadena son áreas distintas, no tarjetas dentro de tarjetas. No exponer controles privilegiados. La desconexión y el alcance de los plazos deben seguir visibles según CONTRACTS.
 
