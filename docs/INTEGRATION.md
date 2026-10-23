@@ -56,6 +56,8 @@ Máximo tres worktrees de tareas activos. No abrirlos todos por adelantado. El w
 
 ## Recursos existentes y reservas
 
+Actualización posterior a T00, autorizada por Diego el 23-10-2026: `relevo_integracion` ya existe en el servidor local y `pnpm db:check` pasó desde este worktree fuera del sandbox. Rol de aplicación: `relevo_integracion_app`, sin privilegios administrativos, límite de 3 conexiones, CONNECT y USAGE de public; sin CREATE de base/schema. Base vacía. `.env` privado, ignorado y con permisos 0600; no se copia a otros worktrees. Las observaciones iniciales que siguen son históricas y quedan superadas para la conexión de integración.
+
 Entorno observado en T00: macOS; Node 24.19.0, pnpm 12.10.1, Playwright 1.64.1 y Google Chrome instalado. PostgreSQL/psql 17.10 (Homebrew) están instalados. Se observó un proceso PostgreSQL en loopback 5432, pero `pg_isready -h 127.0.0.1 -p 5432` respondió `no response` desde este entorno. No se infiere la causa ni conectividad de aplicación.
 
 | Puesto reutilizable | Desarrollo / E2E reservados | Nombre no secreto de base propuesto | Estado |
@@ -63,11 +65,11 @@ Entorno observado en T00: macOS; Node 24.19.0, pnpm 12.10.1, Playwright 1.64.1 y
 | A | 34140 / 34141 | `relevo_ui` | Puertos libres al comprobar; base no creada ni verificada |
 | B | 34142 / 34143 | `relevo_backend` | Puertos libres al comprobar; base no creada ni verificada |
 | C | 34144 / 34145 | `relevo_escenario` | Puertos libres al comprobar; base no creada ni verificada |
-| Integración | 34146 / 34147 | `relevo_integracion` | Puerto E2E usado por T00; base no creada ni verificada |
+| Integración | 34146 / 34147 | `relevo_integracion` | Puerto E2E usado por T00; base creada y conexión/transacción comprobadas posteriormente |
 
 Las reservas no crean procesos ni bases. Los puestos se asignan a tareas al lanzarlas, sin exigir que el carril determine siempre el puesto. Verificar puertos y destino nuevamente antes de usarlos. 3000, 3001, 3002 y 3100 estaban ocupados en la inspección inicial; no cerrar procesos ajenos. T00 solo utiliza su servidor temporal de Playwright en 34147.
 
-Cada entorno requiere su propia conexión privada y permisos limitados a su base. No copiar `.env` entre worktrees. Un único servidor PostgreSQL local es el objetivo; T00 no instala ni arranca otra pila. No hay `DATABASE_URL` elegida para T00: `db:check` queda BLOCKED. No se han comprobado bases, roles, Neon, Vercel, OpenRouter, ntfy ni S26. Los avisos reales continúan desactivados por defecto.
+Cada entorno requiere su propia conexión privada y permisos limitados a su base. No copiar `.env` entre worktrees. Un único servidor PostgreSQL local es el objetivo; T00 no instala ni arranca otra pila. Durante T00 no había `DATABASE_URL` elegida y `db:check` quedó BLOCKED; la actualización posterior de arriba acredita solo la base local de integración. Neon, Vercel, OpenRouter, ntfy y S26 siguen sin comprobarse. Los avisos reales continúan desactivados por defecto.
 
 ## Inventario de entrada
 
