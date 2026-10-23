@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  buildSendBody, clockLabel, countWords, errorMessage, followUp, noteIssue, sendPayloadKey,
+  buildSendBody, clockLabel, countWords, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
 } from "../../src/components/rodrigo/model";
 
 const instant = (s: string) => s as never;
@@ -86,4 +86,18 @@ test("los errores explican qué se conserva", () => {
   assert.match(errorMessage("VERSION_CONFLICT", "send"), /cambió/);
   assert.match(errorMessage("OPERATION_PENDING", "send"), /en curso/);
   assert.match(errorMessage("AUTH_REQUIRED", "send"), /credencial/i);
+});
+
+test("fase: cierre hasta enviar; mañana solo con relevo enviado y escena de mañana", () => {
+  assert.equal(phaseOf(false, "Cierre"), "closing");
+  assert.equal(phaseOf(false, "Registro de mañana"), "closing");
+  assert.equal(phaseOf(true, null), "following");
+  assert.equal(phaseOf(true, "Registro de noche"), "following");
+  assert.equal(phaseOf(true, "Registro de mañana"), "morning");
+});
+
+test("lo que dejaste: singular/plural y nota solo si existe", () => {
+  assert.equal(leftSummary(5, "Revisar #470"), "Lo que dejaste: 5 pendientes y una nota");
+  assert.equal(leftSummary(1, ""), "Lo que dejaste: 1 pendiente");
+  assert.equal(leftSummary(2, "   "), "Lo que dejaste: 2 pendientes");
 });

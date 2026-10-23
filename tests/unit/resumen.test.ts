@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { morningEvents, summarize } from "../../src/components/rodrigo/resumen/model";
+import { summarize } from "../../src/components/rodrigo/resumen/model";
 
 const actor = (name: string) => ({ id: `actor_${name}`, displayName: name });
 const ev = (sequence: number, kind: string, extra: object = {}) =>
@@ -11,18 +11,16 @@ const state = (events: unknown[], extra: object = {}) =>
 test("ejecución vacía: sin hechos y sin conteos inventados", () => {
   const s = summarize(state([]));
   assert.equal(s.empty, true);
-  assert.equal(s.reportsAdmitted, 0);
   assert.equal(s.outgoingNotices, 0);
+  assert.deepEqual(s.taken, []);
 });
 
-test("cuenta solo lo registrado y toma «Avisos a Rodrigo» del estado", () => {
+test("toma «Avisos a Rodrigo» del estado y lista los incidentes tomados", () => {
   const s = summarize(state(
     [ev(1, "report_admitted"), ev(2, "report_admitted"), ev(3, "incident_created"), ev(4, "incident_taken"), ev(5, "coverage_activated")],
     { outgoingNoticeCount: 2, incidents: [{ id: "i1", status: "taken", service: "facturacion", takenBy: actor("Tomás"), takenAt: "2026-10-23T22:12:00Z" }] },
   ));
   assert.equal(s.empty, false);
-  assert.equal(s.reportsAdmitted, 2);
-  assert.equal(s.incidentsCreated, 1);
   assert.equal(s.outgoingNotices, 2);
   assert.deepEqual(s.taken.map(t => t.by), ["Tomás"]);
 });
@@ -33,14 +31,6 @@ test("tomado no se presenta como resuelto", () => {
   assert.doesNotMatch(JSON.stringify(s), /resuelt/i);
 });
 
-test("acuse (incidente tomado) y cobertura se cuentan por separado", () => {
-  const onlyTaken = summarize(state([ev(1, "incident_taken")]));
-  assert.equal(onlyTaken.coverageActivated, 0);
-  const onlyCoverage = summarize(state([ev(1, "coverage_activated")]));
-  assert.equal(onlyCoverage.incidentsTaken, 0);
-});
-
-test("el filtro de mañana conserva cobertura, relevo, incidentes y avisos; quita ruido", () => {
-  const events = [ev(1, "scene_changed"), ev(2, "report_classified"), ev(3, "handoff_accepted"), ev(4, "incident_taken"), ev(5, "notification_in_app"), ev(6, "policy_decided")];
-  assert.deepEqual(morningEvents(events as never[] as { kind: never; sequence: number }[]).map(e => e.sequence), [3, 4, 5]);
+test("el resumen de la noche no repite los conteos del proyector", () => {
+  assert.deepEqual(Object.keys(summarize(state([ev(1, "report_admitted")]))).sort(), ["empty", "outgoingNotices", "taken"]);
 });

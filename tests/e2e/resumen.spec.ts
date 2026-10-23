@@ -1,8 +1,9 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
 /**
- * Resumen y consulta de /rodrigo contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
+ * Fases de /rodrigo (cierre, seguimiento y resumen de la noche) contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
  * APP_ORIGIN igual al origen del servidor, RODRIGO_* y CONTROL_*. Los tests comparten una base: ejecutar con `--workers=1`.
  * La nota guardada se inserta como fixture (no es una llamada en vivo a la IA); Regenerar con éxito requiere clave del proveedor.
  */
@@ -37,44 +38,71 @@ async function resetExecution(request: APIRequestContext): Promise<Json> {
 }
 
 const noScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
-async function openResumen(page: Page) {
+
+async function openCierre(page: Page) {
   await page.goto("/rodrigo");
-  await expect(page.getByRole("heading", { name: "Resumen y registro", level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cierre de turno", level: 1 })).toBeVisible();
+}
+async function sendHandoff(page: Page) {
+  await page.getByRole("button", { name: "Enviar relevo" }).click();
+  await expect(page.getByText(/Esperando aceptación de/)).toBeVisible();
+}
+async function toMorning(request: APIRequestContext) {
+  const s = await state(request);
+  const sceneId = execFileSync("psql", [env.DIRECT_URL ?? env.DATABASE_URL!, "-At", "-c",
+    `select id from scenes where "executionId"='${s.executionId}' and label='Registro de mañana'`], { encoding: "utf8" }).trim();
+  const scene = await control(request, "/api/scene", { executionId: s.executionId, expectedVersion: s.version, sceneId, channelOpen: false });
+  expect(scene.status).toBe(200);
 }
 
-test("ejecución nueva: sin despertares ni resolución, con consulta sin diagnóstico", async ({ page, request }, testInfo) => {
+test("el cierre muestra solo lo del cierre: sin resumen, registro, consulta ni incidentes vacíos", async ({ page, request }) => {
   await resetExecution(request);
-  await openResumen(page);
-  await expect(page.getByText("Avisos a Rodrigo")).toBeVisible();
+  await openCierre(page);
+  await expect(page.getByRole("region", { name: "Resumen de la noche" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^(Mañana|Registro continuo)$/ })).toHaveCount(0);
+  await expect(page.getByText(/roncas fuerte/i)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Incidentes activos" })).toHaveCount(0);
+});
+
+test("tras enviar, el estado del relevo manda y lo entregado queda plegado", async ({ page, request }) => {
+  await resetExecution(request);
+  await openCierre(page);
+  await sendHandoff(page);
+  const left = page.getByText(/^Lo que dejaste: 5 pendientes/);
+  await expect(left).toBeVisible();
+  await expect(page.getByRole("list", { name: "Pendientes del turno" })).toBeHidden();
+  await left.click();
+  await expect(page.getByRole("list", { name: "Pendientes del turno" })).toBeVisible();
+});
+
+test("escena de mañana con relevo enviado: avisos a Rodrigo, sin despertares ni resolución", async ({ page, request }, testInfo) => {
+  await resetExecution(request);
+  await openCierre(page);
+  await sendHandoff(page);
+  await toMorning(request);
+  await expect(page.getByRole("heading", { name: "Resumen de la noche", level: 1 })).toBeVisible({ timeout: 10_000 });
+  const resumen = page.getByRole("region", { name: "Resumen de la noche" });
+  await expect(resumen.getByText("Avisos a Rodrigo: 0")).toBeVisible();
+  await expect(resumen.getByText("No se registraron incidentes.")).toBeVisible();
   await expect(page.getByText(/Despertares:/i)).toHaveCount(0);
   await expect(page.getByText(/^Resuelto|Problema resuelto/)).toHaveCount(0);
-  const consulta = page.getByRole("region", { name: "Si te dicen que roncas fuerte" });
-  await expect(consulta).toContainText("profesional de salud");
-  await expect(consulta).toContainText("no diagnostica ni recomienda medicamentos");
-  await expect(consulta).not.toContainText(/apnea|melatonina|duerm(e|as) (más|mejor)/i);
+  await expect(page.getByText(/roncas fuerte/i)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Estado del relevo" })).toHaveCount(0);
   expect(await noScroll(page)).toBe(true);
-  await page.screenshot({ path: `.impeccable/review/resumen-vacio-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: `.impeccable/review/resumen-noche-${testInfo.project.name}.png`, fullPage: true });
 });
 
-test("Mañana filtra el registro continuo: la escena aparece solo en el continuo", async ({ page, request }, testInfo) => {
-  const before = await resetExecution(request);
-  const scene = await control(request, "/api/scene", { executionId: before.executionId, expectedVersion: before.version, sceneId: before.scene.id, channelOpen: true });
-  expect(scene.status).toBe(200);
-  await openResumen(page);
-  const morning = page.getByRole("button", { name: "Mañana" });
-  const all = page.getByRole("button", { name: "Registro continuo" });
-  await expect(morning).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("Cambió la escena")).toHaveCount(0);
-  await all.click();
-  await expect(all).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("Cambió la escena").first()).toBeVisible();
-  await page.screenshot({ path: `.impeccable/review/resumen-eventos-${testInfo.project.name}.png`, fullPage: true });
+test("escena de mañana sin relevo enviado: sigue el cierre, no se inventa resumen", async ({ page, request }) => {
+  await resetExecution(request);
+  await toMorning(request);
+  await openCierre(page);
+  await expect(page.getByRole("region", { name: "Resumen de la noche" })).toHaveCount(0);
 });
 
-test("tras reset la vista abierta avisa de la ejecución nueva y no mezcla su registro", async ({ page, request }) => {
+test("tras reset la vista abierta avisa que quedó desactualizada", async ({ page, request }) => {
   await resetExecution(request);
-  await openResumen(page);
+  await openCierre(page);
+  await sendHandoff(page);
   await resetExecution(request);
-  await expect(page.getByText("Se inició una nueva ejecución")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("button", { name: "Mañana" })).toHaveCount(0);
+  await expect(page.getByText("Esta vista quedó desactualizada")).toBeVisible({ timeout: 15_000 });
 });

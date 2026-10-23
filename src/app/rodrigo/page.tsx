@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { SurfaceShell } from "@/components/relevo/surface-shell";
 import { CierreForm } from "@/components/rodrigo/cierre-form";
-import { ConsultaCard } from "@/components/rodrigo/resumen/consulta-card";
-import { ResumenPanel } from "@/components/rodrigo/resumen/resumen-panel";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
 import { loadRodrigo } from "./load";
 
@@ -14,8 +12,7 @@ export default async function Page() {
   if (loaded.kind === "ready") {
     const { view, handoffId } = loaded;
     // La clave reinicia el formulario cuando cambia la versión del borrador o termina la preparación de la nota.
-    return <CierreForm key={`${view.executionId}:${view.draftVersion}:${view.note.status}`} view={view} handoffId={handoffId}
-      extra={<><ResumenPanel executionId={view.executionId} /><ConsultaCard /></>} />;
+    return <CierreForm key={`${view.executionId}:${view.draftVersion}:${view.note.status}`} view={view} handoffId={handoffId} />;
   }
   return (
     <SurfaceShell title="Cierre de turno">

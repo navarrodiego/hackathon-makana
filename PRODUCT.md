@@ -55,7 +55,7 @@ El registro y la cobertura del sistema son continuos, 24/7. No implica disponibi
 3. Paula rechaza o no responde: Tomás; si también falla, aviso a Carla y Sin cobertura confirmada. No extensión automática de Rodrigo.
 4. Canal público QR de reportes ficticios; política visible sobre clasificación IA.
 5. Incidentes urgentes con aviso, acuse individual y escalada a respaldo. Tomar no es resolver ni aceptar todo el turno.
-6. Registro continuo, resúmenes y consulta por ronquido fuerte.
+6. Registro continuo y resumen de la noche en `/rodrigo`. Decisión de Diego del 23-10-2026: la consulta por ronquido fuerte sale de la app y, por ahora, tampoco va en el pitch.
 7. Control protegido, reinicio, guion de reportes y video de respaldo.
 
 Plazos de demo: 30 s por candidato, independientes para relevo e incidente; rechazo de relevo deriva inmediatamente. Los detalles están en [CONTRACTS](docs/CONTRACTS.md).

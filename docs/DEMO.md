@@ -31,7 +31,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 | 0:45–1:15 | Situación multifactorial: turnos, café 19:20, normalización y ronquido. Elegimos la dificultad para terminar el trabajo, sin declararla causa principal. |
 | 1:15–1:55 | Mostrar pendientes con #470 destacado para seguimiento y la nota opcional; enviar relevo en un paso. Paula lo acepta desde S26 antes de su plazo. Mostrar aceptación/ventana efectiva y que Rodrigo no es respaldo. |
 | 1:55–3:25 | Abrir canal y QR grande: «Intenten despertar a Rodrigo». Diferible queda en cola. Facturación caída avisa a Paula. Pedir que no pulse Tomar incidente. Esperar 30 s reales; escala a Tomás y el presentador registra su acuse desde control. Origen escenario visible. |
-| 3:25–3:50 | Registro y vista de mañana: «El incidente tiene responsable». No afirmar resolución. Tarjeta de consulta por ronquido fuerte, sin diagnóstico. |
+| 3:25–3:50 | Control pasa a la escena de mañana; `/rodrigo` muestra el resumen de la noche: avisos a Rodrigo, cobertura e «El incidente tiene responsable». No afirmar resolución. El registro completo queda en el proyector. |
 | 3:50–4:20 | Mecanismo de continuidad: menos revisión, receptor confirmado y evidencia de responsabilidad. No afirmar más sueño medido ni adopción real. |
 | 4:20–4:45 | Mostrar En la demo / Fuera de esta demo: canal simulado, solo un teléfono físico y condiciones empresariales hipotéticas. |
 | 4:45–5:00 | «Para dormir, primero necesita poder dejar de trabajar». Relevo · Entrega el turno. Recupera la noche. |

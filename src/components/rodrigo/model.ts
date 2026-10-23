@@ -106,3 +106,20 @@ export function followUp(p: {
     coverageNotice,
   };
 }
+
+/** Etiqueta de la escena de mañana del seed (`BASE_FIXTURE.scenes`): los ids cambian en cada ejecución, la etiqueta no. */
+const MORNING_SCENE_LABEL = "Registro de mañana";
+
+export type Phase = "closing" | "following" | "morning";
+
+/** Qué momento muestra el cierre. La mañana exige un relevo enviado: sin él no hay noche que resumir. */
+export function phaseOf(sent: boolean, sceneLabel: string | null): Phase {
+  if (!sent) return "closing";
+  return sceneLabel === MORNING_SCENE_LABEL ? "morning" : "following";
+}
+
+/** Rótulo del plegable con lo entregado, p. ej. «Lo que dejaste: 5 pendientes y una nota». */
+export function leftSummary(tickets: number, note: string): string {
+  const items = `${tickets} ${tickets === 1 ? "pendiente" : "pendientes"}`;
+  return `Lo que dejaste: ${items}${note.trim() ? " y una nota" : ""}`;
+}
