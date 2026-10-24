@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { config } from "dotenv";
 import { OPERATOR_SECRET, basicAs, loginAs } from "./support/acceso";
+import { enterChannel, sendReport, skipLobby } from "./support/canal";
 
 config({ quiet: true });
 
@@ -120,12 +121,12 @@ test.describe("/canal", () => {
     await page.goto("/control");
     await hydrated(page);
     await pressUntilNotice(page, "o", /Canal abierto\./);
+    await skipLobby();
     await page.goto("/canal");
+    await enterChannel(page, "Cuervo");
     await expect(page.locator("[data-testid='canal-resultado'][aria-live='polite']")).toHaveCount(1);
-    await page.getByLabel("Apodo").fill("Cuervo");
-    await page.getByLabel("Reporte", { exact: true }).fill("La VPN va lenta desde el segundo piso");
-    await page.getByRole("button", { name: "Enviar reporte" }).click();
-    await expect(page.locator("[data-testid='canal-resultado']")).toContainText(/Reporte registrado/, { timeout: 15_000 });
+    await sendReport(page, "La VPN va lenta desde el segundo piso");
+    await expect(page.locator("[data-testid='canal-resultado']")).toContainText(/Reporte enviado/, { timeout: 15_000 });
   });
 });
 

@@ -11,7 +11,7 @@ export const ERROR_STATUS = {
   FORBIDDEN: 403, ORIGIN_REJECTED: 403,
   NOT_FOUND: 404,
   EXECUTION_STALE: 409, VERSION_CONFLICT: 409, CANDIDATE_STALE: 409, STATE_CONFLICT: 409,
-  IDEMPOTENCY_CONFLICT: 409, OPERATION_PENDING: 409, CHANNEL_CLOSED: 409,
+  IDEMPOTENCY_CONFLICT: 409, OPERATION_PENDING: 409, CHANNEL_CLOSED: 409, CHANNEL_WAITING: 409,
   ACTION_EXPIRED: 410, QUOTA_EXCEEDED: 429,
   PROVIDER_FAILED: 502, STORAGE_UNAVAILABLE: 503, AUTH_NOT_CONFIGURED: 503, PROVIDER_TIMEOUT: 504,
 } as const;
@@ -58,7 +58,7 @@ export interface Route<I, O, P, E extends ErrorCode, S extends 200 | 201> {
   readonly input: I; readonly output: O; readonly params: P; readonly errors: E; readonly successStatus: S;
 }
 export interface ApiRoutes {
-  readonly "POST /api/messages": Route<SubmitReport, ReportReceiptDTO, null, WriteError | "CHANNEL_CLOSED" | "QUOTA_EXCEEDED", 201>;
+  readonly "POST /api/messages": Route<SubmitReport, ReportReceiptDTO, null, WriteError | "CHANNEL_CLOSED" | "CHANNEL_WAITING" | "QUOTA_EXCEEDED", 201>;
   readonly "GET /api/state": Route<null, PublicStateDTO, null, CommonError, 200>;
   readonly "POST /api/handoff": Route<SendHandoff, HandoffResultDTO, null, TransitionError, 201>;
   readonly "POST /api/handoff/suggest": Route<SuggestHandoff, SuggestionResultDTO, null, TransitionError | "PROVIDER_FAILED" | "PROVIDER_TIMEOUT", 200>;

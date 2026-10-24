@@ -100,7 +100,7 @@ async function runReset(deps: ResetDeps, context: CommandContext, input: ResetEx
     const now: Instant = context.operationalNow;
     const next: Execution = {
       executionId: `execution_${randomUUID()}` as ExecutionId, version: 1, status: "active", sceneId: first.id,
-      anchor: { operationalAt: now, narrativeAt: first.narrativeAt }, channelOpen: false, admittedReports: 0,
+      anchor: { operationalAt: now, narrativeAt: first.narrativeAt }, channelOpen: false, channelOpenedAt: null, admittedReports: 0,
       preparation: "pending", createdAt: now, supersededBy: null,
     };
     const successor = await tx.replaceExecution(next, input.expectedVersion);

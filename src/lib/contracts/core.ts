@@ -42,7 +42,7 @@ export interface NarrativeAnchor { readonly operationalAt: Instant; readonly nar
 export const LIMITS = {
   reportCharacters: 280, reportsPerSession: 5, reportsPerExecution: 150,
   candidateDeadlineMs: 30_000, tokenMaxAgeMs: 1_800_000,
-  sessionMaxAgeMs: 43_200_000, equivalenceWindowMs: 600_000,
+  sessionMaxAgeMs: 43_200_000, equivalenceWindowMs: 600_000, channelLobbyMs: 30_000,
   classificationTimeoutMs: 6_000, classificationTimeoutMinMs: 1_000, classificationTimeoutMaxMs: 10_000, classificationStallMs: 30_000, noteWords: 60,
 } as const;
 export const POLICY_THRESHOLDS = { review: 0.40, notify: 0.70, outOfScope: 0.85 } as const;

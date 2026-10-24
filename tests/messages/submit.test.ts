@@ -120,3 +120,33 @@ test('principal sin permiso de ingreso (destinatario) se rechaza', async () => {
     assert.deepEqual(r, { ok: false, code: 'FORBIDDEN' });
   } finally { await w.close(); }
 });
+
+test('espera común tras abrir el canal: el público aún no envía; control sí; al cumplirse se admite', async () => {
+  const w = await world();
+  try {
+    const openedAt = w.reporter().operationalNow;
+    await w.db.$executeRaw`UPDATE executions SET "channelOpenedAt" = ${new Date(openedAt)} WHERE "executionId" = ${w.prepared.executionId}`;
+    const early = await w.service.submit(w.reporter(), w.input('Local 7 caja 2 no emite boletas'));
+    assert.deepEqual(early, { ok: false, code: 'CHANNEL_WAITING' });
+    let s = await w.snapshot();
+    assert.equal(s.reports.length, 0);
+    assert.equal(s.execution.admittedReports, 0);
+    const scripted = await w.service.submit(w.control(), w.input('Impresora administrativa no imprime'));
+    assert.ok(scripted.ok, JSON.stringify(scripted));
+    const later = await w.service.submit(w.reporter(30_000), w.input('Local 7 caja 2 no emite boletas'));
+    assert.ok(later.ok, JSON.stringify(later));
+    s = await w.snapshot();
+    assert.equal(s.reports.length, 2);
+  } finally { await w.close(); }
+});
+
+test('recibo propio: trae el texto enviado y a quién se avisó, sin datos de otras sesiones', async () => {
+  const w = await world();
+  try {
+    const r = await w.service.submit(w.reporter(), w.input('Local 7 caja 2 no emite boletas'));
+    assert.ok(r.ok);
+    assert.equal(r.value.text, 'Local 7 caja 2 no emite boletas');
+    assert.equal(r.value.notifiedTo, 'Paula');
+    assert.equal(r.value.takenBy, null);
+  } finally { await w.close(); }
+});

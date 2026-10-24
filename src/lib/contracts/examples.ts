@@ -23,13 +23,14 @@ export const publicStateExample = {
   audience: "public", executionId: "execution_example", version: 1,
   scene: { id: "scene_closing", label: "Cierre" }, preparation: "ready",
   clocks: { operationalNow: "2026-10-23T15:00:00.000Z", narrativeNow: "2026-10-24T01:09:50.000Z", timeZone: "America/Santiago" },
-  channelOpen: false, coverage: coverageExample, handoff: handoffExample, closing: null,
+  channelOpen: false, channelOpenedAt: null, coverage: coverageExample, handoff: handoffExample, closing: null,
   incidents: [], notifications: [], events: [], outgoingNoticeCount: 0,
 } as const satisfies PublicStateDTO;
 export const receiptExample = {
   audience: "reporter", executionId: "execution_example", reportId: "report_example",
-  status: "review", classificationMode: "degraded", incidentId: "incident_example", duplicate: false,
-  notificationStatus: "pending", nextAttentionAt: null, classified: null, physicalEmergency: false,
+  text: "No podemos emitir boletas en el local 12.", status: "review", classificationMode: "degraded", incidentId: "incident_example", duplicate: false,
+  notificationStatus: "pending", nextAttentionAt: null, notifiedTo: "Paula", takenBy: null,
+  classified: null, physicalEmergency: false,
 } as const satisfies ReportReceiptDTO;
 export const noteExample = {
   status: "ready", saved: {
@@ -95,7 +96,7 @@ export const routeExamples = {
   "POST /api/scene": {
     params: null, input: { ...versioned, sceneId: "scene_channel", channelOpen: true },
     response: { status: 200, body: { ok: true, data: { ...publicStateExample, version: 3,
-      scene: { id: "scene_channel", label: "Canal" }, channelOpen: true,
+      scene: { id: "scene_channel", label: "Canal" }, channelOpen: true, channelOpenedAt: "2026-10-23T15:00:00.000Z",
       clocks: { ...publicStateExample.clocks, narrativeNow: "2026-10-24T01:10:00.000Z" },
     }, correlationId } },
   },
@@ -108,7 +109,7 @@ export const routeExamples = {
 } as const satisfies { readonly [K in keyof import("./http").ApiRoutes]: RouteExample<K> };
 const ticketViewExamples = BASE_FIXTURE.tickets satisfies readonly import("./private").TicketDTO[];
 export const pageExamples = {
-  "/canal": { audience: "reporter", executionId: "execution_example", channelOpen: false, remainingSessionReports: 5, remainingExecutionReports: 50, ownReports: [] },
+  "/canal": { audience: "reporter", executionId: "execution_example", channelOpen: false, channelOpenedAt: null, remainingSessionReports: 5, remainingExecutionReports: 50, ownReports: [] },
   "/rodrigo": {
     audience: "outgoing", executionId: "execution_example", actorId: "actor_outgoing", draftVersion: 1,
     tickets: ticketViewExamples, note: noteExample, handoff: handoffExample, coverage: coverageExample, activeIncidents: [],

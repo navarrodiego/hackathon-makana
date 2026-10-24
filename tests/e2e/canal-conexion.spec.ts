@@ -2,6 +2,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 import { config } from "dotenv";
 import { Client } from "pg";
 import { OPERATOR_SECRET, basicAs } from "./support/acceso";
+import { enterChannel, skipLobby } from "./support/canal";
 
 config({ quiet: true });
 
@@ -34,8 +35,10 @@ async function openChannel(page: Page, request: APIRequestContext, origin: strin
   await command(request, origin, "/api/reset", { executionId: before.executionId, expectedVersion: before.version });
   const now = await state(request, origin);
   await command(request, origin, "/api/scene", { executionId: now.executionId, expectedVersion: now.version, sceneId: await sceneId("Canal"), channelOpen: true });
+  await skipLobby();
   await page.goto("/canal");
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toBeEnabled({ timeout: 15_000 });
+  await enterChannel(page);
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toBeEnabled({ timeout: 15_000 });
 }
 
 test("respuesta perdida: se conserva el texto y el reenvío deja un solo reporte", async ({ page, request, baseURL }) => {
@@ -48,37 +51,34 @@ test("respuesta perdida: se conserva el texto y el reenvío deja un solo reporte
     await route.fetch();
     await route.abort("internetdisconnected");
   });
-  await page.getByRole("textbox", { name: "Apodo" }).fill("Visita");
-  await page.getByRole("textbox", { name: "Reporte" }).fill("Local 7: caja 2 no emite boletas");
+  await page.getByRole("textbox", { name: "Qué pasó" }).fill("Local 7: caja 2 no emite boletas");
   await page.getByRole("button", { name: "Enviar reporte" }).click();
-  await expect(page.getByText("No se pudo comprobar si el reporte quedó registrado")).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toHaveValue("Local 7: caja 2 no emite boletas");
+  await expect(page.getByText("No se pudo comprobar si el reporte llegó")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveValue("Local 7: caja 2 no emite boletas");
 
   await page.getByRole("button", { name: "Enviar reporte" }).click();
-  await expect(page.getByTestId("canal-resultado")).toHaveText("Reporte registrado. Su estado aparece en Tus reportes.");
-  await expect(page.getByText(/^Reporte 1:/)).toBeVisible();
-  await expect(page.getByText(/^Reporte 2:/)).toHaveCount(0);
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toHaveValue("");
+  await expect(page.getByTestId("canal-resultado")).toHaveText("Reporte enviado. Su estado aparece en Tus reportes.");
+  await expect(page.getByRole("region", { name: "Tus reportes" }).getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveValue("");
 });
 
 test("recargar la página no pierde el borrador", async ({ page, request, baseURL }) => {
   await openChannel(page, request, baseURL!);
-  await page.getByRole("textbox", { name: "Apodo" }).fill("Visita");
-  await page.getByRole("textbox", { name: "Reporte" }).fill("VPN lenta en el local 3");
+  await page.getByRole("textbox", { name: "Qué pasó" }).fill("VPN lenta en el local 3");
   await page.reload();
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toHaveValue("VPN lenta en el local 3");
-  await expect(page.getByRole("textbox", { name: "Apodo" })).toHaveValue("Visita");
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveValue("VPN lenta en el local 3");
+  await expect(page.getByText("Hola, Visita.")).toBeVisible();
 });
 
 test("sin red: aviso de conexión, texto conservado y vuelta sola al recuperarla", async ({ page, context, request, baseURL }) => {
   await openChannel(page, request, baseURL!);
-  await page.getByRole("textbox", { name: "Reporte" }).fill("Impresora sin tóner");
+  await page.getByRole("textbox", { name: "Qué pasó" }).fill("Impresora sin tóner");
   await context.setOffline(true);
   await expect(page.getByText(/Sin conexión desde las/)).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toHaveValue("Impresora sin tóner");
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveValue("Impresora sin tóner");
   await context.setOffline(false);
   await expect(page.getByText(/Sin conexión desde las/)).toBeHidden({ timeout: 20_000 });
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toHaveValue("Impresora sin tóner");
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveValue("Impresora sin tóner");
 });
 
 test("una consulta de estado colgada se muestra como sin conexión, no como al día", async ({ page, request, baseURL }) => {

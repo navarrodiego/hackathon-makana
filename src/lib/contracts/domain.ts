@@ -12,6 +12,8 @@ export interface Execution extends Revision {
   readonly sceneId: SceneId;
   readonly anchor: NarrativeAnchor;
   readonly channelOpen: boolean;
+  /** Cuándo pasó de cerrado a abierto; null con el canal cerrado. */
+  readonly channelOpenedAt: Instant | null;
   readonly admittedReports: number;
   readonly preparation: PreparationStatus;
   readonly createdAt: Instant;

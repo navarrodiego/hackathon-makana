@@ -5,6 +5,10 @@ import type { Execution, Handoff, Incident, Report } from '../../contracts/domai
 import type { ActorId, ExecutionId, Instant, SceneId, TicketId } from '../../contracts/core';
 import type { PreparedExecution } from '../../contracts/services';
 import { insert, keyHash, type Row, type Tx } from './sql';
+import { LIMITS } from '../../contracts/core';
+
+/** Un fixture con canal abierto ya pasó la espera previa al envío. */
+const lobbyDone = (at: Instant): Instant => new Date(Date.parse(at) - LIMITS.channelLobbyMs).toISOString() as Instant;
 
 /** Construye datos sintéticos dentro de una TX del caller, sin IA ni avisos. */
 export async function materializeFixture(tx: Tx, fixture: ExecutionFixture): Promise<PreparedExecution> {
@@ -14,7 +18,7 @@ export async function materializeFixture(tx: Tx, fixture: ExecutionFixture): Pro
   const ticketIds = new Map(fixture.tickets.map(t => [t.id, `ticket_${randomUUID()}` as TicketId]));
   const actor = (id: ActorId): ActorId => { const mapped = actorIds.get(id); if (!mapped) throw new Error('Unknown fixture actor'); return mapped; };
   const sceneId = sceneIds.get(fixture.initialSceneId); if (!sceneId) throw new Error('Unknown fixture scene');
-  const execution: Execution = { executionId, version: 1, status: 'active', sceneId, anchor: { operationalAt: fixture.operationalAt, narrativeAt: fixture.narrativeAt }, channelOpen: fixture.channelOpen, admittedReports: fixture.incident ? 1 : 0, preparation: 'pending', createdAt: fixture.operationalAt, supersededBy: null };
+  const execution: Execution = { executionId, version: 1, status: 'active', sceneId, anchor: { operationalAt: fixture.operationalAt, narrativeAt: fixture.narrativeAt }, channelOpen: fixture.channelOpen, channelOpenedAt: fixture.channelOpen ? lobbyDone(fixture.operationalAt) : null, admittedReports: fixture.incident ? 1 : 0, preparation: 'pending', createdAt: fixture.operationalAt, supersededBy: null };
   await insert(tx, 'executions', execution as unknown as Row);
   for (const a of fixture.actors) await insert(tx, 'actors', { ...a, id: actor(a.id), executionId });
   for (const s of fixture.scenes) await insert(tx, 'scenes', { ...s, id: sceneIds.get(s.id), executionId });

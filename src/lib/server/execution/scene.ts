@@ -27,6 +27,8 @@ export async function changeScene(store: UnitOfWork, context: CommandContext, in
     if (!scene) return fail("NOT_FOUND");
     const next = {
       ...execution, sceneId: scene.id, channelOpen: input.channelOpen, version: execution.version + 1,
+      // Solo pasar de cerrado a abierto fija la hora: es el ancla común de la espera del canal y del QR grande.
+      channelOpenedAt: !input.channelOpen ? null : execution.channelOpen ? execution.channelOpenedAt : context.operationalNow,
       // La nueva hora narrativa parte de la escena; el reloj operacional sigue siendo el real (C02).
       anchor: { operationalAt: context.operationalNow, narrativeAt: scene.narrativeAt },
     };

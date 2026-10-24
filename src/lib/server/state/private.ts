@@ -1,7 +1,7 @@
 import "server-only";
 import type { CommandContext } from "@/lib/contracts/auth";
-import type { HandoffId, Instant } from "@/lib/contracts/core";
-import type { Execution, Report, Ticket } from "@/lib/contracts/domain";
+import type { ActorId, HandoffId, Instant } from "@/lib/contracts/core";
+import type { Actor, Execution, Incident, IncidentAttempt, NotificationIntent, Report, Ticket } from "@/lib/contracts/domain";
 import type { ErrorCode, ServiceResult } from "@/lib/contracts/http";
 import type { ChannelViewDTO, IncidentSummaryDTO, ReportReceiptDTO } from "@/lib/contracts/public";
 import type { ControlViewDTO, HandoffPackageDTO, NoteDTO, RodrigoViewDTO, TicketDTO } from "@/lib/contracts/private";
@@ -77,8 +77,14 @@ export async function controlView(tx: TransactionRepositories, context: CommandC
   } };
 }
 
-export function receipt(report: Report, execution: Execution, tx: { incidents: readonly import("@/lib/contracts/domain").Incident[]; notifications: readonly import("@/lib/contracts/domain").NotificationIntent[] }): ReportReceiptDTO {
+export interface ReceiptSources {
+  readonly incidents: readonly Incident[]; readonly attempts: readonly IncidentAttempt[];
+  readonly notifications: readonly NotificationIntent[]; readonly actors: readonly Actor[];
+}
+export function receipt(report: Report, execution: Execution, tx: ReceiptSources): ReportReceiptDTO {
   const incident = report.incidentId ? tx.incidents.find(i => i.id === report.incidentId) ?? null : null;
+  const attempt = incident?.currentAttemptId ? tx.attempts.find(a => a.id === incident.currentAttemptId) ?? null : null;
+  const name = (id: ActorId | null | undefined) => id ? actorDto(tx.actors, id).displayName || null : null;
   const intents = incident ? tx.notifications.filter(n => n.subject.kind === "incident" && n.subject.id === incident.id) : [];
   const latest = [...intents].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
   const route = report.decision?.route;
@@ -86,12 +92,15 @@ export function receipt(report: Report, execution: Execution, tx: { incidents: r
     : incident ? "incident" : route === "review" ? "review" : route === "out_of_scope" ? "out_of_scope" : "queued";
   const output = report.classification?.output ?? null;
   return {
-    audience: "reporter", executionId: execution.executionId, reportId: report.id, status,
+    audience: "reporter", executionId: execution.executionId, reportId: report.id, text: report.text, status,
     classificationMode: report.classification?.mode ?? "pending", incidentId: incident?.id ?? null,
     duplicate: incident ? incident.firstReportId !== report.id : false,
     notificationStatus: !latest || latest.status === "discarded" ? "none" : latest.status,
     // La próxima atención de un diferible la define la política; sin dato guardado no se inventa una hora.
     nextAttentionAt: report.decision?.route === "queue" ? report.decision.nextAttentionAt : null,
+    // Quién tiene el aviso ahora y quién lo tomó; tomar no es resolver.
+    notifiedTo: incident && !incident.takenBy ? name(attempt?.candidateActorId) : null,
+    takenBy: name(incident?.takenBy),
     classified: report.classification?.mode === "model" && output && status !== "out_of_scope"
       ? { service: output.service, condition: output.condition, scope: output.scope } : null,
     // Clasificaciones guardadas antes de v2 no traen el campo.
@@ -103,15 +112,16 @@ export function receipt(report: Report, execution: Execution, tx: { incidents: r
 export async function ownReportsView(tx: TransactionRepositories, context: CommandContext): Promise<ServiceResult<ChannelViewDTO>> {
   const p = context.principal;
   if (p.kind !== "reporter") return fail("FORBIDDEN");
-  const [execution, reports, incidents, notifications] = await Promise.all([
-    currentExecution(tx, context), tx.aggregates.reports.list(), tx.aggregates.incidents.list(), tx.aggregates.notifications.list(),
+  const [execution, reports, incidents, attempts, notifications, actors] = await Promise.all([
+    currentExecution(tx, context), tx.aggregates.reports.list(), tx.aggregates.incidents.list(), tx.aggregates.incidentAttempts.list(),
+    tx.aggregates.notifications.list(), tx.reference.actors(),
   ]);
   if (!execution) return fail("NOT_FOUND");
   const own = reports.filter(r => r.sessionId === p.sessionId).sort((a, b) => a.admissionSequence - b.admissionSequence);
   return { ok: true, value: {
-    audience: "reporter", executionId: execution.executionId, channelOpen: execution.channelOpen,
+    audience: "reporter", executionId: execution.executionId, channelOpen: execution.channelOpen, channelOpenedAt: execution.channelOpenedAt,
     remainingSessionReports: Math.max(0, LIMITS.reportsPerSession - own.length),
     remainingExecutionReports: Math.max(0, LIMITS.reportsPerExecution - execution.admittedReports),
-    ownReports: own.map(r => receipt(r, execution, { incidents, notifications })),
+    ownReports: own.map(r => receipt(r, execution, { incidents, attempts, notifications, actors })),
   } };
 }

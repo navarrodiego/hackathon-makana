@@ -114,3 +114,17 @@ test('lecturas privadas autorizadas (S04/S05)', async t => {
     } finally { await w.close(); await w.db.$executeRaw`DELETE FROM report_sessions`.catch(() => undefined); }
   });
 });
+
+test('recibo del canal: quién tomó el incidente, sin decir que se resolvió', async () => {
+  const TAKEN = { ...ACCEPTED_FIXTURE, name: 'taken', channelOpen: true, incident: { candidateActorId: 'actor_incoming', deadlineOffsetMs: 30_000, status: 'taken' } } as const;
+  const w = await world(TAKEN);
+  try {
+    const view = await w.read.ownReports(w.ctx({ kind: 'reporter', sessionId: w.prepared.sessionId }, null, TAKEN.operationalAt));
+    assert.ok(view.ok, JSON.stringify(view));
+    const [receipt] = view.value.ownReports;
+    assert.equal(receipt.status, 'incident');
+    assert.equal(receipt.text, 'Facturación caída en local de prueba.');
+    assert.equal(receipt.takenBy, 'Paula');
+    assert.equal(view.value.channelOpenedAt !== null, true);
+  } finally { await w.close(); }
+});
