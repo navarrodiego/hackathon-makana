@@ -71,6 +71,7 @@ export function memoryUnitOfWork(initial?: Partial<Handoff>) {
       if (!result.ok) { state.handoff = before.handoff; state.idempotency = before.idempotency; }
       return result;
     },
+    runReadFirst(c, work) { return unitOfWork.run(c, work); },
     async replayReset() { throw new Error("no usado"); },
   };
   return { unitOfWork, state, tickets };

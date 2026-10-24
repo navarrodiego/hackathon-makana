@@ -1,9 +1,17 @@
-import type { PublicStateDTO } from "@/lib/contracts/client";
+import type { PublicEventDTO, PublicStateDTO } from "@/lib/contracts/client";
 import { hhmm } from "@/components/registro/time";
+
+/** Etiqueta de la escena de mañana del seed (`BASE_FIXTURE.scenes`): los ids cambian en cada ejecución, la etiqueta no. */
+export const MORNING_SCENE_LABEL = "Registro de mañana";
+
+/** La mañana exige un relevo enviado: sin él no hay noche que resumir y la pantalla sigue en el cierre. */
+export function isMorning(state: Pick<PublicStateDTO, "scene" | "handoff" | "closing">): boolean {
+  return state.scene.label === MORNING_SCENE_LABEL && state.handoff !== null && state.closing === null;
+}
 
 export interface TakenIncident { readonly id: string; readonly by: string; readonly text: string }
 
-/** Lo que Rodrigo necesita saber a la mañana. Los demás conteos y el registro viven en el proyector. */
+/** Lo que Rodrigo necesita saber a la mañana. Lo que envió la sala lo cuenta el proyector con `reportCount`. */
 export interface Summary {
   /** Sin eventos en la ejecución vigente. */
   readonly empty: boolean;
@@ -12,7 +20,7 @@ export interface Summary {
   readonly taken: readonly TakenIncident[];
 }
 
-const SERVICE: Record<string, string> = {
+export const SERVICE: Readonly<Record<string, string>> = {
   facturacion: "Facturación", red_locales: "Red de locales", correo: "Correo", vpn: "VPN",
   impresora: "Impresora", cuentas: "Cuentas", otro: "Otro servicio",
 };
@@ -26,4 +34,9 @@ export function summarize(state: Pick<PublicStateDTO, "events" | "incidents" | "
       text: `${SERVICE[i.service] ?? i.service}: tomado por ${i.takenBy!.displayName}${i.takenAt ? ` a las ${hhmm(i.takenAt)}` : ""}`,
     }));
   return { empty: state.events.length === 0, outgoingNotices: state.outgoingNoticeCount, taken };
+}
+
+/** Reportes que envió la sala, contados del registro completo (`reports` solo trae los últimos 6). */
+export function reportCount(events: readonly Pick<PublicEventDTO, "kind">[]): number {
+  return events.filter(e => e.kind === "report_admitted").length;
 }

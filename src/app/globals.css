@@ -104,6 +104,13 @@
   --text-aux--line-height: 1.4;
   --text-action: var(--fs-action);
   --text-action--line-height: 1.3;
+  --animate-escena: escena 900ms ease-out both;
+}
+
+/* Cambio de escena en el proyector (noche → mañana): la sala nota el salto sin que el presentador lo diga. */
+@keyframes escena {
+  from { opacity: 0; transform: translateY(1.5rem); }
+  to { opacity: 1; transform: none; }
 }
 
 /* La barra de acción fija de SurfaceShell no debe tapar el elemento enfocado. */

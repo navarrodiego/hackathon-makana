@@ -61,7 +61,7 @@ export function createNotificationService(deps: DispatcherDeps): NotificationSer
 
   return {
     async dispatchPending(context) {
-      const due = await deps.uow.run<readonly NotificationIntent[]>(context, async tx => {
+      const due = await deps.uow.runReadFirst<readonly NotificationIntent[]>(context, async tx => {
         const events = await tx.events.list();
         const now = Date.parse(context.operationalNow);
         const lastFailure = (id: string) => events.filter(e => e.kind === "notification_failed" && e.entity.id === id).reduce((m, e) => Math.max(m, Date.parse(e.operationalAt)), 0);

@@ -18,7 +18,7 @@ export function persistenceDirectory(store: Persistence): AuthDirectory {
       executionId, executionVersion: execution.version, principal: { kind: "system" }, actorId: null, origin: "system",
       operationalNow: execution.createdAt, narrativeNow: execution.anchor.narrativeAt, correlationId: `correlation_${randomUUID()}` as CorrelationId,
     };
-    const result: ServiceResult<T> = await store.run(context, async tx => ({ ok: true, value: await work(tx) }));
+    const result: ServiceResult<T> = await store.runReadFirst(context, async tx => ({ ok: true, value: await work(tx) }));
     if (result.ok) return result.value;
     if (result.code === "EXECUTION_STALE") return null;
     throw new Error(result.code);
