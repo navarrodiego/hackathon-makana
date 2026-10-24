@@ -77,7 +77,7 @@ test('hora de apertura del canal: ancla común de la espera de /canal y del QR g
   const w = await world(BASE_FIXTURE);
   try {
     const scenes = await w.readTx(async tx => ({ ok: true, value: await tx.reference.scenes() }));
-    const channel = scenes.find(s => s.label === 'Canal')!, night = scenes.find(s => s.label === 'Registro de noche')!;
+    const channel = scenes.find(s => s.label === 'Canal')!, morning = scenes.find(s => s.label === 'Registro de mañana')!;
     const openedAt = at(BASE_FIXTURE.operationalAt, 5_000);
     const change = async (sceneId: string, channelOpen: boolean, now: number, key: string) => {
       const state = await w.read.publicState(); assert.ok(state.ok);
@@ -91,9 +91,9 @@ test('hora de apertura del canal: ancla común de la espera de /canal y del QR g
     const opened = await change(channel.id, true, 5_000, 'open');
     assert.equal(opened.channelOpenedAt, openedAt);
     // Cambiar de escena con el canal abierto no reinicia la espera.
-    const moved = await change(night.id, true, 20_000, 'move');
+    const moved = await change(morning.id, true, 20_000, 'move');
     assert.equal(moved.channelOpenedAt, openedAt);
-    const closed = await change(night.id, false, 25_000, 'close');
+    const closed = await change(morning.id, false, 25_000, 'close');
     assert.equal(closed.channelOpenedAt, null);
     const reopened = await change(channel.id, true, 40_000, 'reopen');
     assert.equal(reopened.channelOpenedAt, at(BASE_FIXTURE.operationalAt, 40_000));
