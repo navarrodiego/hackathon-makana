@@ -33,6 +33,7 @@ El eslogan **Entrega el turno. Recupera la noche.** es aprobado, no una garantí
 - **Tomar incidente** en web y ntfy. No usar la etiqueta anterior «Lo tomo».
 - **Para seguimiento** en el pendiente que la IA destaca; los demás se listan sin etiqueta. No usar «Transferir» como etiqueta visible: quien entra recibe todos los pendientes.
 - **Regenerar** para una nueva llamada IA; no simularla con una espera artificial.
+- **Editar nota** abre el campo de la nota en el cierre; la nota se lee antes como texto. Sin nota: «Sin nota. Es opcional.».
 
 - **Ingresar al cierre de turno** / **Ingresar a control** con el campo «Contraseña de operador»; **Cerrar sesión** para salir. Decir «contraseña de operador», no «credencial» ni «usuario».
 
@@ -44,6 +45,8 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 
 | Condición comprobada | Mensaje |
 |---|---|
+| Cierre antes de enviar (cabecera, también proyectada) | «Rodrigo deja 5 pendientes a quien entra.»; el número sale de los datos |
+| Relevo enviado (cabecera) | «Rodrigo envió el relevo.»; no afirma aceptación ni cobertura |
 | Enviado, aún sin aceptación | «Esperando aceptación de Paula» |
 | Derivado por rechazo/plazo | «Relevo enviado a Tomás; no necesitas reenviarlo» |
 | Aceptación anticipada | «Paula aceptó. Su cobertura comienza a las 22:10» |
@@ -66,7 +69,7 @@ Una explicación de error incluye qué falló, qué se conserva y cómo recupera
 
 ## IA
 
-«Borrador de IA · puedes enviarla tal cual, editarla o dejarla vacía». Nota opcional y editable, hasta 60 palabras según CONTRACTS. No añade causas, compromisos, responsables, horas ni resolución inexistentes. La nota no acepta el relevo ni degrada un incidente activo. No hacer aparecer como llamada en vivo una nota generada previamente en reset.
+«Borrador de IA · puedes enviarla tal cual, editarla o dejarla vacía», solo cuando existe un borrador guardado o regenerado; si la nota no se generó, lo explica el aviso. Nota opcional y editable, hasta 60 palabras según CONTRACTS. No añade causas, compromisos, responsables, horas ni resolución inexistentes. La nota no acepta el relevo ni degrada un incidente activo. No hacer aparecer como llamada en vivo una nota generada previamente en reset.
 
 La clasificación devuelve hechos/categorías para la política; instrucciones dentro del reporte no reescriben la cadena de responsabilidad. Mensajes de modo degradado muestran incertidumbre y revisión pendiente.
 

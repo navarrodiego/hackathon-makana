@@ -219,7 +219,8 @@ Implementados en `src/components/ui/` y `src/components/relevo/`; sin dependenci
 - Error (borde izquierdo salmón, `role="alert"`), aviso o desconexión (borde ámbar, `role="status"`), carga y vacío con texto. Registro y pendientes en filas abiertas con divisores `#5e8582`, sin tarjetas anidadas. El contador visual es `aria-hidden` y su texto accesible no cambia cada segundo.
 
 ### Superficies
-- `SurfaceShell`: columna de 42 rem para móvil con acción primaria fija abajo (solo si la altura útil supera 40 rem) y safe area; variante `data-surface="projector"` con escala 56 / 44 / 32 / 24 / 20 px.
+- `SurfaceShell`: columna de 42 rem para móvil con acción primaria fija abajo (solo si la altura útil supera 40 rem) y safe area; variante `data-surface="projector"` con escala 56 / 44 / 32 / 24 / 20 px. Variante `data-surface="adaptive"` (`/rodrigo`, decisión de Diego del 24-10-2026): móvil en el teléfono y, desde 80 rem de ancho, la escala del proyector con dos columnas (`ROOM_COLUMNS`). Los valores de sala viven una vez en `--room-*`.
+- Cierre `/rodrigo` proyectable: cabecera con quién entrega («Rodrigo deja N pendientes a quien entra.»), pendientes a la izquierda y nota a la derecha como texto de solo lectura. El campo, el contador y Regenerar quedan plegados bajo «Editar nota», que se abre solo si la nota no se generó o si su error bloquea el envío. Enviar relevo queda bajo la columna de la nota.
 
 ## Do's and Don'ts
 

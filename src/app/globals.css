@@ -40,15 +40,38 @@
   --touch: 3rem;
 }
 
-/* Proyector: misma gramática, escala de lectura a distancia. Se activa en el contenedor de la superficie. */
+/*
+ * Proyector: misma gramática, escala de lectura a distancia. Se activa en el contenedor de la superficie.
+ * `adaptive` (cierre de Rodrigo) toma la misma escala solo con ancho de sala; en el teléfono sigue la móvil.
+ */
+:root {
+  --room-title: 3.5rem;
+  --room-people: 2.75rem;
+  --room-section: 2rem;
+  --room-body: 1.5rem;
+  --room-aux: 1.25rem;
+  --room-action: 1.5rem;
+  --room-touch: 3.5rem;
+}
 [data-surface="projector"] {
-  --fs-title: 3.5rem;
-  --fs-people: 2.75rem;
-  --fs-section: 2rem;
-  --fs-body: 1.5rem;
-  --fs-aux: 1.25rem;
-  --fs-action: 1.5rem;
-  --touch: 3.5rem;
+  --fs-title: var(--room-title);
+  --fs-people: var(--room-people);
+  --fs-section: var(--room-section);
+  --fs-body: var(--room-body);
+  --fs-aux: var(--room-aux);
+  --fs-action: var(--room-action);
+  --touch: var(--room-touch);
+}
+@media (min-width: 80rem) {
+  [data-surface="adaptive"] {
+    --fs-title: var(--room-title);
+    --fs-people: var(--room-people);
+    --fs-section: var(--room-section);
+    --fs-body: var(--room-body);
+    --fs-aux: var(--room-aux);
+    --fs-action: var(--room-action);
+    --touch: var(--room-touch);
+  }
 }
 
 @theme inline {

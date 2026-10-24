@@ -10,7 +10,7 @@ export function ResumenNoche({ state, follow, outgoing }: { state: PublicStateDT
     <section aria-label="Resumen de la noche" className="space-y-6">
       <p className="text-people font-semibold">Avisos a Rodrigo: {s.outgoingNotices}</p>
       <div className="space-y-3 border-y border-line py-4">
-        <ContinuityLine outgoing={outgoing} incoming={follow.incoming} state={follow.state} startsAtLabel={follow.startsAtLabel} />
+        <ContinuityLine emphasis outgoing={outgoing} incoming={follow.incoming} state={follow.state} startsAtLabel={follow.startsAtLabel} />
         {follow.coverageNotice ? <p role="status" className="text-body">{follow.coverageNotice}</p> : null}
       </div>
       {s.taken.length > 0 ? (

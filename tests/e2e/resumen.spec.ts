@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { basicAs, loginAs } from "./support/acceso";
+import { campoNota } from "./support/nota";
 
 /**
  * Fases de /rodrigo (cierre, seguimiento y resumen de la noche) contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
@@ -113,7 +114,7 @@ test("tras reset la vista abierta se rehace sola, sin recargar", async ({ page, 
 test("tras reset con cambios sin enviar avisa y conserva el texto hasta recargar", async ({ page, request }) => {
   await resetExecution(request);
   await openCierre(page);
-  await page.getByLabel("Nota del relevo").fill("Borrador que no se envió.");
+  await (await campoNota(page)).fill("Borrador que no se envió.");
   await resetExecution(request);
   await expect(page.getByText("Esta vista quedó desactualizada")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByLabel("Nota del relevo")).toHaveValue("Borrador que no se envió.");
