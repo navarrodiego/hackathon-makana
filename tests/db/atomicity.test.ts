@@ -9,7 +9,7 @@ import { BASE_FIXTURE } from '../../src/lib/contracts/fixtures';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
 import type { CommandContext } from '../../src/lib/contracts/auth';
 import type { Execution, Incident, NotificationIntent, Report } from '../../src/lib/contracts/domain';
-import type { Instant, ReportSessionId } from '../../src/lib/contracts/core';
+import { LIMITS, type Instant, type ReportSessionId } from '../../src/lib/contracts/core';
 import type { PreparedExecution } from '../../src/lib/contracts/services';
 import type { IdempotencyRecord, SavedResponse, TransactionRepositories } from '../../src/lib/contracts/repositories';
 import type { ServiceResult } from '../../src/lib/contracts/http';
@@ -79,17 +79,18 @@ test('equivalencia, decisiones ordenadas, eventos, cuotas globales y reset', asy
         await checked(store, c, async r => { assert.deepEqual((await r.events.list()).map(e => e.sequence), [1]); assert.equal((await r.aggregates.notifications.list()).length, 1); return success(null); });
       } finally { await fixtures.dispose(p.executionId); }
     });
-    await t.test('51 ingresos de once sesiones respetan el máximo global 50', async () => {
+    await t.test('un ingreso sobre el máximo global, repartido en sesiones con cuota, queda rechazado', async () => {
+      const max = LIMITS.reportsPerExecution, total = max + 1, count = Math.ceil(total / LIMITS.reportsPerSession);
       const p = await fixtures.prepare(BASE_FIXTURE), c = ctx(p); const sessions: ReportSessionId[] = [];
       try {
-        await checked(store, c, async r => { for (let i = 0; i < 11; i++) { const id: ReportSessionId = `session_${randomUUID()}`; sessions.push(id); await r.credentials.saveSession({ id, credentialHash: randomUUID().replaceAll('-', '').repeat(2), expiresAt: '2026-10-24T15:00:00.000Z' }); } return success(null); });
+        await checked(store, c, async r => { for (let i = 0; i < count; i++) { const id: ReportSessionId = `session_${randomUUID()}`; sessions.push(id); await r.credentials.saveSession({ id, credentialHash: randomUUID().replaceAll('-', '').repeat(2), expiresAt: '2026-10-24T15:00:00.000Z' }); } return success(null); });
         const results = [];
         // Lotes de tres conexiones; cada petición compite en una TX real.
-        for (let i = 0; i < 51; i += 3)results.push(...await Promise.all(Array.from({ length: Math.min(3, 51 - i) }, (_, j) => store.run(c, async r => {
-          const session = sessions[(i + j) % 11]; const q = await r.reserveReportQuota(session); if (!q.ok) return q; await r.aggregates.reports.insert(makeReport(p, q.value.admissionSequence, session)); return success(null);
+        for (let i = 0; i < total; i += 3)results.push(...await Promise.all(Array.from({ length: Math.min(3, total - i) }, (_, j) => store.run(c, async r => {
+          const session = sessions[(i + j) % count]; const q = await r.reserveReportQuota(session); if (!q.ok) return q; await r.aggregates.reports.insert(makeReport(p, q.value.admissionSequence, session)); return success(null);
         }))));
-        assert.equal(results.filter(x => x.ok).length, 50); assert.equal(results.filter(x => !x.ok && x.code === 'QUOTA_EXCEEDED').length, 1);
-        await checked(store, c, async r => { assert.equal((await r.aggregates.reports.list()).length, 50); return success(null); });
+        assert.equal(results.filter(x => x.ok).length, max); assert.equal(results.filter(x => !x.ok && x.code === 'QUOTA_EXCEEDED').length, 1);
+        await checked(store, c, async r => { assert.equal((await r.aggregates.reports.list()).length, max); return success(null); });
       } finally { await fixtures.dispose(p.executionId); for (const s of sessions) await db.$executeRaw`DELETE FROM report_sessions WHERE id=${s}`; }
     });
     await t.test('reset cambia ejecución atómicamente; replay y escrituras antiguas quedan acotados', async () => {

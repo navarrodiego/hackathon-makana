@@ -4,7 +4,7 @@ import type { ExecutionId, Instant } from "@/lib/contracts/core";
 import type { ChangeScene, ResetExecution, ResetResultDTO, ServiceResult } from "@/lib/contracts/http";
 import type { PublicStateDTO } from "@/lib/contracts/public";
 import type { ExecutionReader, UnitOfWork } from "@/lib/contracts/repositories";
-import type { ExecutionService, HandoffNoteService, HandoffService, IncidentService, NotificationService, ReadService } from "@/lib/contracts/services";
+import type { ExecutionService, HandoffNoteService, HandoffService, IncidentService, MessageService, NotificationService, ReadService } from "@/lib/contracts/services";
 import { systemContext } from "@/lib/server/state";
 import { prepareNote, resetExecution } from "./reset";
 import { changeScene } from "./scene";
@@ -16,7 +16,14 @@ export interface ExecutionDeps {
   readonly notifications: NotificationService;
   readonly note: HandoffNoteService;
   readonly read: Pick<ReadService, "publicState">;
+  /** Si existe, cada consulta rescata reportes trabados sin clasificación (C14) antes de evaluar plazos. */
+  readonly reports?: Pick<MessageService, "rescueStalled">;
   readonly now: () => Instant;
+  /**
+   * Si existe, el despacho de avisos corre después de responder (en Next, `after`): un ntfy lento no retrasa la
+   * consulta de estado. Sin él, despacha antes de leer, como en las pruebas.
+   */
+  readonly deferDispatch?: (work: () => Promise<unknown>) => void;
 }
 
 /** El servicio de contrato más la preparación de nota que el reset deja para después de responder. */
@@ -40,13 +47,16 @@ export function createExecutionService(deps: ExecutionDeps): ExecutionRuntimeSer
     const internal = systemContext(execution, deps.now());
     // Cada paso es independiente: si uno falla, el estado igual se entrega y el plazo vencido se reintenta en la
     // próxima consulta. Un fallo de transporte queda como `failed`/pendiente, nunca como recibido.
+    const dispatch = () => deps.notifications.dispatchPending(internal);
     for (const step of [
+      ...(deps.reports ? [() => deps.reports!.rescueStalled(internal)] : []),
       () => deps.handoff.evaluateDeadlines(internal),
       () => deps.incidents.evaluateDeadlines(internal),
-      () => deps.notifications.dispatchPending(internal),
+      ...(deps.deferDispatch ? [] : [dispatch]),
     ]) {
       try { await step(); } catch { /* se informa en el estado; no se oculta con éxito falso */ }
     }
+    deps.deferDispatch?.(dispatch);
     return deps.read.publicState();
   }
   return {

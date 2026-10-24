@@ -12,16 +12,19 @@ import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
 import { announceChange, usePublicState } from "@/lib/client/state";
 import { buildRespondRequest, failureView, formatClock, reviewState, type FailureView, type RespondAction } from "./logic";
+import { fetchWithTimeout } from "@/lib/client/fetch-timeout";
 
 type Decision = "accepted" | "rejected" | null;
 
 const POLL_MS = 1500;
+/** Una red colgada termina como fallo de red: repetir la acción es seguro (clave determinista). */
+const RESPOND_TIMEOUT_MS = 15_000;
 
 
 async function respond(action: RespondAction, pkg: HandoffPackageDTO, token: string): Promise<{ ok: true; result: HandoffResultDTO } | { ok: false; failure: FailureView }> {
   const { url, init } = buildRespondRequest(action, pkg, token);
   try {
-    const response = await fetch(url, init);
+    const response = await fetchWithTimeout(url, { ...init, timeoutMs: RESPOND_TIMEOUT_MS });
     const body = await response.json().catch(() => null) as { ok?: boolean; data?: HandoffResultDTO; error?: { code?: string } } | null;
     if (response.ok && body?.ok && body.data) return { ok: true, result: body.data };
     return { ok: false, failure: failureView((body?.error?.code ?? "STORAGE_UNAVAILABLE") as Parameters<typeof failureView>[0]) };

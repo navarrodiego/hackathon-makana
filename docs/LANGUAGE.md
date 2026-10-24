@@ -61,6 +61,8 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 | Origen rechazado | Nombrar la dirección usada y la configurada (`APP_ORIGIN`); no presentarlo como problema de contraseña |
 | Falta `OPERATOR_SECRET` en el servidor | Decir que nadie puede ingresar hasta configurarla; nunca mostrar su valor |
 | Sin conexión o persistencia fallida | Decir qué se pudo comprobar; no declarar acción guardada ni atribuir causa no observada |
+| Canal sin respuesta del servidor (sondeo fallido o de más de 8 s) | Título «Sin conexión desde las HH:MM:SS»; cuerpo «Tus reportes pueden no estar al día. Lo que escribiste se conserva en este teléfono y la página vuelve a consultar sola.» No culpar a la red del teléfono |
+| Envío del canal sin respuesta | «No se pudo comprobar si el reporte quedó registrado» · «Tu texto se conserva. Revisa tu lista; si no aparece, vuelve a enviar: el reintento no duplica el reporte.» |
 
 Una explicación de error incluye qué falló, qué se conserva y cómo recuperarse cuando esos hechos se saben. Evitar «Intenta de nuevo» si reintentar puede duplicar una operación sin idempotencia comprobada.
 

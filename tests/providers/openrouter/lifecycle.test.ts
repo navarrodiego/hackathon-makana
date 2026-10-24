@@ -34,11 +34,11 @@ test("empty key fails closed before invoking transport", async () => {
   assert.deepEqual(await provider.classify(classifyRequest), { ok: false, fence: classifyRequest.fence, reason: "provider_unavailable" });
   assert.equal(calls, 0);
 });
-test("classification starts both branches together and times out at 2500ms even when fetch ignores abort", async () => {
+test("classification starts both branches together and times out at its configured deadline even when fetch ignores abort", async () => {
   const timing = manualTiming();
   const signals: AbortSignal[] = [];
   const releases: (() => void)[] = [];
-  const provider = createOpenRouterProvider({ apiKey: "test", timing, fetch: (url, init) => {
+  const provider = createOpenRouterProvider({ apiKey: "test", timing, classificationTimeoutMs: 2_500, fetch: (url, init) => {
     signals.push(init!.signal!);
     return new Promise(resolve => releases.push(() => resolve(Response.json(String(url).endsWith("/decisions") ? decisions() : chat(evidence)))));
   } });
@@ -55,7 +55,7 @@ test("classification starts both branches together and times out at 2500ms even 
 });
 test("body reading shares the classification deadline", async () => {
   const timing = manualTiming();
-  const provider = createOpenRouterProvider({ apiKey: "test", timing, fetch: async () => new Response(new ReadableStream({ start() {} })) });
+  const provider = createOpenRouterProvider({ apiKey: "test", timing, classificationTimeoutMs: 2_500, fetch: async () => new Response(new ReadableStream({ start() {} })) });
   const promise = provider.classify(classifyRequest);
   await Promise.resolve();
   timing.advance(2500);
@@ -126,4 +126,39 @@ test("body network failure remains unavailable instead of invalid JSON", async (
     start(controller) { controller.error(new TypeError("private network error")); },
   })) });
   assert.deepEqual(await provider.suggest(noteRequest), { ok: false, fence: noteRequest.fence, reason: "provider_unavailable" });
+});
+test("classification waits 6000ms by default", async () => {
+  const timing = manualTiming();
+  const signals: AbortSignal[] = [];
+  const provider = createOpenRouterProvider({ apiKey: "test", timing, fetch: (_url, init) => {
+    signals.push(init!.signal!);
+    return new Promise(() => {});
+  } });
+  const promise = provider.classify(classifyRequest);
+  timing.advance(5999);
+  assert.equal(signals[0].aborted, false);
+  timing.advance(1);
+  assert.deepEqual(await promise, { ok: false, fence: classifyRequest.fence, reason: "timeout" });
+});
+test("classification timeout reads CLASSIFICATION_TIMEOUT_MS and clamps it to 1000-10000ms", async () => {
+  const cases: [string | undefined, number][] = [["4000", 4000], ["200", 1000], ["60000", 10000], ["abc", 6000], [undefined, 6000]];
+  for (const [value, expected] of cases) {
+    const previous = process.env.CLASSIFICATION_TIMEOUT_MS;
+    if (value === undefined) delete process.env.CLASSIFICATION_TIMEOUT_MS; else process.env.CLASSIFICATION_TIMEOUT_MS = value;
+    try {
+      const timing = manualTiming();
+      const signals: AbortSignal[] = [];
+      const provider = createOpenRouterProvider({ apiKey: "test", timing, fetch: (_url, init) => {
+        signals.push(init!.signal!);
+        return new Promise(() => {});
+      } });
+      const promise = provider.classify(classifyRequest);
+      timing.advance(expected - 1);
+      assert.equal(signals[0].aborted, false, `${value} aborted early`);
+      timing.advance(1);
+      assert.equal((await promise).ok, false, `${value}`);
+    } finally {
+      if (previous === undefined) delete process.env.CLASSIFICATION_TIMEOUT_MS; else process.env.CLASSIFICATION_TIMEOUT_MS = previous;
+    }
+  }
 });

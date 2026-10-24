@@ -37,6 +37,11 @@ export interface IncidentService {
 }
 export interface MessageService {
   submit(context: CommandContext, input: SubmitReport): Promise<ServiceResult<ReportReceiptDTO>>;
+  /**
+   * Reportes `processing` sin clasificación guardada tras `LIMITS.classificationStallMs` reales pasan a degradado
+   * (`timeout`, revisión de la guardia) y se drena la cola en orden. Devuelve cuántos rescató.
+   */
+  rescueStalled(context: CommandContext): Promise<ServiceResult<number>>;
 }
 export type NotificationDeliveryResult =
   | { readonly kind: "provider_accepted"; readonly acceptedAt: Instant; readonly providerMessageId: string | null }

@@ -19,6 +19,7 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:check": "tsx scripts/check-db.ts",
+    "load:canal": "tsx scripts/load/canal.ts",
     "db:migrate:local": "tsx scripts/db/migrate.ts",
     "db:seed:local": "node --conditions=react-server --import tsx scripts/db/seed.ts",
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
