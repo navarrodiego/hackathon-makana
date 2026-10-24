@@ -22,10 +22,21 @@ function isCritical(output: ClassificationOutput): boolean {
   }
 }
 
-/** Orden fijo: modo degradado, datos dudosos, alcance generalizado, umbrales críticos, cola. Solo lee la clasificación. */
+/** Ajeno a TI solo con alta probabilidad y sin servicio ni manipulación: ante la duda, la guardia revisa. */
+function outOfScope(output: ClassificationOutput): boolean {
+  return output.topic === "no_ti" && output.service === "otro" && !output.manipulation
+    && Number.isFinite(output.noTiProbability) && output.noTiProbability >= POLICY_THRESHOLDS.outOfScope && output.noTiProbability <= 1;
+}
+
+/** Orden fijo: modo degradado, fuera de TI, datos dudosos, alcance generalizado, umbrales críticos, cola. Solo lee la clasificación. */
 export function decide(classification: Classification): PolicyDecision {
-  if (classification.mode === "degraded") return { route: "review", reason: DEGRADED_REASONS[classification.reason] };
   const output = classification.output;
+  // «hola» no basta para TI, pero el modelo sí respondió: puede quedar fuera de TI. Las fallas del proveedor no.
+  const answered = classification.mode === "model" || classification.reason === "insufficient_information";
+  if (output && answered && outOfScope(output)) return { route: "out_of_scope", reason: "No es un reporte de TI." };
+  if (classification.mode === "degraded" || !output) {
+    return { route: "review", reason: DEGRADED_REASONS[classification.mode === "degraded" ? classification.reason : "invalid_output"] };
+  }
   const { pc } = output;
   if (!Number.isFinite(pc) || pc < 0 || pc > 1 || !output.sufficientInformation) {
     return { route: "review", reason: DEGRADED_REASONS.insufficient_information };

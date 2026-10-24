@@ -54,6 +54,8 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 
 Canal: apodo inventado, 280 caracteres, cinco envíos por sesión/apodo y límite global de 150 reportes por ejecución. No solicitar datos personales reales. Chips/reportes guionados: impresora administrativa, VPN lenta, orden de despertar a Rodrigo y caída general de facturación. Una orden no cambia la elegibilidad.
 
+Qué ve el público en su recibo: la clasificación de la IA con etiquetas fijas («Clasificación IA: red de locales, no funciona, un local o equipo.»). Un mensaje que claramente no es de TI («hola», «tengo hambre», «me caí fuerte») dice «No parece un reporte de TI. No se creó un incidente ni se envió un aviso»: no llega a Paula ni al proyector como incidente. Si describe una emergencia física, el recibo orienta a 131/132/133 y a la jefatura. Pedidos vagos («ayuda tengo una urgencia») siguen yendo a revisión de la guardia, con aviso. Mensajes cortos que se reconocen bien: «se cayó el internet», «no pasa la tarjeta», «la caja no tira boletas».
+
 Si a los 20 s de abrir canal hay menos de tres participantes, inyectar reportes con I/P y origen identificado. No presentar entradas del control como aportes espontáneos del público. Deduplicar el mismo hecho para evitar una ráfaga de avisos.
 
 | Atajo aprobado | Función |

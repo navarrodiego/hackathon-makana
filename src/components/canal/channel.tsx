@@ -182,6 +182,8 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
               return (
                 <li key={report.reportId} className="border-l-4 border-line pl-4">
                   <p className="text-body font-semibold">Reporte {index + 1}: {lines.status}</p>
+                  {lines.emergency ? <p className="mt-1 text-body font-semibold">{lines.emergency}</p> : null}
+                  {lines.classified ? <p className="mt-1 text-aux text-muted-foreground">{lines.classified}</p> : null}
                   {lines.notice ? <p className="mt-1 text-aux text-muted-foreground">{lines.notice}</p> : null}
                   {lines.degraded ? <p className="mt-1 text-aux text-muted-foreground">{lines.degraded}</p> : null}
                 </li>

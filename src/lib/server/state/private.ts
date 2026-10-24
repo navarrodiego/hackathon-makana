@@ -81,8 +81,10 @@ export function receipt(report: Report, execution: Execution, tx: { incidents: r
   const incident = report.incidentId ? tx.incidents.find(i => i.id === report.incidentId) ?? null : null;
   const intents = incident ? tx.notifications.filter(n => n.subject.kind === "incident" && n.subject.id === incident.id) : [];
   const latest = [...intents].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+  const route = report.decision?.route;
   const status: ReportReceiptDTO["status"] = report.status === "processing" ? "processing"
-    : incident ? "incident" : report.decision?.route === "review" ? "review" : "queued";
+    : incident ? "incident" : route === "review" ? "review" : route === "out_of_scope" ? "out_of_scope" : "queued";
+  const output = report.classification?.output ?? null;
   return {
     audience: "reporter", executionId: execution.executionId, reportId: report.id, status,
     classificationMode: report.classification?.mode ?? "pending", incidentId: incident?.id ?? null,
@@ -90,6 +92,10 @@ export function receipt(report: Report, execution: Execution, tx: { incidents: r
     notificationStatus: !latest || latest.status === "discarded" ? "none" : latest.status,
     // La próxima atención de un diferible la define la política; sin dato guardado no se inventa una hora.
     nextAttentionAt: report.decision?.route === "queue" ? report.decision.nextAttentionAt : null,
+    classified: report.classification?.mode === "model" && output && status !== "out_of_scope"
+      ? { service: output.service, condition: output.condition, scope: output.scope } : null,
+    // Clasificaciones guardadas antes de v2 no traen el campo.
+    physicalEmergency: output?.physicalEmergency === true,
   };
 }
 

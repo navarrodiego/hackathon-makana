@@ -8,7 +8,8 @@ export interface Case {
 }
 const o = (p: Partial<ClassificationOutput>): Provider => ({ ok: true, output: {
   service: "otro", condition: "caida", scope: "persona", pc: 0.1, manipulation: false, blocksBilling: false,
-  evidence: { location: null, resource: null, problem: "falla" }, sufficientInformation: true, ...p } });
+  evidence: { location: null, resource: null, problem: "falla" }, sufficientInformation: true,
+  topic: "ti", noTiProbability: 0.02, physicalEmergency: false, ...p } });
 const ev = (location: string | null, resource: string | null, problem: string) => ({ location, resource, problem });
 
 export const CASES: readonly Case[] = [
