@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { isSessionProblem, loginErrorMessage } from "../../src/components/acceso/messages";
 import { test } from "node:test";
 import {
-  buildSendBody, clockLabel, countWords, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
+  buildSendBody, clockLabel, countWords, closingLead, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
 } from "../../src/components/rodrigo/model";
 
 const instant = (s: string) => s as never;
@@ -113,4 +113,9 @@ test("lo que dejaste: singular/plural y nota solo si existe", () => {
   assert.equal(leftSummary(5, "Revisar #470"), "Lo que dejaste: 5 pendientes y una nota");
   assert.equal(leftSummary(1, ""), "Lo que dejaste: 1 pendiente");
   assert.equal(leftSummary(2, "   "), "Lo que dejaste: 2 pendientes");
+});
+
+test("cabecera del cierre: quién entrega y cuántos pendientes deja, con singular/plural", () => {
+  assert.equal(closingLead(5), "Rodrigo deja 5 pendientes a quien entra.");
+  assert.equal(closingLead(1), "Rodrigo deja 1 pendiente a quien entra.");
 });

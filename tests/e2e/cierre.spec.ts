@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { basicAs, loginAs } from "./support/acceso";
+import { campoNota } from "./support/nota";
 
 /**
  * Cierre de Rodrigo contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
@@ -137,7 +138,7 @@ test("muestra los cinco pendientes, destaca solo el de seguimiento y no afirma c
 test("pasar de 60 palabras bloquea el envío con un error vinculado", async ({ page, request }) => {
   await freshReady(request);
   await openCierre(page);
-  const note = page.getByLabel("Nota del relevo");
+  const note = await campoNota(page);
   await note.fill(Array.from({ length: 61 }, (_, i) => `palabra${i}`).join(" "));
   await expect(page.getByText(/La nota tiene 61 palabras/)).toBeVisible();
   await expect(note).toHaveAttribute("aria-invalid", "true");
@@ -150,7 +151,7 @@ test("Regenerar sin proveedor muestra el fallo y conserva el borrador editado", 
   test.skip(Boolean(env.OPENROUTER_API_KEY), "El servidor tiene clave del proveedor: este caso exige que falle");
   await freshReady(request);
   await openCierre(page);
-  const note = page.getByLabel("Nota del relevo");
+  const note = await campoNota(page);
   await note.fill("Mi nota editada a mano.");
   await page.getByRole("button", { name: "Regenerar" }).click();
   await expect(page.getByRole("alert").getByText(/No se pudo generar la nota/)).toBeVisible();
@@ -162,14 +163,14 @@ test("sin nota guardada avisa que no se generó y deja escribirla", async ({ pag
   await resetExecution(request);
   await openCierre(page);
   await expect(page.getByText("La nota no se generó")).toBeVisible();
-  await page.getByLabel("Nota del relevo").fill("Nota escrita por Rodrigo.");
+  await (await campoNota(page)).fill("Nota escrita por Rodrigo.");
   await expect(sendButton(page)).toBeEnabled();
 });
 
 test("la nota es opcional: se puede enviar el relevo con la nota vacía", async ({ page, request }) => {
   await freshReady(request);
   await openCierre(page);
-  await page.getByLabel("Nota del relevo").fill("");
+  await (await campoNota(page)).fill("");
   await sendButton(page).click();
   await expect(page.getByText(/Esperando aceptación de/)).toBeVisible();
   expect((await state(request)).handoff.status).toBe("awaiting_candidate");

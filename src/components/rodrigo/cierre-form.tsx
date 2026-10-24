@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { RodrigoViewDTO } from "@/lib/contracts/private";
 import type {
@@ -8,7 +8,7 @@ import type {
 } from "@/lib/contracts/client";
 import { PendingList } from "@/components/relevo/pending-row";
 import { ContinuityLine } from "@/components/relevo/continuity-line";
-import { SurfaceShell } from "@/components/relevo/surface-shell";
+import { ROOM_COLUMNS, SurfaceShell } from "@/components/relevo/surface-shell";
 import { Button } from "@/components/ui/button";
 import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
@@ -16,9 +16,10 @@ import { OperatorLogin } from "@/components/acceso/operator-login";
 import { isSessionProblem } from "@/components/acceso/messages";
 import { SignOutButton } from "@/components/acceso/sign-out-button";
 import { announceChange, usePublicState } from "@/lib/client/state";
+import { cn } from "@/lib/utils";
 import { postJson } from "./api";
 import {
-  buildSendBody, clockLabel, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
+  buildSendBody, clockLabel, closingLead, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
 } from "./model";
 import { NotaEditor } from "./nota-editor";
 import { Pendiente, type TicketDraft } from "./pendiente-card";
@@ -47,10 +48,26 @@ function initialTickets(view: RodrigoViewDTO): TicketDraft[] {
   });
 }
 
+/** Plegable con flecha dibujada; `open`/`onToggle` opcionales para abrirlo desde fuera (errores de la nota). */
+function Plegable({ summary, open, onToggle, children }: {
+  summary: ReactNode; open?: boolean; onToggle?: (open: boolean) => void; children: ReactNode;
+}) {
+  return (
+    <details className="group" open={open} onToggle={onToggle ? event => onToggle(event.currentTarget.open) : undefined}>
+      <summary className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg text-body font-semibold marker:content-none [&::-webkit-details-marker]:hidden">
+        <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[0.75em] shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none">
+          <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+        {summary}
+      </summary>
+      <div className="mt-4">{children}</div>
+    </details>
+  );
+}
+
+/** Origen del borrador guardado; solo se muestra cuando existe (`aiDraft`). */
 function originText(view: RodrigoViewDTO): string {
-  if (view.note.status === "ready" && view.note.saved) return `Guardada a las ${clockLabel(view.note.saved.generatedAt)}, al preparar el turno.`;
-  if (view.note.status === "pending") return "Se está preparando.";
-  return "No se generó. Escríbela o usa Regenerar.";
+  return view.note.saved ? `Guardada a las ${clockLabel(view.note.saved.generatedAt)}, al preparar el turno.` : "";
 }
 
 export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffId: HandoffId }) {
@@ -58,6 +75,8 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const [tickets, setTickets] = useState<TicketDraft[]>(() => initialTickets(view));
   const [note, setNote] = useState(view.note.saved?.output.note ?? "");
   const [origin, setOrigin] = useState(() => originText(view));
+  // Solo hay borrador de IA si se guardó al preparar el turno o se regeneró aquí; si no, los avisos ya lo explican.
+  const [aiDraft, setAiDraft] = useState(view.note.status === "ready" && view.note.saved !== null);
   const [version, setVersion] = useState<number>(view.draftVersion);
   const [localHandoff, setLocalHandoff] = useState<HandoffSummaryDTO | null>(view.handoff);
   const [localCoverage, setLocalCoverage] = useState<CoverageDTO | null>(view.coverage);
@@ -66,6 +85,8 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const [showErrors, setShowErrors] = useState(false);
   const [staleByServer, setStaleByServer] = useState(false);
   const [dirty, setDirty] = useState(false);
+  // La edición de la nota se abre sola si la nota no se generó o si su error bloquea el envío.
+  const [editing, setEditing] = useState(view.note.status === "failed");
   const [firstCandidate, setFirstCandidate] = useState<string | null>(view.handoff?.candidate?.id ?? null);
   const attempt = useRef<{ payload: string; key: string } | null>(null);
 
@@ -108,6 +129,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
     if (!saved) { setProblem({ text: errorMessage("PROVIDER_FAILED", "suggest"), retryable: true }); return; }
     setNote(saved.output.note);
     setOrigin(`Regenerada en esta sesión a las ${clockLabel(saved.generatedAt)}.`);
+    setAiDraft(true);
     setTickets(list => list.map(t => {
       const s = saved.output.suggestions.find(x => x.ticketId === (t.id as TicketId));
       return s ? { ...t, disposition: s.disposition as TicketDisposition, reason: s.reason } : t;
@@ -116,7 +138,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   }
 
   async function send() {
-    if (noteIssue(note)) { setShowErrors(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
+    if (noteIssue(note)) { setShowErrors(true); setEditing(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
     setBusy("sending"); setProblem(null);
     const payload = sendPayloadKey({ version, note, tickets });
     if (attempt.current?.payload !== payload) attempt.current = { payload, key: crypto.randomUUID() };
@@ -138,7 +160,8 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
     void announceChange();
   }
 
-  const outgoing = { id: view.actorId, displayName: "Tú" };
+  // Nombre y no «Tú»: esta vista también se proyecta a la sala.
+  const outgoing = { id: view.actorId, displayName: "Rodrigo" };
   const follow = sent ? followUp({
     handoff, coverage, outgoing, firstCandidateId: firstCandidate, events: snapshot?.events ?? [],
   }) : null;
@@ -153,21 +176,33 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   );
 
   const pendientes = (
-    <>
-      <section aria-labelledby="pendientes" className="space-y-3">
-        <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
-        <p className="text-aux text-muted-foreground">Quien entra recibe todos. La IA destaca los que necesitan seguimiento; eso no los vuelve urgentes.</p>
-        <PendingList label="Pendientes del turno">
-          {tickets.map(t => <Pendiente key={t.id} ticket={t} />)}
-        </PendingList>
-      </section>
-      <NotaEditor note={note} origin={origin} disabled={locked} regenerating={busy === "regenerating"} showErrors={showErrors}
-        onChange={value => { setNote(value); setDirty(true); }} onRegenerate={regenerate} />
-    </>
+    <section aria-labelledby="pendientes" className="space-y-3">
+      <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
+      <p className="text-aux text-muted-foreground">La IA destaca los que necesitan seguimiento; eso no los vuelve urgentes.</p>
+      <PendingList label="Pendientes del turno">
+        {tickets.map(t => <Pendiente key={t.id} ticket={t} />)}
+      </PendingList>
+    </section>
+  );
+
+  const nota = (
+    <section aria-labelledby="nota" className="space-y-4">
+      <h2 id="nota" className="text-section font-semibold">Nota para quien entra (opcional)</h2>
+      {/* Mientras se edita, el campo ya muestra la nota: la cita sobraría. */}
+      {editing ? null : note.trim()
+        ? <blockquote className="max-w-[60ch] text-body text-pretty break-words whitespace-pre-line">{note}</blockquote>
+        : <p className="text-body text-muted-foreground">Sin nota. Es opcional.</p>}
+      {aiDraft ? <p className="text-aux text-muted-foreground">Borrador de IA · puedes enviarla tal cual, editarla o dejarla vacía. {origin}</p> : null}
+      <Plegable summary="Editar nota" open={editing} onToggle={setEditing}>
+        <NotaEditor note={note} disabled={locked} regenerating={busy === "regenerating"} showErrors={showErrors}
+          onChange={value => { setNote(value); setDirty(true); }} onRegenerate={regenerate} />
+      </Plegable>
+    </section>
   );
 
   return (
-    <SurfaceShell title={phase === "morning" ? "Resumen de la noche" : "Cierre de turno"} action={action}>
+    <SurfaceShell surface="adaptive" title={phase === "morning" ? "Resumen de la noche" : "Cierre de turno"}
+      lead={phase === "closing" ? closingLead(tickets.length) : phase === "following" ? "Rodrigo envió el relevo." : undefined} action={action}>
       {stale ? (
         <DegradedNotice title="Esta vista quedó desactualizada">
           <p>El relevo cambió o se reinició la demostración. Tus cambios locales no se enviaron.</p>
@@ -187,15 +222,15 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
       {phase === "following" && follow ? (
         <section aria-labelledby="estado" className="space-y-4">
           <h2 id="estado" className="text-section font-semibold">Estado del relevo</h2>
-          <ContinuityLine outgoing={outgoing} incoming={follow.incoming} state={follow.state} startsAtLabel={follow.startsAtLabel} />
+          <ContinuityLine emphasis outgoing={outgoing} incoming={follow.incoming} state={follow.state} startsAtLabel={follow.startsAtLabel} />
           {follow.derivedNotice ? <p role="status" className="text-body">{follow.derivedNotice}</p> : null}
           {follow.coverageNotice ? <p role="status" className="text-body">{follow.coverageNotice}</p> : null}
-          <dl className="grid gap-x-6 gap-y-2 text-body sm:grid-cols-[auto_1fr]">
+          <dl className="grid items-baseline gap-x-6 gap-y-2 text-body sm:grid-cols-[auto_1fr]">
             <dt className="text-muted-foreground">Tu turno termina</dt>
-            <dd>{coverage ? clockLabel(coverage.outgoingEndsAt) : "Sin dato"}</dd>
+            <dd className="text-people font-semibold">{coverage ? clockLabel(coverage.outgoingEndsAt) : "Sin dato"}</dd>
             {handoff?.status === "awaiting_candidate" && handoff.deadlineAt && handoff.candidate ? (
               <><dt className="text-muted-foreground">Plazo real de {handoff.candidate.displayName}</dt>
-                <dd><Countdown deadlineAt={handoff.deadlineAt} label={`Plazo de aceptación de ${handoff.candidate.displayName} hasta las ${clockLabel(handoff.deadlineAt)}`} /></dd></>
+                <dd className="text-people font-semibold"><Countdown deadlineAt={handoff.deadlineAt} label={`Plazo de aceptación de ${handoff.candidate.displayName} hasta las ${clockLabel(handoff.deadlineAt)}`} /></dd></>
             ) : null}
           </dl>
         </section>
@@ -216,16 +251,14 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
       ) : null}
 
       {sent ? (
-        <details className="group border-t border-line pt-4">
-          <summary className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg text-body font-semibold marker:content-none [&::-webkit-details-marker]:hidden">
-            <svg aria-hidden="true" viewBox="0 0 12 12" className="size-3 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none">
-              <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="2" />
-            </svg>
-            {leftSummary(tickets.length, note)}
-          </summary>
-          <div className="mt-4 flex flex-col gap-8">{pendientes}</div>
-        </details>
-      ) : pendientes}
+        <div className="border-t border-line pt-4">
+          <Plegable summary={leftSummary(tickets.length, note)}>
+            <div className="flex flex-col gap-8">{pendientes}{nota}</div>
+          </Plegable>
+        </div>
+      ) : (
+        <div className={cn("flex flex-col gap-10", ROOM_COLUMNS)}>{pendientes}{nota}</div>
+      )}
       <SignOutButton />
     </SurfaceShell>
   );

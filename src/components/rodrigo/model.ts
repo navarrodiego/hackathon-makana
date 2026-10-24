@@ -127,3 +127,8 @@ export function leftSummary(tickets: number, note: string): string {
   const items = `${tickets} ${tickets === 1 ? "pendiente" : "pendientes"}`;
   return `Lo que dejaste: ${items}${note.trim() ? " y una nota" : ""}`;
 }
+
+/** Cabecera del cierre, legible desde la sala: quién entrega el turno y cuántos pendientes deja. */
+export function closingLead(tickets: number): string {
+  return `Rodrigo deja ${tickets} ${tickets === 1 ? "pendiente" : "pendientes"} a quien entra.`;
+}

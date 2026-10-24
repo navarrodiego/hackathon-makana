@@ -3,6 +3,7 @@ import {
   HAS_AI, ORIGIN, PRINTER, PRINTER_LABEL, loginAs, eventsOf, expectNoSecrets, handoffNotice,
   incidentNotice, pressNtfyAction, requireBackend, rows, state, waitNtfy, waitState, words,
 } from "./support/flow";
+import { campoNota } from "../support/nota";
 
 /**
  * E01 · Recorrido principal de DEMO con todas las superficies a la vez: reset desde control, cierre de Rodrigo,
@@ -52,7 +53,7 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
     expect(words(generated)).toBeGreaterThan(0);
     expect(words(generated), "nota de hasta 60 palabras").toBeLessThanOrEqual(60);
   }
-  await nota.fill("Hay cinco pendientes. #470: el respaldo falló y reintenta a las 02:00; queda para seguimiento. El resto puede esperar.");
+  await (await campoNota(rod)).fill("Hay cinco pendientes. #470: el respaldo falló y reintenta a las 02:00; queda para seguimiento. El resto puede esperar.");
   await rod.getByRole("button", { name: "Enviar relevo" }).click();
   await expect(rod.getByText(/Esperando aceptación de Paula/)).toBeVisible();
   s = await state(request);
