@@ -15,7 +15,7 @@ import type { NoteOutput } from "../../src/lib/contracts/classification";
 // La preparación remapea los IDs de cada ejecución: la salida debe usar los tickets recibidos, como el proveedor real.
 const echoTickets = (req: Parameters<Parameters<typeof provider>[0]>[0]) =>
   okResult(req, { ...OUTPUT, suggestions: req.input.tickets.map((t, i): NoteOutput["suggestions"][number] => ({ ticketId: t.id, disposition: i === 2 ? "transferir" : "puede_esperar", reason: "Según la política del ejemplo." })) });
-config({ path: ".env.t03", quiet: true });
+config({ path: ".env.db", quiet: true });
 
 // Persistencia real: versión, idempotencia y reset. Requiere la base local de pruebas (SETUP §T03).
 test("sugerencia de nota sobre PostgreSQL real", async t => {

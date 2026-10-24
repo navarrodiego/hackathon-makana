@@ -5,7 +5,7 @@ import { localClient } from '../../scripts/db/client';
 import { fixturePreparer } from '../helpers/db/fixtures';
 import { BASE_FIXTURE } from '../../src/lib/contracts/fixtures';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 test('limpieza y credenciales quedan limitadas a su base y al preparador dueño', async () => {
   const url = process.env.RELEVO_BACKEND_TEST_URL!, secondUrl = process.env.RELEVO_BACKEND_TEST_ISOLATION_URL!;

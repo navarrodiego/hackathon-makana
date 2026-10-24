@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { config } from 'dotenv';
 import { localClient } from '../../scripts/db/client';
 import { localDestination, verifyLocalConnection } from '../../scripts/db/destination';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 test('migración materializa tablas y unicidad de ejecución activa', async () => {
   const url = localDestination(process.env.RELEVO_BACKEND_TEST_URL, true).url;

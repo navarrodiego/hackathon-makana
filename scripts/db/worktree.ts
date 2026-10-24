@@ -8,7 +8,7 @@ import { userInfo } from 'node:os';
 import { localAdminDestination, localDestination } from './destination';
 import { worktreeDatabases } from './worktree-names';
 
-// Prepara, de forma idempotente, las tres bases locales de ESTE worktree y deja `.env.t03` y `.env`
+// Prepara, de forma idempotente, las tres bases locales de ESTE worktree y deja `.env.db` y `.env`
 // (ambos ignorados por Git, 0600). Solo toca nombres derivados de la ruta del worktree; nunca
 // relevo_backend*, relevo_integracion ni destinos remotos. `--drop` retira solo esos recursos.
 const KEYS = ['RELEVO_BACKEND_URL', 'RELEVO_BACKEND_DIRECT_URL', 'RELEVO_BACKEND_TEST_URL', 'RELEVO_BACKEND_TEST_DIRECT_URL', 'RELEVO_BACKEND_TEST_ISOLATION_URL', 'RELEVO_BACKEND_TEST_ISOLATION_DIRECT_URL'];
@@ -39,8 +39,8 @@ async function main() {
       log(`Recursos de ${names.dev} retirados.`);
       return;
     }
-    const complete = existsSync('.env.t03') && KEYS.every(k => new RegExp(`^${k}=.+`, 'm').test(readFileSync('.env.t03', 'utf8')));
-    if (complete && !process.argv.includes('--force')) { log('Este worktree ya tiene .env.t03; no se cambia nada (usa --force para rotar credenciales).'); return; }
+    const complete = existsSync('.env.db') && KEYS.every(k => new RegExp(`^${k}=.+`, 'm').test(readFileSync('.env.db', 'utf8')));
+    if (complete && !process.argv.includes('--force')) { log('Este worktree ya tiene .env.db; no se cambia nada (usa --force para rotar credenciales).'); return; }
     const records: string[] = [];
     for (const db of list) {
       const urls: Record<string, string> = {};
@@ -73,10 +73,10 @@ async function main() {
       if (db === names.dev) records.push(`DEV_DATABASE_URL=${urls.app}`, `DEV_DIRECT_URL=${urls.migrate}`);
     }
     const dev = { app: records.find(r => r.startsWith('DEV_DATABASE_URL='))!.slice(17), direct: records.find(r => r.startsWith('DEV_DIRECT_URL='))!.slice(15) };
-    await writeFile('.env.t03', records.filter(r => !r.startsWith('DEV_')).join('\n') + '\n', { mode: 0o600 });
+    await writeFile('.env.db', records.filter(r => !r.startsWith('DEV_')).join('\n') + '\n', { mode: 0o600 });
     if (!existsSync('.env')) await writeFile('.env', `DATABASE_URL=${dev.app}\nDIRECT_URL=${dev.direct}\n`, { mode: 0o600, flag: 'wx' });
-    else log('.env ya existe: no se modificó; usa RELEVO_BACKEND_URL de .env.t03 si necesitas la conexión de desarrollo.');
-    log(`Worktree preparado: ${list.join(', ')} (migradas, sin seed). Credenciales en .env.t03 y .env.`);
+    else log('.env ya existe: no se modificó; usa RELEVO_BACKEND_URL de .env.db si necesitas la conexión de desarrollo.');
+    log(`Worktree preparado: ${list.join(', ')} (migradas, sin seed). Credenciales en .env.db y .env.`);
   } finally { await admin.end(); }
 }
 main().catch(() => {

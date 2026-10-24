@@ -13,7 +13,7 @@ import type { Instant, ReportSessionId } from '../../src/lib/contracts/core';
 import type { PreparedExecution } from '../../src/lib/contracts/services';
 import type { IdempotencyRecord, SavedResponse, TransactionRepositories } from '../../src/lib/contracts/repositories';
 import type { ServiceResult } from '../../src/lib/contracts/http';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 const success = <T>(value: T) => ({ ok: true as const, value });
 const ctx = (p: PreparedExecution): CommandContext => ({ executionId: p.executionId, executionVersion: 1, principal: { kind: 'system' }, actorId: null, origin: 'system', operationalNow: BASE_FIXTURE.operationalAt, narrativeNow: BASE_FIXTURE.narrativeAt, correlationId: 'correlation_atomic' });
 async function checked<T>(p: PostgresPersistence, c: CommandContext, fn: (r: TransactionRepositories) => Promise<ServiceResult<T>>): Promise<T> { const result = await p.run(c, fn); assert.ok(result.ok, JSON.stringify(result)); return result.value; }

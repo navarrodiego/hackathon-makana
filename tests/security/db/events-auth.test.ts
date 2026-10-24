@@ -8,7 +8,7 @@ import type { CommandContext } from '../../../src/lib/contracts/auth';
 import { PostgresPersistence } from '../../../src/lib/server/repositories';
 import { recordEvent, registerNotificationIntent } from '../../../src/lib/server/events';
 import { createPersistedAuthorization, persistenceDirectory } from '../../../src/lib/server/auth/persistence';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 const APP = 'https://relevo.example';
 const NOW = ACCEPTED_FIXTURE.operationalAt;
