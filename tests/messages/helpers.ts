@@ -13,7 +13,7 @@ import { createIncidentService } from '../../src/lib/server/incidents';
 import { createClassificationService } from '../../src/lib/server/classification';
 import { policyService } from '../../src/lib/server/policy';
 import { createMessageService } from '../../src/lib/server/messages';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 export const OPEN_FIXTURE: ExecutionFixture = { ...ACCEPTED_FIXTURE, name: 'channel_open', channelOpen: true, narrativeAt: '2026-10-24T01:10:01.000Z' };
 export const at = (base: Instant, ms: number): Instant => new Date(Date.parse(base) + ms).toISOString() as Instant;

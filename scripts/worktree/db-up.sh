@@ -68,12 +68,12 @@ mv "$tmp" .env
 trap - EXIT
 # Mismo archivo que escribe `pnpm db:worktree` (T06): así scripts/worktree-setup.sh lo ve
 # completo y no rota estas credenciales.
-if [ ! -f .env.t03 ]; then
+if [ ! -f .env.db ]; then
   {
     echo "RELEVO_BACKEND_URL=${app_url[0]}"; echo "RELEVO_BACKEND_DIRECT_URL=${migrate_url[0]}"
     echo "RELEVO_BACKEND_TEST_URL=${app_url[1]}"; echo "RELEVO_BACKEND_TEST_DIRECT_URL=${migrate_url[1]}"
     echo "RELEVO_BACKEND_TEST_ISOLATION_URL=${app_url[2]}"; echo "RELEVO_BACKEND_TEST_ISOLATION_DIRECT_URL=${migrate_url[2]}"
-  } > .env.t03
+  } > .env.db
 fi
 echo "worktree-db: bases $base, ${base}_test y ${base}_test_isolation preparadas; .env creado (0600)."
 echo "worktree-db: siguiente paso: pnpm install --frozen-lockfile && pnpm db:worktree:setup"

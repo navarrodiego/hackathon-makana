@@ -8,7 +8,7 @@ import type { Principal } from '../../src/lib/contracts/auth';
 import type { PreparedExecution } from '../../src/lib/contracts/services';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
 import { createHandoffService } from '../../src/lib/server/handoff';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 export const at = (base: Instant, ms: number): Instant => new Date(Date.parse(base) + ms).toISOString() as Instant;
 

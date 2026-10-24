@@ -11,7 +11,7 @@ import type { PreparedExecution } from '../../src/lib/contracts/services';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
 import { createHandoffService } from '../../src/lib/server/handoff';
 import { createIncidentService } from '../../src/lib/server/incidents';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 export const at = (base: Instant, ms: number): Instant => new Date(Date.parse(base) + ms).toISOString() as Instant;
 export const NOTIFY: PolicyDecision = { route: 'notify', reason: 'Servicio crítico con alta probabilidad de caída.' };

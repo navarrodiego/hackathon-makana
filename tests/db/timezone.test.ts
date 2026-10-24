@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { config } from 'dotenv';
 import { localClient } from '../../scripts/db/client';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 // El adaptador de Prisma formatea y lee timestamptz como si la sesión estuviera en UTC. En un servidor con otra
 // zona (el local usa America/Santiago) los instantes quedaban desplazados en la base, aunque la app los leyera bien.

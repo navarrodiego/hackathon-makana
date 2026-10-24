@@ -14,7 +14,7 @@ import { createIncidentService } from '../../src/lib/server/incidents';
 import { createHandoffNoteService } from '../../src/lib/server/handoff-note/service';
 import { createExecutionService } from '../../src/lib/server/execution';
 import { createReadService } from '../../src/lib/server/state';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 export const at = (base: Instant, ms: number): Instant => new Date(Date.parse(base) + ms).toISOString() as Instant;
 

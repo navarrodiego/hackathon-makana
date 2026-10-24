@@ -7,7 +7,7 @@ import { ACCEPTED_FIXTURE } from '../../src/lib/contracts/fixtures';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
 import type { CommandContext, RecipientGrant } from '../../src/lib/contracts/auth';
 import type { StoredNote } from '../../src/lib/contracts/domain';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 
 test('concesiones y nota guardada conservan alcance y versión sin almacenar token crudo', async () => {
   const url = process.env.RELEVO_BACKEND_TEST_URL!;

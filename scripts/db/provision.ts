@@ -5,7 +5,7 @@ import { access, writeFile } from 'node:fs/promises';
 import { localAdminDestination } from './destination';
 
 const names = ['relevo_backend', 'relevo_backend_test', 'relevo_backend_test_isolation'];
-const privateFile = '.env.t03';
+const privateFile = '.env.db';
 try {
   const url = localAdminDestination(process.env.LOCAL_POSTGRES_ADMIN_URL);
   // No reemplazar conexiones privadas ni tocar bases/roles existentes.
@@ -47,7 +47,7 @@ try {
       records.push(`${database.toUpperCase()}_URL=${urls.app}`, `${database.toUpperCase()}_DIRECT_URL=${urls.migrate}`);
     }
     await writeFile(privateFile, records.join('\n') + '\n', { mode: 0o600, flag: 'wx' });
-    console.info('Tres bases locales y seis roles preparados. Conexiones en .env.t03 (0600); sin migrar ni enviar avisos.');
+    console.info('Tres bases locales y seis roles preparados. Conexiones en .env.db (0600); sin migrar ni enviar avisos.');
   } finally { await admin.end(); }
 } catch {
   console.error('Preparación local rechazada o fallida. No se reemplazan recursos existentes. Si hubo un fallo intermedio, revisa los recursos creados antes de repetir.');

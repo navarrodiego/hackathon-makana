@@ -11,7 +11,7 @@ import type { TransactionRepositories } from '../../src/lib/contracts/repositori
 import type { ServiceResult } from '../../src/lib/contracts/http';
 import type { Report } from '../../src/lib/contracts/domain';
 import { randomUUID } from 'node:crypto';
-config({ path: '.env.t03', quiet: true });
+config({ path: '.env.db', quiet: true });
 const context = (p: PreparedExecution): CommandContext => ({ executionId: p.executionId, executionVersion: p.version, principal: { kind: 'system' }, actorId: null, origin: 'system', operationalNow: BASE_FIXTURE.operationalAt, narrativeNow: BASE_FIXTURE.narrativeAt, correlationId: 'correlation_db_test' });
 const success = <T>(value: T) => ({ ok: true as const, value });
 async function checked<T>(store: PostgresPersistence, c: CommandContext, fn: (r: TransactionRepositories) => Promise<ServiceResult<T>>): Promise<void> { const result = await store.run(c, fn); assert.ok(result.ok, JSON.stringify(result)); }
