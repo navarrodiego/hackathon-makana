@@ -64,7 +64,8 @@ export default function Home() {
           </Step>
           <Step title="5. Reporta un problema" screen={<Screen href="/canal">Abrir canal</Screen>}>
             <p>
-              En Control, pulsa «Escena siguiente» y después «Abrir canal». Luego escribe en el canal o escanea el QR del proyector. Prueba
+              En Control, pulsa «Empezar la noche y abrir el canal». Luego abre el canal o escanea el QR del proyector; el envío se
+              habilita a los 30 segundos. Prueba
               con algo que pueda esperar («La VPN está lenta para dos personas») y con algo grave («Facturación no responde en ningún local»).
             </p>
             <p>Lo que puede esperar queda en cola. Lo grave, como no hay cobertura confirmada, se avisa a la jefatura y no a Rodrigo.</p>
