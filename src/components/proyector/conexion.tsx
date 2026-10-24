@@ -14,5 +14,6 @@ export function Conexion({ view }: { view: PublicStateView }) {
     );
   }
   if (view.status === "loading") return <p role="status" className="text-body">Cargando estado…</p>;
-  return <p className="text-aux text-muted-foreground">Conectado · actualizado a las {hhmmss(view.lastUpdatedAt!)}</p>;
+  // En vivo es una frase dentro del pie del proyector; hereda su estilo.
+  return <span>Conectado · actualizado a las {hhmmss(view.lastUpdatedAt!)}</span>;
 }
