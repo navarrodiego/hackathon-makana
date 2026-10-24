@@ -5,7 +5,8 @@ import { Client } from "pg";
 export async function enterChannel(page: Page, name = "Visita") {
   await page.getByRole("textbox", { name: "Tu nombre" }).fill(name);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByText(`Hola, ${name}.`)).toBeVisible();
+  // Entró: el nombre ya no se pide (no hay opción de cambiarlo dentro del canal).
+  await expect(page.getByRole("textbox", { name: "Tu nombre" })).toHaveCount(0);
 }
 
 /**

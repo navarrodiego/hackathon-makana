@@ -46,7 +46,8 @@ test("canal: nombre, espera común sin recargar, reportes propios con texto esca
   page.on("pageerror", e => errors.push(e.message));
 
   await page.goto("/canal");
-  await expect(page.getByRole("heading", { name: "Canal", exact: true })).toBeVisible();
+  // El título existe para lectores de pantalla, pero no ocupa espacio en el teléfono.
+  await expect(page.locator("header.sr-only").getByRole("heading", { name: "Canal", exact: true })).toHaveCount(1);
   // Primero solo el nombre; el máximo se avisa antes de entrar.
   await page.getByRole("textbox", { name: "Tu nombre" }).fill("x".repeat(41));
   await expect(page.getByText("Tu nombre tiene 41 caracteres. El máximo es 40.")).toBeVisible();
@@ -67,7 +68,11 @@ test("canal: nombre, espera común sin recargar, reportes propios con texto esca
     body: JSON.stringify({ executionId, idempotencyKey: "e2e-espera", nickname: "Visita", text: "Llegó antes" }),
   })).status, opened.executionId);
   expect(early).toBe(409);
-  await expect(page.getByRole("heading", { name: "Trabajas en la empresa de Rodrigo" })).toBeVisible({ timeout: 40_000 });
+  await expect(page.getByRole("heading", { name: "Visita, trabajas en la empresa de Rodrigo" })).toBeVisible({ timeout: 40_000 });
+  // El botón de envío cabe en la primera pantalla, sin desplazarse.
+  const send = await page.getByRole("button", { name: "Enviar reporte" }).boundingBox();
+  expect(send!.y + send!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await expect(page.getByRole("button", { name: "Cambiar nombre" })).toHaveCount(0);
 
   const list = page.getByRole("region", { name: "Tus reportes" });
   const html = "<img src=x onerror=alert(1)> Local 7: la caja 2 no emite boletas";
@@ -75,7 +80,7 @@ test("canal: nombre, espera común sin recargar, reportes propios con texto esca
   await expect(list.getByText(html)).toBeVisible();
   // Sin IA la clasificación es degradada y la facturación pasa a incidente; sin relevo aceptado nadie lo tiene aún.
   // El estado dice a quién le toca, sin texto técnico del proveedor ni de la clasificación.
-  await expect(list.getByText("Incidente registrado. Nadie lo ha tomado")).toBeVisible({ timeout: 15_000 });
+  await expect(list.getByText("Se trata como urgente hasta revisarlo. Todavía nadie lo toma")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(/No se pudo clasificar/)).toHaveCount(0);
   await expect(page.getByText(/ntfy/)).toHaveCount(0);
   expect(await page.locator("img[src='x']").count()).toBe(0);
@@ -106,7 +111,7 @@ test("canal: nombre, espera común sin recargar, reportes propios con texto esca
 
   // El nombre se recuerda en este navegador.
   await page.reload();
-  await expect(page.getByText("Hola, Visita.")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Tu nombre" })).toHaveCount(0);
 
   // La cookie de sesión no es legible desde la página y el DOM no la contiene.
   expect(await page.evaluate(() => document.cookie)).not.toContain("relevo_session");
