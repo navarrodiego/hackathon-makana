@@ -118,7 +118,7 @@ export async function ownReportsView(tx: TransactionRepositories, context: Comma
   if (!execution) return fail("NOT_FOUND");
   const own = reports.filter(r => r.sessionId === p.sessionId).sort((a, b) => a.admissionSequence - b.admissionSequence);
   return { ok: true, value: {
-    audience: "reporter", executionId: execution.executionId, channelOpen: execution.channelOpen, channelOpenedAt: execution.channelOpenedAt,
+    audience: "reporter", executionId: execution.executionId, channelOpen: execution.channelOpen, channelOpenedAt: execution.channelOpenedAt, lobbyEndsAt: execution.lobbyEndsAt,
     remainingSessionReports: Math.max(0, LIMITS.reportsPerSession - own.length),
     remainingExecutionReports: Math.max(0, LIMITS.reportsPerExecution - execution.admittedReports),
     ownReports: own.map(r => receipt(r, execution, { incidents, attempts, notifications, actors })),

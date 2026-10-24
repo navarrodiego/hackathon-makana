@@ -13,10 +13,11 @@ import { OperatorLogin } from "@/components/acceso/operator-login";
 import { isSessionProblem } from "@/components/acceso/messages";
 import { SignOutButton } from "@/components/acceso/sign-out-button";
 import { Conexion } from "@/components/proyector/conexion";
-import { announceChange, freshest, useServerViewSync } from "@/lib/client/state";
+import { LIMITS } from "@/lib/contracts/core";
+import { announceChange, freshest, qrOnScreen, useLobbyRemaining, useServerViewSync } from "@/lib/client/state";
 import { failureMessage, postJson } from "./api";
 import {
-  SCRIPTED_REPORTS, buildReportRequest, buildResetRequest, buildSceneRequest, buildTakeRequest,
+  SCRIPTED_REPORTS, buildQrRequest, buildReportRequest, buildResetRequest, buildSceneRequest, buildTakeRequest,
   clockLabel, eventText, resolveShortcut, scriptStep, takeableIncident, type Moment, type ScriptedReport, type ShortcutState,
 } from "./logic";
 
@@ -87,6 +88,10 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
     run(`scene:${sceneId}:${channelOpen}`, label, key =>
       postJson("/api/scene", buildSceneRequest(state, sceneId as never, channelOpen, key)));
 
+  const changeQr = (action: "extend" | "show") =>
+    run(`qr:${action}`, action === "extend" ? "Se sumaron 30 s al QR." : "El QR volvió a la pantalla por 30 s.", key =>
+      postJson("/api/qr", buildQrRequest(state, action, key)));
+
   const sendReport = (report: ScriptedReport) =>
     run(`report:${report.id}`, `Reporte guionado «${report.label}» enviado.`, key =>
       postJson("/api/messages", buildReportRequest(state.executionId, report, key)));
@@ -103,6 +108,12 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
     if (result.ok) { setResetOpen(false); shortcut.current = { armedAt: null, resetOpen: false }; }
     return result;
   });
+
+  // Misma cuenta y misma regla que el proyector: control ve lo que la sala tiene en pantalla.
+  const qrLeft = useLobbyRemaining(live, state.channelOpen ? state.qrEndsAt : null);
+  const lobbyLeft = useLobbyRemaining(live, state.channelOpen ? state.lobbyEndsAt : null);
+  const qrShown = qrOnScreen(state.channelOpen, qrLeft, lobbyLeft, state.incidents.length);
+  const qrAtCap = qrLeft !== null && qrLeft + LIMITS.qrExtensionMs > LIMITS.qrMaxAheadMs;
 
   const tomas = view.representedActors.find(a => a.displayName === "Tomás");
   const step = scriptStep(view.sceneOptions, state.scene.label);
@@ -222,6 +233,21 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
         </Button>
       </section>
 
+      <section aria-labelledby="qr" className="flex flex-col gap-3 border-t border-line pt-6">
+        <h2 id="qr" className="text-section font-semibold">QR en el proyector</h2>
+        <QrStatus open={state.channelOpen} shown={qrShown} qrLeft={qrLeft} lobbyLeft={lobbyLeft} />
+        {state.channelOpen ? (
+          <div className="flex flex-wrap gap-3">
+            {qrShown ? (
+              <Button loading={busy === "qr:extend"} loadingLabel="Sumando…" disabled={working || qrAtCap} onClick={() => changeQr("extend")}>Sumar 30 s al QR</Button>
+            ) : qrLeft === 0 ? (
+              <Button loading={busy === "qr:show"} loadingLabel="Mostrando…" disabled={working} onClick={() => changeQr("show")}>Mostrar QR otra vez</Button>
+            ) : null}
+          </div>
+        ) : null}
+        {qrShown && qrAtCap ? <p className="text-aux text-muted-foreground">El QR ya tiene casi 2 min por delante. Podrás sumar más cuando baje de 90 s.</p> : null}
+      </section>
+
       <section aria-labelledby="reportes" className="flex flex-col gap-3 border-t border-line pt-6">
         <h2 id="reportes" className="text-section font-semibold">Reportes guionados</h2>
         {!state.channelOpen ? <p className="text-aux text-muted-foreground">El canal está cerrado. Ábrelo para enviar reportes guionados.</p> : null}
@@ -274,4 +300,16 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
       <SignOutButton />
     </SurfaceShell>
   );
+}
+
+const seconds = (ms: number | null) => (ms === null ? null : Math.ceil(ms / 1000));
+
+/** Estado del QR con su cuenta. Sin región viva: el lector no anuncia cada segundo. */
+function QrStatus({ open, shown, qrLeft, lobbyLeft }: { open: boolean; shown: boolean; qrLeft: number | null; lobbyLeft: number | null }) {
+  if (!open) return <p className="text-body">El canal está cerrado. El QR aparece al abrirlo.</p>;
+  const qr = seconds(qrLeft), lobby = seconds(lobbyLeft);
+  const sending = lobby === null ? "" : lobby > 0 ? ` Los teléfonos pueden enviar en ${lobby} s.` : " Los teléfonos ya pueden enviar.";
+  if (shown) return <p className="text-body font-semibold">{qr === null ? "QR en pantalla." : `QR en pantalla: quedan ${qr} s.`}{sending}</p>;
+  if (qr !== 0) return <p className="text-body">El QR cedió al panel por un incidente.{sending}</p>;
+  return <p className="text-body">El QR no está en pantalla.{sending} Si alguien no alcanzó a entrar, muéstralo otra vez.</p>;
 }

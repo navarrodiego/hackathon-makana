@@ -125,7 +125,7 @@ test('espera común tras abrir el canal: el público aún no envía; control sí
   const w = await world();
   try {
     const openedAt = w.reporter().operationalNow;
-    await w.db.$executeRaw`UPDATE executions SET "channelOpenedAt" = ${new Date(openedAt)} WHERE "executionId" = ${w.prepared.executionId}`;
+    await w.db.$executeRaw`UPDATE executions SET "channelOpenedAt" = ${new Date(openedAt)}, "lobbyEndsAt" = ${new Date(Date.parse(openedAt) + 30_000)} WHERE "executionId" = ${w.prepared.executionId}`;
     const early = await w.service.submit(w.reporter(), w.input('Local 7 caja 2 no emite boletas'));
     assert.deepEqual(early, { ok: false, code: 'CHANNEL_WAITING' });
     let s = await w.snapshot();

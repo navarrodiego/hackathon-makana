@@ -1,5 +1,6 @@
 import "server-only";
 import type { CommandContext } from "@/lib/contracts/auth";
+import { LIMITS, type Instant } from "@/lib/contracts/core";
 import type { ChangeScene, ErrorCode, ServiceResult } from "@/lib/contracts/http";
 import type { UnitOfWork } from "@/lib/contracts/repositories";
 import type { PublicStateDTO } from "@/lib/contracts/public";
@@ -25,10 +26,14 @@ export async function changeScene(store: UnitOfWork, context: CommandContext, in
     if (execution.version !== input.expectedVersion) return fail("VERSION_CONFLICT");
     const scene = (await tx.reference.scenes()).find(s => s.id === input.sceneId);
     if (!scene) return fail("NOT_FOUND");
+    // Solo pasar de cerrado a abierto fija la hora y el fin común de la espera del canal y del QR grande.
+    const opening = input.channelOpen && !execution.channelOpen;
+    const lobbyEnd = new Date(Date.parse(context.operationalNow) + LIMITS.channelLobbyMs).toISOString() as Instant;
     const next = {
       ...execution, sceneId: scene.id, channelOpen: input.channelOpen, version: execution.version + 1,
-      // Solo pasar de cerrado a abierto fija la hora: es el ancla común de la espera del canal y del QR grande.
-      channelOpenedAt: !input.channelOpen ? null : execution.channelOpen ? execution.channelOpenedAt : context.operationalNow,
+      channelOpenedAt: !input.channelOpen ? null : opening ? context.operationalNow : execution.channelOpenedAt,
+      lobbyEndsAt: !input.channelOpen ? null : opening ? lobbyEnd : execution.lobbyEndsAt,
+      qrEndsAt: !input.channelOpen ? null : opening ? lobbyEnd : execution.qrEndsAt,
       // La nueva hora narrativa parte de la escena; el reloj operacional sigue siendo el real (C02).
       anchor: { operationalAt: context.operationalNow, narrativeAt: scene.narrativeAt },
     };

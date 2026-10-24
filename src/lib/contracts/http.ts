@@ -38,6 +38,8 @@ export interface RespondHandoff extends VersionedMutation, ScenarioActor { reado
 export interface TakeIncident extends VersionedMutation, ScenarioActor { readonly attemptId: IncidentAttemptId }
 export interface SubmitReport extends Mutation { readonly nickname: string; readonly text: string }
 export interface ChangeScene extends VersionedMutation { readonly sceneId: SceneId; readonly channelOpen: boolean }
+/** `extend` suma 30 s al QR visible (y a la espera si sigue); `show` vuelve a mostrar el QR sin reabrir la espera. */
+export interface ChangeQr extends VersionedMutation { readonly action: "extend" | "show" }
 export type ResetExecution = VersionedMutation;
 export interface HandoffResultDTO {
   readonly executionId: ExecutionId; readonly handoff: HandoffSummaryDTO; readonly coverage: CoverageDTO;
@@ -66,6 +68,7 @@ export interface ApiRoutes {
   readonly "POST /api/handoff/[id]/reject": Route<RespondHandoff, HandoffResultDTO, { readonly id: HandoffId }, TransitionError, 200>;
   readonly "POST /api/ack/[id]": Route<TakeIncident, IncidentResultDTO, { readonly id: IncidentId }, TransitionError, 200>;
   readonly "POST /api/scene": Route<ChangeScene, PublicStateDTO, null, WriteError | "NOT_FOUND" | "VERSION_CONFLICT" | "STATE_CONFLICT", 200>;
+  readonly "POST /api/qr": Route<ChangeQr, PublicStateDTO, null, WriteError | "NOT_FOUND" | "VERSION_CONFLICT" | "STATE_CONFLICT" | "CHANNEL_CLOSED", 200>;
   readonly "POST /api/reset": Route<ResetExecution, ResetResultDTO, null, WriteError | "VERSION_CONFLICT", 201>;
 }
 export type RouteKey = keyof ApiRoutes;
@@ -83,6 +86,7 @@ export const ROUTE_ACCESS = {
   "POST /api/handoff/[id]/reject": ["recipient", "control"],
   "POST /api/ack/[id]": ["recipient", "control"],
   "POST /api/scene": ["control"],
+  "POST /api/qr": ["control"],
   "POST /api/reset": ["control"],
 } as const satisfies Record<RouteKey, readonly string[]>;
 

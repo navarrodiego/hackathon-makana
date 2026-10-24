@@ -55,4 +55,4 @@ function sharedState() {
 }
 
 export const stateRoute = (request: Request) => handleState({ service: { evaluateCurrent: () => sharedState().get() } }, request);
-export const commandRoute = (route: "POST /api/scene" | "POST /api/reset", request: Request) => handleCommand(deps(), route, request);
+export const commandRoute = (route: "POST /api/scene" | "POST /api/qr" | "POST /api/reset", request: Request) => handleCommand(deps(), route, request);

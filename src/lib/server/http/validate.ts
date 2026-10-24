@@ -98,6 +98,11 @@ const PARSERS: { [K in RouteKey]: (body: unknown, params: unknown) => Parsed<K> 
     if (typeof o.channelOpen !== "boolean") invalid();
     return { input: { ...versioned(o), sceneId: id(o.sceneId, "scene"), channelOpen: o.channelOpen as boolean }, params: null };
   },
+  "POST /api/qr": body => {
+    const o = record(body, [...VERSIONED, "action"]);
+    if (o.action !== "extend" && o.action !== "show") invalid();
+    return { input: { ...versioned(o), action: o.action as "extend" | "show" }, params: null };
+  },
   "POST /api/reset": body => ({ input: versioned(record(body, VERSIONED)), params: null }),
 };
 function respondHandoff(body: unknown, params: unknown) {

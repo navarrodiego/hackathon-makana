@@ -18,7 +18,7 @@ export async function materializeFixture(tx: Tx, fixture: ExecutionFixture): Pro
   const ticketIds = new Map(fixture.tickets.map(t => [t.id, `ticket_${randomUUID()}` as TicketId]));
   const actor = (id: ActorId): ActorId => { const mapped = actorIds.get(id); if (!mapped) throw new Error('Unknown fixture actor'); return mapped; };
   const sceneId = sceneIds.get(fixture.initialSceneId); if (!sceneId) throw new Error('Unknown fixture scene');
-  const execution: Execution = { executionId, version: 1, status: 'active', sceneId, anchor: { operationalAt: fixture.operationalAt, narrativeAt: fixture.narrativeAt }, channelOpen: fixture.channelOpen, channelOpenedAt: fixture.channelOpen ? lobbyDone(fixture.operationalAt) : null, admittedReports: fixture.incident ? 1 : 0, preparation: 'pending', createdAt: fixture.operationalAt, supersededBy: null };
+  const execution: Execution = { executionId, version: 1, status: 'active', sceneId, anchor: { operationalAt: fixture.operationalAt, narrativeAt: fixture.narrativeAt }, channelOpen: fixture.channelOpen, channelOpenedAt: fixture.channelOpen ? lobbyDone(fixture.operationalAt) : null, lobbyEndsAt: fixture.channelOpen ? fixture.operationalAt : null, qrEndsAt: fixture.channelOpen ? fixture.operationalAt : null, admittedReports: fixture.incident ? 1 : 0, preparation: 'pending', createdAt: fixture.operationalAt, supersededBy: null };
   await insert(tx, 'executions', execution as unknown as Row);
   for (const a of fixture.actors) await insert(tx, 'actors', { ...a, id: actor(a.id), executionId });
   for (const s of fixture.scenes) await insert(tx, 'scenes', { ...s, id: sceneIds.get(s.id), executionId });

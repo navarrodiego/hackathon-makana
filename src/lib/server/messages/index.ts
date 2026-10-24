@@ -61,8 +61,8 @@ export function createMessageService(deps: MessageDeps): MessageService {
       if (!execution) return fail("STORAGE_UNAVAILABLE");
       if (!execution.channelOpen) return fail("CHANNEL_CLOSED");
       // Espera común tras abrir: da tiempo a escanear el QR. Los reportes guionados de control no esperan.
-      if (p.kind === "reporter" && execution.channelOpenedAt
-        && Date.parse(context.operationalNow) < Date.parse(execution.channelOpenedAt) + LIMITS.channelLobbyMs) return fail("CHANNEL_WAITING");
+      if (p.kind === "reporter" && execution.lobbyEndsAt
+        && Date.parse(context.operationalNow) < Date.parse(execution.lobbyEndsAt)) return fail("CHANNEL_WAITING");
       const sessionId: ReportSessionId = p.kind === "reporter" ? p.sessionId : await scenarioSessionId(tx, context);
       const quota = await tx.reserveReportQuota(sessionId);
       if (!quota.ok) return quota;

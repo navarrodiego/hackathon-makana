@@ -7,7 +7,7 @@ import { principalKey } from "@/lib/server/handoff/idempotency";
 
 export { fingerprint } from "@/lib/server/handoff/idempotency";
 
-export type ExecutionOperation = Extract<IdempotencyScope["operation"], "POST /api/scene" | "POST /api/reset">;
+export type ExecutionOperation = Extract<IdempotencyScope["operation"], "POST /api/scene" | "POST /api/qr" | "POST /api/reset">;
 
 /**
  * Reserva dentro de la transacción del llamador (misma regla que relevo e incidentes, C14). Un fallo posterior

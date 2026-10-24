@@ -17,7 +17,7 @@ export async function skipLobby(connectionString = process.env.DIRECT_URL) {
   const db = new Client({ connectionString });
   await db.connect();
   try {
-    await db.query(`UPDATE executions SET "channelOpenedAt" = "channelOpenedAt" - interval '30 seconds' WHERE status='active' AND "channelOpenedAt" IS NOT NULL`);
+    await db.query(`UPDATE executions SET "channelOpenedAt" = "channelOpenedAt" - interval '30 seconds', "lobbyEndsAt" = "lobbyEndsAt" - interval '30 seconds', "qrEndsAt" = "qrEndsAt" - interval '30 seconds' WHERE status='active' AND "channelOpenedAt" IS NOT NULL`);
   } finally { await db.end(); }
 }
 

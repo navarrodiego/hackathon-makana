@@ -1,12 +1,13 @@
 import "server-only";
 import type { CommandContext } from "@/lib/contracts/auth";
 import type { ExecutionId, Instant } from "@/lib/contracts/core";
-import type { ChangeScene, ResetExecution, ResetResultDTO, ServiceResult } from "@/lib/contracts/http";
+import type { ChangeQr, ChangeScene, ResetExecution, ResetResultDTO, ServiceResult } from "@/lib/contracts/http";
 import type { PublicStateDTO } from "@/lib/contracts/public";
 import type { ExecutionReader, UnitOfWork } from "@/lib/contracts/repositories";
 import type { ExecutionService, HandoffNoteService, HandoffService, IncidentService, MessageService, NotificationService, ReadService } from "@/lib/contracts/services";
 import { systemContext } from "@/lib/server/state";
 import { prepareNote, resetExecution } from "./reset";
+import { changeQr } from "./qr";
 import { changeScene } from "./scene";
 
 export interface ExecutionDeps {
@@ -63,6 +64,10 @@ export function createExecutionService(deps: ExecutionDeps): ExecutionRuntimeSer
   return {
     changeScene: async (context, input: ChangeScene) => {
       const changed = await changeScene(deps.store, context, input);
+      return changed.ok ? evaluate(context) : changed;
+    },
+    changeQr: async (context, input: ChangeQr) => {
+      const changed = await changeQr(deps.store, context, input);
       return changed.ok ? evaluate(context) : changed;
     },
     reset: (context, input: ResetExecution): Promise<ServiceResult<ResetResultDTO>> => resetExecution({ store: deps.store }, context, input),

@@ -78,9 +78,9 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
   const processing = view.ownReports.some(r => r.status === "processing");
   const live = useServerViewSync(view.channelOpen ? OPEN_POLL_MS : CLOSED_POLL_MS, processing ? PROCESSING_REFRESH_MS : IDLE_REFRESH_MS, POLL);
   const lost = live.status === "lost";
-  // El sondeo en vivo trae la hora de apertura sin rehacer la página; la vista del servidor cubre el primer render.
-  const openedAt = live.state && live.state.executionId === view.executionId ? live.state.channelOpenedAt : view.channelOpenedAt;
-  const remaining = useLobbyRemaining(live, view.channelOpen ? openedAt : null);
+  // El sondeo en vivo trae el fin de la espera (control puede alargarlo) sin rehacer la página; la vista del servidor cubre el primer render.
+  const lobbyEndsAt = live.state && live.state.executionId === view.executionId ? live.state.lobbyEndsAt : view.lobbyEndsAt;
+  const remaining = useLobbyRemaining(live, view.channelOpen ? lobbyEndsAt : null);
   const name = useSyncExternalStore(subscribeName, readName, () => undefined);
   const ready = view.channelOpen && remaining === 0;
 

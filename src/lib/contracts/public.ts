@@ -57,8 +57,12 @@ export interface PublicStateDTO {
   readonly executionId: ExecutionId; readonly version: Version;
   readonly scene: { readonly id: SceneId; readonly label: string };
   readonly preparation: PreparationStatus; readonly clocks: ClockSnapshot; readonly channelOpen: boolean;
-  /** Cuándo se abrió el canal; el envío público empieza `LIMITS.channelLobbyMs` después. */
+  /** Cuándo se abrió el canal. */
   readonly channelOpenedAt: Instant | null;
+  /** Fin de la espera común: antes, el envío público se rechaza. Null con el canal cerrado. */
+  readonly lobbyEndsAt: Instant | null;
+  /** Hasta cuándo el proyector muestra el QR grande. Null con el canal cerrado. */
+  readonly qrEndsAt: Instant | null;
   readonly coverage: CoverageDTO | null; readonly handoff: HandoffSummaryDTO | null;
   /** Solo con el relevo en borrador; `null` en cuanto se envía. */
   readonly closing: ClosingSummaryDTO | null;
@@ -90,6 +94,7 @@ export interface ReportReceiptDTO {
 export interface ChannelViewDTO {
   readonly audience: "reporter"; readonly executionId: ExecutionId; readonly channelOpen: boolean;
   readonly channelOpenedAt: Instant | null;
+  readonly lobbyEndsAt: Instant | null;
   readonly remainingSessionReports: number; readonly remainingExecutionReports: number;
   readonly ownReports: readonly ReportReceiptDTO[];
 }
