@@ -116,7 +116,7 @@ test("fase: cierre hasta enviar; mañana solo con relevo enviado y escena de ma�
   assert.equal(phaseOf(false, "Cierre"), "closing");
   assert.equal(phaseOf(false, "Registro de mañana"), "closing");
   assert.equal(phaseOf(true, null), "following");
-  assert.equal(phaseOf(true, "Registro de noche"), "following");
+  assert.equal(phaseOf(true, "Canal"), "following");
   assert.equal(phaseOf(true, "Registro de mañana"), "morning");
 });
 

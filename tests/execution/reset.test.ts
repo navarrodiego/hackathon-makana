@@ -190,3 +190,17 @@ test('preparación de la nota tras el reset (C03/C09)', async t => {
     } finally { await w.close(); }
   });
 });
+
+test('escenas tras el reset', async t => {
+  await t.test('la sucesora conserva solo las escenas del escenario: una base con una escena retirada la pierde', async () => {
+    const retired = { id: 'scene_retired', order: 3, label: 'Registro de noche', narrativeAt: '2026-10-24T06:00:00.000Z' } as const;
+    const w = await world({ ...BASE_FIXTURE, scenes: [...BASE_FIXTURE.scenes, retired] });
+    try {
+      const result = await w.execution.reset(w.control(), resetInput(w.prepared.executionId, await versionOf(w), 'reset-scenes'));
+      assert.ok(result.ok, JSON.stringify(result));
+      const scenes = await w.readTx(async tx => ({ ok: true, value: await tx.reference.scenes() }), result.value.executionId);
+      assert.deepEqual(scenes.map(s => s.label), BASE_FIXTURE.scenes.map(s => s.label));
+      assert.equal(result.value.state.scene.label, 'Cierre');
+    } finally { await w.close(); }
+  });
+});

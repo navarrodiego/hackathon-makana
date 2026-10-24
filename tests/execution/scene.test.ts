@@ -30,13 +30,13 @@ test('cambio de escena (S05)', async t => {
     const w = await world(BASE_FIXTURE);
     try {
       const scenes = await w.readTx(async tx => ({ ok: true, value: await tx.reference.scenes() }));
-      const night = scenes.find(s => s.label === 'Registro de noche')!, morning = scenes.find(s => s.label === 'Registro de mañana')!;
+      const channel = scenes.find(s => s.label === 'Canal')!, morning = scenes.find(s => s.label === 'Registro de mañana')!;
       const before = await w.read.publicState(); assert.ok(before.ok);
-      const input = { executionId: w.prepared.executionId, idempotencyKey: 'scene-dup', expectedVersion: before.value.version, sceneId: night.id, channelOpen: true };
+      const input = { executionId: w.prepared.executionId, idempotencyKey: 'scene-dup', expectedVersion: before.value.version, sceneId: channel.id, channelOpen: true };
       const first = await w.execution.changeScene(w.control(), input);
       const second = await w.execution.changeScene(w.control(), input);
       assert.ok(first.ok && second.ok);
-      assert.equal(second.value.scene.id, night.id);
+      assert.equal(second.value.scene.id, channel.id);
       const events = await w.readTx(async tx => ({ ok: true, value: await tx.events.list() }));
       assert.equal(events.filter(e => e.kind === 'scene_changed').length, 1);
       const different = await w.execution.changeScene(w.control(), { ...input, sceneId: morning.id });

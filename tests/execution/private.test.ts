@@ -80,7 +80,7 @@ test('lecturas privadas autorizadas (S04/S05)', async t => {
     try {
       const view = await w.read.control(w.control());
       assert.ok(view.ok);
-      assert.equal(view.value.sceneOptions.length, 4);
+      assert.equal(view.value.sceneOptions.length, BASE_FIXTURE.scenes.length);
       assert.equal(view.value.representedActors.length, 4);
       assert.deepEqual(leaks(view.value), []);
       assert.deepEqual(await w.read.control(w.system()), { ok: false, code: 'FORBIDDEN' });

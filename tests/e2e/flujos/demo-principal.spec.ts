@@ -72,11 +72,9 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   await expect(rod.getByText(/Paula aceptó\. Su cobertura comienza a las 22:10/)).toBeVisible();
   expect((await state(request)).coverage.status, "aceptación anticipada no activa").toBe("scheduled");
 
-  // 5. Proyector abierto (sus lecturas evalúan vencimientos). Control avanza a la ventana y abre el canal.
-  await ctl.getByRole("button", { name: "Escena siguiente" }).click();
-  await waitState(request, x => x.scene.label === "Canal" && x.coverage?.status === "active" && x.coverage.actor?.displayName === "Paula", "cobertura activa de Paula");
-  await ctl.getByRole("button", { name: "Abrir canal" }).click();
-  await waitState(request, x => x.channelOpen, "canal abierto");
+  // 5. Proyector abierto (sus lecturas evalúan vencimientos). Control empieza la noche: avanza a la ventana y abre el canal en un paso.
+  await ctl.getByRole("button", { name: "Empezar la noche y abrir el canal" }).click();
+  await waitState(request, x => x.scene.label === "Canal" && x.channelOpen && x.coverage?.status === "active" && x.coverage.actor?.displayName === "Paula", "cobertura activa de Paula y canal abierto");
   await expect(proy.getByText("Cobertura activa de Paula")).toBeVisible();
 
   // 6. El chip guionado de la impresora (el mismo del pitch) queda en cola y no genera aviso. El canal público ya admite reportes.
