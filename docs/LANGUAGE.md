@@ -47,6 +47,7 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 |---|---|
 | Cierre antes de enviar (cabecera, también proyectada) | «Rodrigo deja 5 pendientes a quien entra.»; el número sale de los datos |
 | Relevo enviado (cabecera) | «Rodrigo envió el relevo.»; no afirma aceptación ni cobertura |
+| Proyector con el relevo en borrador | «Rodrigo cierra su turno» · «Deja 5 pendientes a quien entra; 1 queda para seguimiento.» · «Su turno termina a las 22:10. El relevo irá primero a Paula; aún no se envía.» («terminó» si la hora ya pasó). Solo conteos: sin referencias ni nota |
 | Enviado, aún sin aceptación | «Esperando aceptación de Paula» |
 | Derivado por rechazo/plazo | «Relevo enviado a Tomás; no necesitas reenviarlo» |
 | Aceptación anticipada | «Paula aceptó. Su cobertura comienza a las 22:10» |

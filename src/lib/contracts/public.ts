@@ -35,6 +35,14 @@ export interface PublicEventDTO {
   readonly operationalAt: Instant; readonly narrativeAt: Instant;
   readonly result: "recorded" | "provider_accepted" | "failed" | "taken";
 }
+/**
+ * Cierre en borrador para la sala (decisión de Diego, 24-10-2026): quién entrega, a quién irá primero y conteos.
+ * Sin referencias, textos ni razones de los pendientes, y sin la nota.
+ */
+export interface ClosingSummaryDTO {
+  readonly outgoing: ActorDTO; readonly firstCandidate: ActorDTO;
+  readonly pendingCount: number; readonly followUpCount: number;
+}
 /** Construir explícitamente esta lista; no serializar entidades ni usar spreads privados. */
 export interface PublicStateDTO {
   readonly audience: "public";
@@ -42,6 +50,8 @@ export interface PublicStateDTO {
   readonly scene: { readonly id: SceneId; readonly label: string };
   readonly preparation: PreparationStatus; readonly clocks: ClockSnapshot; readonly channelOpen: boolean;
   readonly coverage: CoverageDTO | null; readonly handoff: HandoffSummaryDTO | null;
+  /** Solo con el relevo en borrador; `null` en cuanto se envía. */
+  readonly closing: ClosingSummaryDTO | null;
   readonly incidents: readonly IncidentSummaryDTO[]; readonly notifications: readonly NotificationDTO[];
   readonly events: readonly PublicEventDTO[];
   /** Derivado de intenciones de aviso a ese actor, no de despertares. */
