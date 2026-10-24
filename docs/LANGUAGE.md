@@ -47,6 +47,7 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 |---|---|
 | Cierre antes de enviar (cabecera, también proyectada) | «Rodrigo deja 5 pendientes a quien entra.»; el número sale de los datos |
 | Relevo enviado (cabecera) | «Rodrigo envió el relevo.»; no afirma aceptación ni cobertura |
+| Proyector: reportes de la sala | Título «Reportes de la sala». Cada fila: hora, «Nombre: texto» (recortado con «…») y el estado con las palabras del recibo: «Clasificando…», «En cola para la próxima atención», «En revisión de la guardia», «No parece un reporte de TI», «Incidente registrado» / «Incidente ya registrado». Quién tiene el incidente lo dice «Ahora». «Lo que pasó» ya no cuenta reportes |
 | Proyector con el relevo en borrador | «Rodrigo cierra su turno» · «Deja 5 pendientes a quien entra; 1 queda para seguimiento.» · «Su turno termina a las 22:10. El relevo irá primero a Paula; aún no se envía.» («terminó» si la hora ya pasó). Solo conteos: sin referencias ni nota |
 | Enviado, aún sin aceptación | «Esperando aceptación de Paula» |
 | Derivado por plazo | «Paula no aceptó a tiempo. El relevo pasó a Tomás; no necesitas reenviarlo.» |
@@ -64,7 +65,7 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 | Reporte enviado desde /canal y aceptado por el servidor | «Reporte enviado. Su estado aparece en Tus reportes.»; no promete clasificación ni atención |
 | /canal: primer paso | Campo «Tu nombre» y botón **Entrar**; luego «Hola, Diego.» con **Cambiar nombre** |
 | /canal: espera común tras abrir | «En 18 s puedes enviar» (cifra `aria-hidden`; lector: «Podrás enviar en unos segundos») y «Esperamos a que entren los demás.»; canal cerrado: «El canal abre pronto» |
-| /canal: encuadre del reporte | «Trabajas en la empresa de Rodrigo» y «Algo dejó de funcionar en tu local u oficina. Cuéntale a soporte qué pasó y dónde, como lo escribirías un día normal.»; campo «Qué pasó» |
+| /canal: encuadre del reporte | «Trabajas en la empresa de Rodrigo» y «Algo dejó de funcionar en tu local u oficina. Cuéntale a soporte qué pasó y dónde, como lo escribirías un día normal.» y «Tu nombre y lo que escribas se verán en la pantalla de la sala.»; bajo «Tu nombre», «Se verá en la pantalla de la sala junto a tus reportes.»; campo «Qué pasó» |
 | /canal: estados en Tus reportes | «Clasificando…», «En cola…», «En revisión de la guardia», «Incidente registrado. Paula aún no lo toma», «Incidente tomado por Tomás». Sin resultado del proveedor ni de la clasificación degradada: el público ve a quién le toca, no la mecánica del aviso |
 | Incidente ya notificado del mismo hecho | «Incidente ya avisado» |
 | Acción tardía tras derivación | Explicar que ya fue derivada; indicar destinatario actual solo si se conoce |

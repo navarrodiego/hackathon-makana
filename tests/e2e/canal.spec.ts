@@ -80,6 +80,16 @@ test("canal: nombre, espera común sin recargar, reportes propios con texto esca
   await expect(page.getByText(/ntfy/)).toHaveCount(0);
   expect(await page.locator("img[src='x']").count()).toBe(0);
 
+  // El proyector muestra a la sala el nombre y el texto tal cual (escapado) con su estado; pasada la espera, sin QR.
+  const proyector = await page.context().newPage();
+  await proyector.goto("/proyector");
+  const sala = proyector.getByRole("region", { name: "Reportes de la sala" });
+  await expect(sala.getByText(`Visita: ${html}`)).toBeVisible();
+  await expect(sala.getByText("Incidente registrado", { exact: true })).toBeVisible();
+  await expect(proyector.getByRole("img", { name: /Código QR/ })).toHaveCount(0);
+  expect(await proyector.locator("img[src='x']").count()).toBe(0);
+  await proyector.close();
+
   // Texto largo: el contador avisa y no se envía.
   await page.getByRole("textbox", { name: "Qué pasó" }).fill("x".repeat(281));
   await expect(page.getByText("El reporte tiene 281 caracteres. El máximo es 280.")).toBeVisible();

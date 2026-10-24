@@ -7,6 +7,7 @@ import { narrativeNow } from "@/lib/server/auth/service";
 import { closingSummary, coverageDto, handoffSummary } from "@/lib/server/handoff/dto";
 import { loadState } from "@/lib/server/handoff/engine";
 import { incidentService, incidentSummary } from "@/lib/server/incidents/dto";
+import { publicReports } from "./reports";
 
 export const actorDto = (actors: readonly Actor[], id: ActorId): ActorDTO => ({ id, displayName: actors.find(a => a.id === id)?.displayName ?? "" });
 
@@ -26,7 +27,8 @@ function publicEvent(event: Event, actors: readonly Actor[]): PublicEventDTO {
 
 /**
  * Construye el DTO público campo a campo dentro de la transacción de lectura. Nunca serializa entidades:
- * ni tickets (del cierre en borrador solo van conteos), ni notas, ni textos de reporte, ni concesiones, ni destinos de aviso.
+ * ni tickets (del cierre en borrador solo van conteos), ni notas, ni concesiones, ni destinos de aviso. De los reportes solo
+ * van los últimos, con apodo y texto recortados y su estado.
  */
 export async function buildPublicState(tx: TransactionRepositories, execution: Execution, now: Instant): Promise<PublicStateDTO> {
   const [actors, scenes, state, incidents, reports, notifications, events, tickets] = await Promise.all([
@@ -60,6 +62,7 @@ export async function buildPublicState(tx: TransactionRepositories, execution: E
     incidents: incidentDtos,
     notifications: notificationDtos,
     events: events.map(e => publicEvent(e, actors)),
+    reports: publicReports(reports, incidents),
     // Intenciones de aviso al saliente, no despertares confirmados (C09).
     outgoingNoticeCount: window ? notifications.filter(n => n.recipientActorId === window.outgoingActorId).length : 0,
   };
