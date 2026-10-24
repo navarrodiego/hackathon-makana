@@ -27,6 +27,8 @@ export interface ContinuityLineProps {
   state: ContinuityState;
   /** Hora ya formateada (24 h) en que comienza la cobertura, p. ej. «22:10». */
   startsAtLabel?: string;
+  /** Escala de titular (proyector): nombres y mensaje un paso más grandes. */
+  emphasis?: boolean;
   className?: string;
 }
 
@@ -42,12 +44,12 @@ function message(p: ContinuityLineProps) {
 
 /** Saliente → entrante. La línea queda cortada hasta que haya aceptación; el texto explica el estado. */
 export function ContinuityLine(props: ContinuityLineProps) {
-  const { outgoing, incoming, state, className } = props;
+  const { outgoing, incoming, state, emphasis, className } = props;
   const joined = state === "scheduled" || state === "active";
   return (
     <section aria-label="Continuidad del turno" className={cn("py-2", className)}>
       <div className="flex items-center gap-3">
-        <span className="text-people font-semibold">{outgoing.displayName}</span>
+        <span className={cn("text-people font-semibold", emphasis && "text-title")}>{outgoing.displayName}</span>
         <svg aria-hidden="true" viewBox="0 0 64 12" className="h-3 min-w-10 flex-1 text-foreground" preserveAspectRatio="none">
           {joined ? (
             <line x1="0" y1="6" x2="64" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray={state === "scheduled" ? "6 4" : undefined} />
@@ -58,11 +60,11 @@ export function ContinuityLine(props: ContinuityLineProps) {
             </>
           )}
         </svg>
-        <span className={cn("text-people font-semibold", !incoming && "text-muted-foreground")}>
+        <span className={cn("text-people font-semibold", emphasis && "text-title", !incoming && "text-muted-foreground")}>
           {incoming ? incoming.displayName : "Sin definir"}
         </span>
       </div>
-      <p className="mt-3"><Status kind={kinds[state]}>{message(props)}</Status></p>
+      <p className="mt-3"><Status kind={kinds[state]} className={emphasis ? "text-section" : undefined}>{message(props)}</Status></p>
     </section>
   );
 }

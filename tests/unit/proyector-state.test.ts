@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { acceptSnapshot } from "../../src/lib/client/state/accept";
 import { eventText } from "../../src/components/registro/event-text";
 import { tallyNotices } from "../../src/components/registro/resultados-aviso";
+import { relato } from "../../src/components/proyector/relato";
 
 const snap = (executionId: string, version: number, at: string) => ({ executionId, version, clocks: { operationalNow: at } }) as never;
 
@@ -35,4 +36,16 @@ test("separa ntfy, in-app, acuse y escenario", () => {
     events: [{ origin: "scenario" }, { origin: "web" }],
   } as never);
   assert.deepEqual(t, { ntfyAccepted: 1, inAppRecorded: 1, failed: 1, pending: 0, taken: 1, scenarioEvents: 1 });
+});
+test("el relato del proyector deja fuera la puesta en escena y agrupa reportes seguidos", () => {
+  const ev = (sequence: number, kind: string, origin = "web", actor: string | null = null) =>
+    ({ id: `e${sequence}`, sequence, kind, origin, actor: actor ? { id: `a_${actor}`, displayName: actor } : null, narrativeAt: "2026-10-23T22:10:00-03:00" }) as never;
+  const r = relato([
+    ev(1, "execution_started", "scenario"), ev(2, "scene_changed", "scenario"), ev(3, "handoff_accepted", "web", "Paula"),
+    ev(4, "report_admitted"), ev(5, "report_admitted"), ev(6, "report_admitted"),
+    ev(7, "notification_provider_accepted", "system", "Paula"), ev(8, "incident_taken", "scenario", "Tomás"), ev(9, "handoff_accepted", "scenario", "Tomás"),
+  ]);
+  assert.deepEqual(r.map(h => h.texto), ["Tomás aceptó el relevo", "Tomás tomó el incidente", "Llegaron 3 reportes", "Paula aceptó el relevo"]);
+  assert.deepEqual(r.map(h => h.desdeControl), [true, false, false, false]);
+  for (const h of r) assert.doesNotMatch(h.texto, /ntfy|in-app|escena|ejecución|resuelt|despert/i);
 });
