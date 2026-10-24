@@ -55,28 +55,40 @@ test("la hora se muestra en 24 h de Santiago", () => {
 });
 
 test("enviado sin aceptación no cuenta como cobertura", () => {
-  const f = followUp({ handoff: handoff("awaiting_candidate", paula), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidateId: "actor_paula", events: [] });
+  const f = followUp({ handoff: handoff("awaiting_candidate", paula), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidate: paula, events: [] });
   assert.equal(f.state, "awaiting");
   assert.equal(f.derivedNotice, null);
   assert.equal(f.coverageNotice, null);
 });
 
 test("aceptación anticipada queda programada con la hora de inicio", () => {
-  const f = followUp({ handoff: handoff("accepted", paula), coverage: coverage("scheduled", paula), outgoing: rodrigo, firstCandidateId: "actor_paula", events: [] });
+  const f = followUp({ handoff: handoff("accepted", paula), coverage: coverage("scheduled", paula), outgoing: rodrigo, firstCandidate: paula, events: [] });
   assert.equal(f.state, "scheduled");
   assert.equal(f.startsAtLabel, "22:10");
 });
 
-test("derivación a Tomás avisa que no hay que reenviar", () => {
-  const f = followUp({ handoff: handoff("awaiting_candidate", tomas), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidateId: "actor_paula", events: [] });
-  assert.equal(f.derivedNotice, "Relevo enviado a Tomás; no necesitas reenviarlo.");
+test("derivación por plazo vencido: dice que Paula no aceptó a tiempo y que no hay que reenviar", () => {
+  const f = followUp({ handoff: handoff("awaiting_candidate", tomas), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidate: paula,
+    events: [{ sequence: 3, kind: "handoff_sent" }, { sequence: 4, kind: "handoff_expired" }, { sequence: 5, kind: "handoff_derived" }] as never });
+  assert.equal(f.derivedNotice, "Paula no aceptó a tiempo. El relevo pasó a Tomás; no necesitas reenviarlo.");
+});
+
+test("derivación por rechazo: dice que Paula no puede cubrir", () => {
+  const f = followUp({ handoff: handoff("awaiting_candidate", tomas), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidate: paula,
+    events: [{ sequence: 4, kind: "handoff_rejected" }, { sequence: 5, kind: "handoff_derived" }] as never });
+  assert.equal(f.derivedNotice, "Paula no puede cubrir. El relevo pasó a Tomás; no necesitas reenviarlo.");
+});
+
+test("derivación sin evento de causa no inventa el motivo", () => {
+  const f = followUp({ handoff: handoff("awaiting_candidate", tomas), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidate: paula, events: [] });
+  assert.equal(f.derivedNotice, "El relevo pasó a Tomás; no necesitas reenviarlo.");
 });
 
 test("sin cobertura distingue aviso a jefatura registrado de pendiente", () => {
-  const base = { handoff: handoff("uncovered"), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidateId: "actor_paula" };
+  const base = { handoff: handoff("uncovered"), coverage: coverage("unconfirmed"), outgoing: rodrigo, firstCandidate: paula };
   const pending = followUp({ ...base, events: [{ sequence: 4, kind: "coverage_unconfirmed" }] as never });
   assert.equal(pending.state, "uncovered");
-  assert.match(pending.coverageNotice ?? "", /Aviso a jefatura pendiente/);
+  assert.equal(pending.coverageNotice, "Nadie aceptó el relevo. Sin cobertura confirmada. Aviso a jefatura pendiente.");
   const done = followUp({ ...base, events: [{ sequence: 4, kind: "coverage_unconfirmed" }, { sequence: 5, kind: "notification_in_app" }] as never });
   assert.match(done.coverageNotice ?? "", /Aviso a jefatura registrado/);
   assert.doesNotMatch(done.coverageNotice ?? "", /descansar|tranquilo/i);

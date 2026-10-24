@@ -69,7 +69,7 @@ test("tras enviar, el estado del relevo manda y lo entregado queda plegado", asy
   await resetExecution(request);
   await openCierre(page);
   await sendHandoff(page);
-  const left = page.getByText(/^Lo que dejaste: 5 pendientes/);
+  const left = page.getByText(/^Lo que dejaste: 3 pendientes/);
   await expect(left).toBeVisible();
   await expect(page.getByRole("list", { name: "Pendientes del turno" })).toBeHidden();
   await left.click();
@@ -117,7 +117,7 @@ test("tras reset con cambios sin enviar avisa y conserva el texto hasta recargar
   await (await campoNota(page)).fill("Borrador que no se envió.");
   await resetExecution(request);
   await expect(page.getByText("Esta vista quedó desactualizada")).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByLabel("Nota del relevo")).toHaveValue("Borrador que no se envió.");
+  await expect(page.getByLabel("Nota para quien entra (opcional)")).toHaveValue("Borrador que no se envió.");
   await page.getByRole("button", { name: "Recargar cierre" }).click();
   await expect(page.getByText("Esta vista quedó desactualizada")).toHaveCount(0);
 });

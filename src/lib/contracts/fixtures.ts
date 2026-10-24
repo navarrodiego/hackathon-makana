@@ -45,10 +45,8 @@ export const BASE_FIXTURE = {
     startsAt: "2026-10-24T01:10:00.000Z", endsAt: "2026-10-24T11:00:00.000Z", outgoingEndsAt: "2026-10-24T01:10:00.000Z",
   },
   tickets: [
-    { id: "ticket_481", reference: "#481", text: "Local Coronel: el lector de códigos de la caja 3 no lee; la cajera digita los códigos a mano.", disposition: "puede_esperar", reason: "La caja sigue vendiendo." },
-    { id: "ticket_477", reference: "#477", text: "Local Los Ángeles: la impresora de etiquetas de precios de la bodega no imprime.", disposition: "puede_esperar", reason: "No afecta las ventas." },
     { id: "ticket_470", reference: "#470", text: "El cierre de caja de 6 locales no llegó a la central; el sistema reintenta a las 02:00.", disposition: "transferir", reason: "Revisa si el reintento de las 02:00 funcionó." },
-    { id: "ticket_466", reference: "#466", text: "Bodega de Talcahuano: la consulta de stock va lenta por la VPN.", disposition: "puede_esperar", reason: "Afecta solo a la bodega." },
+    { id: "ticket_481", reference: "#481", text: "Local Coronel: el lector de códigos de la caja 3 no lee; la cajera digita los códigos a mano.", disposition: "puede_esperar", reason: "La caja sigue vendiendo." },
     { id: "ticket_462", reference: "#462", text: "Crear la cuenta de la nueva cajera del local Chillán; entra el lunes.", disposition: "puede_esperar", reason: "Se necesita para el lunes." },
   ],
   handoffState: "draft", acceptedBy: null, incident: null,
@@ -58,7 +56,7 @@ export const BASE_FIXTURE = {
  * Resumen de traspaso del escenario, fijo en el código: el cierre no usa IA. Coincide con los pendientes de
  * `BASE_FIXTURE` (solo #470 para seguimiento) y cabe en el límite de la nota; Rodrigo puede editarlo antes de enviar.
  */
-export const HANDOFF_SUMMARY = "Paula: dejo cinco pendientes. Solo el #470 necesita seguimiento: el cierre de caja de 6 locales no llegó a la central y el sistema reintenta a las 02:00. Revisa si funcionó. Los demás pueden esperar a la mañana; ninguno detiene las ventas.";
+export const HANDOFF_SUMMARY = "Paula: dejo tres pendientes. Solo el #470 necesita seguimiento: el cierre de caja de 6 locales no llegó a la central y el sistema reintenta a las 02:00. Revisa si funcionó. Los otros dos pueden esperar a la mañana.";
 /** Misma persona, otro rol explícito: no hay regla por el nombre Rodrigo. */
 export const OUTGOING_ELIGIBLE_FIXTURE = {
   ...BASE_FIXTURE, name: "outgoing_explicit_backup",

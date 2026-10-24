@@ -13,7 +13,7 @@ export function Pendiente({ ticket }: { ticket: TicketDraft }) {
       ticketId={ticket.reference}
       title={ticket.text}
       proposal={ticket.disposition === "transferir"
-        ? <><span className="font-semibold">Para seguimiento.</span> {ticket.reason}</>
+        ? <><span className="font-semibold text-primary">Para seguimiento.</span> {ticket.reason}</>
         : null}
     />
   );

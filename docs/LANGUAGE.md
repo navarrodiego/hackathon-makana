@@ -33,7 +33,7 @@ El eslogan **Entrega el turno. Recupera la noche.** es aprobado, no una garantí
 - **Tomar incidente** en web y ntfy. No usar la etiqueta anterior «Lo tomo».
 - **Para seguimiento** en el pendiente que la IA destaca; los demás se listan sin etiqueta. No usar «Transferir» como etiqueta visible: quien entra recibe todos los pendientes.
 - **Regenerar** para una nueva llamada IA; no simularla con una espera artificial.
-- **Editar nota** abre el campo de la nota en el cierre; la nota se lee antes como texto. Sin nota: «Sin nota. Es opcional.».
+- **Nota para quien entra (opcional)**: campo visible y editable desde el inicio en el cierre, con el resumen del turno ya escrito. Vacía no bloquea el envío.
 
 - **Ingresar al cierre de turno** / **Ingresar a control** con el campo «Contraseña de operador»; **Cerrar sesión** para salir. Decir «contraseña de operador», no «credencial» ni «usuario».
 
@@ -49,7 +49,8 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 | Relevo enviado (cabecera) | «Rodrigo envió el relevo.»; no afirma aceptación ni cobertura |
 | Proyector con el relevo en borrador | «Rodrigo cierra su turno» · «Deja 5 pendientes a quien entra; 1 queda para seguimiento.» · «Su turno termina a las 22:10. El relevo irá primero a Paula; aún no se envía.» («terminó» si la hora ya pasó). Solo conteos: sin referencias ni nota |
 | Enviado, aún sin aceptación | «Esperando aceptación de Paula» |
-| Derivado por rechazo/plazo | «Relevo enviado a Tomás; no necesitas reenviarlo» |
+| Derivado por plazo | «Paula no aceptó a tiempo. El relevo pasó a Tomás; no necesitas reenviarlo.» |
+| Derivado por rechazo | «Paula no puede cubrir. El relevo pasó a Tomás; no necesitas reenviarlo.» |
 | Aceptación anticipada | «Paula aceptó. Su cobertura comienza a las 22:10» |
 | Turno terminado y cobertura efectiva | «Turno terminado. Cobertura aceptada por Paula. No eres respaldo en esta ventana» |
 | Turno terminado, hueco y aviso in-app registrado | «Tu turno terminó. Sin cobertura confirmada. Jefatura avisada»; mostrar canal escenario |

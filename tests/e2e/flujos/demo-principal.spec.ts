@@ -41,16 +41,16 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   const proy = await open(undefined, { viewport: { width: 1920, height: 1080 } });
   await proy.goto("/proyector");
   await expect(proy.getByText("Rodrigo cierra su turno")).toBeVisible();
-  await expect(proy.getByText(/^Deja 5 pendientes a quien entra/)).toBeVisible();
+  await expect(proy.getByText(/^Deja 3 pendientes a quien entra/)).toBeVisible();
   await expect(proy.getByText(/El relevo irá primero a Paula; aún no se envía\./)).toBeVisible();
   await expect(proy.getByText(/#470|Nadie aceptó el relevo/)).toHaveCount(0);
 
   // 3. Cierre de Rodrigo en su teléfono: la nota es editable y enviar no confirma cobertura (R01).
   const rod = await open("outgoing");
   await rod.goto("/rodrigo");
-  const nota = rod.getByLabel("Nota del relevo");
-  await expect(nota).toHaveValue(/^Paula: dejo cinco pendientes\./);
-  await (await campoNota(rod)).fill("Hay cinco pendientes. #470: el cierre de caja de 6 locales no llegó a la central; reintenta a las 02:00. El resto puede esperar.");
+  const nota = rod.getByLabel("Nota para quien entra (opcional)");
+  await expect(nota).toHaveValue(/^Paula: dejo tres pendientes\./);
+  await (await campoNota(rod)).fill("Hay tres pendientes. #470: el cierre de caja de 6 locales no llegó a la central; reintenta a las 02:00. El resto puede esperar.");
   await rod.getByRole("button", { name: "Enviar relevo" }).click();
   await expect(rod.getByText(/Esperando aceptación de Paula/)).toBeVisible();
   // El proyector cambia solo, sin recargar.

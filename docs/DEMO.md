@@ -8,7 +8,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 
 - Deploy Vercel con base Neon; verificar acceso público desde otro dispositivo/red, commit correcto y secretos solo servidor. Localhost no sirve como backend de la demo pública.
 - Semilla ficticia: Rodrigo saliente 22:10; Paula entrante y push físico; Tomás respaldo; Carla coordinación in-app. Rodrigo no es respaldo elegible en esta ventana.
-- Cargar cinco pendientes de CONTRACTS C03 en reset; la nota parte del resumen de traspaso fijo (sin IA) y es editable. No introducir tickets/contactos/salud reales.
+- Cargar tres pendientes de CONTRACTS C03 en reset; la nota parte del resumen de traspaso fijo (sin IA) y es editable. No introducir tickets/contactos/salud reales.
 - Reset escénico protegido, nueva ejecución y tokens vigentes. Comprobar que el canal comienza cerrado y no queda un incidente de ensayos anteriores.
 - Mantener proyector consultando cada segundo: esas peticiones evalúan vencimientos. Mostrar estado de conexión. No afirmar autonomía si no hay lector.
 - Plazos reales de 30 s por candidato, separados para relevo e incidente. Las escenas horarias no aceleran ese tiempo.
@@ -75,8 +75,8 @@ Si R R muestra «El estado cambió mientras actuabas», un reporte terminó de c
 
 ## Ramas para preguntas y QA, fuera del pitch principal
 
-1. Paula rechaza: Tomás recibe solicitud inmediatamente.
-2. Paula guarda silencio: Tomás recibe solicitud al vencer 30 s; su propio plazo empieza al derivar.
+1. Paula rechaza: Tomás recibe solicitud inmediatamente. `/rodrigo` muestra «Paula no puede cubrir. El relevo pasó a Tomás; no necesitas reenviarlo.»
+2. Paula guarda silencio: Tomás recibe solicitud al vencer 30 s; su propio plazo empieza al derivar. `/rodrigo` muestra «Paula no aceptó a tiempo. El relevo pasó a Tomás; no necesitas reenviarlo.» Decisión del 24-10-2026: estas ramas no entran al pitch; si Paula no acepta, Tomás pasa a ser el entrante y el incidente no tendría un segundo respaldo en esta ventana.
 3. Tomás también falla: Sin cobertura confirmada; aviso a Carla in-app y fin del saliente independiente. No prolongar automáticamente Rodrigo.
 4. Aceptación/acuse tardío: no reasignar; explicar derivación.
 5. Crítico nuevo sin cobertura: registrar y elevar coordinación; no inventar responsable técnico ni ampliar turno.

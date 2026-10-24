@@ -83,27 +83,41 @@ export interface FollowUp {
   readonly coverageNotice: string | null;
 }
 
+/** Último motivo registrado de que el relevo dejó a una persona: plazo vencido o «no puedo cubrir». */
+function lastRefusal(events: readonly Pick<PublicEventDTO, "sequence" | "kind">[]): "handoff_expired" | "handoff_rejected" | null {
+  const last = events.filter(e => e.kind === "handoff_expired" || e.kind === "handoff_rejected").sort((a, b) => b.sequence - a.sequence)[0];
+  return last ? last.kind as "handoff_expired" | "handoff_rejected" : null;
+}
+
 /** Deriva el mensaje de continuidad solo de lo registrado; enviar nunca muestra cobertura. */
 export function followUp(p: {
-  handoff: HandoffSummaryDTO | null; coverage: CoverageDTO | null; outgoing: ActorDTO; firstCandidateId: string | null;
+  handoff: HandoffSummaryDTO | null; coverage: CoverageDTO | null; outgoing: ActorDTO; firstCandidate: ActorDTO | null;
   events: readonly Pick<PublicEventDTO, "sequence" | "kind">[];
 }): FollowUp {
   const state = continuityState(p.handoff, p.coverage);
   const incoming = p.coverage?.actor ?? p.handoff?.candidate ?? null;
-  const derived = p.handoff?.status === "awaiting_candidate" && p.handoff.candidate && p.firstCandidateId !== null
-    && p.handoff.candidate.id !== p.firstCandidateId;
+  const next = p.handoff?.status === "awaiting_candidate" ? p.handoff.candidate : null;
+  const derived = next !== null && p.firstCandidate !== null && next.id !== p.firstCandidate.id;
+  let derivedNotice: string | null = null;
+  if (derived) {
+    // Solo se nombra a la primera persona cuando el motivo está registrado; sin evento no se inventa.
+    const refusal = lastRefusal(p.events);
+    const why = refusal === "handoff_expired" ? `${p.firstCandidate!.displayName} no aceptó a tiempo. `
+      : refusal === "handoff_rejected" ? `${p.firstCandidate!.displayName} no puede cubrir. ` : "";
+    derivedNotice = `${why}El relevo pasó a ${next!.displayName}; no necesitas reenviarlo.`;
+  }
   let coverageNotice: string | null = null;
   if (state === "uncovered" && p.handoff?.status === "uncovered") {
     const lost = p.events.filter(e => e.kind === "coverage_unconfirmed").map(e => e.sequence).sort((a, b) => b - a)[0];
     const noticed = lost !== undefined && p.events.some(e => e.kind === "notification_in_app" && e.sequence > lost);
     coverageNotice = noticed
-      ? "Sin cobertura confirmada. Aviso a jefatura registrado en la aplicación."
-      : "Sin cobertura confirmada. Aviso a jefatura pendiente.";
+      ? "Nadie aceptó el relevo. Sin cobertura confirmada. Aviso a jefatura registrado en la aplicación."
+      : "Nadie aceptó el relevo. Sin cobertura confirmada. Aviso a jefatura pendiente.";
   }
   return {
     state, incoming,
     startsAtLabel: p.coverage ? clockLabel(p.coverage.startsAt) : undefined,
-    derivedNotice: derived ? `Relevo enviado a ${p.handoff!.candidate!.displayName}; no necesitas reenviarlo.` : null,
+    derivedNotice,
     coverageNotice,
   };
 }

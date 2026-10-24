@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { RodrigoViewDTO } from "@/lib/contracts/private";
-import type { CoverageDTO, HandoffId, HandoffSummaryDTO, TicketId } from "@/lib/contracts/client";
+import type { ActorDTO, CoverageDTO, HandoffId, HandoffSummaryDTO, TicketId } from "@/lib/contracts/client";
 import { HANDOFF_SUMMARY } from "@/lib/contracts/fixtures";
 import { PendingList } from "@/components/relevo/pending-row";
 import { ContinuityLine } from "@/components/relevo/continuity-line";
@@ -41,20 +41,10 @@ function initialTickets(view: RodrigoViewDTO): TicketDraft[] {
   return view.tickets.map(t => ({ id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason }));
 }
 
-/** Pendientes para seguimiento por referencia, en frase completa: «Solo #470 queda…» o «#470 y #466 quedan…». */
-function followUpHint(tickets: readonly TicketDraft[]): string {
-  const refs = tickets.filter(t => t.disposition === "transferir").map(t => t.reference);
-  if (refs.length === 0) return "Ningún pendiente queda para seguimiento.";
-  if (refs.length === 1) return `Solo ${refs[0]} queda para seguimiento; eso no lo vuelve urgente.`;
-  return `${refs.slice(0, -1).join(", ")} y ${refs.at(-1)} quedan para seguimiento; eso no los vuelve urgentes.`;
-}
-
-/** Plegable con flecha dibujada; `open`/`onToggle` opcionales para abrirlo desde fuera (errores de la nota). */
-function Plegable({ summary, open, onToggle, children }: {
-  summary: ReactNode; open?: boolean; onToggle?: (open: boolean) => void; children: ReactNode;
-}) {
+/** Plegable con flecha dibujada para lo ya entregado. */
+function Plegable({ summary, children }: { summary: ReactNode; children: ReactNode }) {
   return (
-    <details className="group" open={open} onToggle={onToggle ? event => onToggle(event.currentTarget.open) : undefined}>
+    <details className="group">
       <summary className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg text-body font-semibold marker:content-none [&::-webkit-details-marker]:hidden">
         <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[0.75em] shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none">
           <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -79,9 +69,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const [showErrors, setShowErrors] = useState(false);
   const [staleByServer, setStaleByServer] = useState(false);
   const [dirty, setDirty] = useState(false);
-  // La edición de la nota se abre sola si su error bloquea el envío.
-  const [editing, setEditing] = useState(false);
-  const [firstCandidate, setFirstCandidate] = useState<string | null>(view.handoff?.candidate?.id ?? null);
+  const [firstCandidate, setFirstCandidate] = useState<ActorDTO | null>(view.handoff?.candidate ?? null);
   const attempt = useRef<{ payload: string; key: string } | null>(null);
 
   // Estado público compartido con las demás pantallas. Otra ejecución significa que se reinició la demostración.
@@ -96,7 +84,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const coverage = handoff === remote && snapshot?.coverage ? snapshot.coverage : localCoverage;
   const sent = handoff !== null && handoff.status !== "draft";
   // Primer candidato visto: se recuerda aunque el relevo escale después.
-  if (firstCandidate === null && handoff?.status === "awaiting_candidate" && handoff.candidate) setFirstCandidate(handoff.candidate.id);
+  if (firstCandidate === null && handoff?.status === "awaiting_candidate" && handoff.candidate) setFirstCandidate(handoff.candidate);
 
   // Tras un reset la vista se rehace sola, salvo que haya cambios sin enviar: entonces se avisa y se espera el clic.
   const rebuild = otherExecution && !dirty && busy === "idle";
@@ -105,7 +93,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const locked = sent || stale || busy !== "idle";
 
   async function send() {
-    if (noteIssue(note)) { setShowErrors(true); setEditing(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
+    if (noteIssue(note)) { setShowErrors(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
     setBusy("sending"); setProblem(null);
     const payload = sendPayloadKey({ version, note, tickets });
     if (attempt.current?.payload !== payload) attempt.current = { payload, key: crypto.randomUUID() };
@@ -122,7 +110,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
       if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE" || result.code === "STATE_CONFLICT") setStaleByServer(true);
       return;
     }
-    setFirstCandidate(result.data.handoff.candidate?.id ?? null);
+    setFirstCandidate(result.data.handoff.candidate ?? null);
     setLocalHandoff(result.data.handoff); setLocalCoverage(result.data.coverage);
     void announceChange();
   }
@@ -130,7 +118,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   // Nombre y no «Tú»: esta vista también se proyecta a la sala.
   const outgoing = { id: view.actorId, displayName: "Rodrigo" };
   const follow = sent ? followUp({
-    handoff, coverage, outgoing, firstCandidateId: firstCandidate, events: snapshot?.events ?? [],
+    handoff, coverage, outgoing, firstCandidate, events: snapshot?.events ?? [],
   }) : null;
   const active = snapshot?.incidents.filter(i => i.status !== "taken") ?? view.activeIncidents;
   const phase = phaseOf(sent, snapshot?.scene.label ?? null);
@@ -144,8 +132,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
 
   const pendientes = (
     <section aria-labelledby="pendientes" className="space-y-3">
-      <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
-      <p className="text-aux text-muted-foreground">{followUpHint(tickets)}</p>
+      <h2 id="pendientes" className="text-body font-semibold text-muted-foreground">Pendientes que dejas</h2>
       <PendingList label="Pendientes del turno">
         {tickets.map(t => <Pendiente key={t.id} ticket={t} />)}
       </PendingList>
@@ -153,17 +140,10 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   );
 
   const nota = (
-    <section aria-labelledby="nota" className="space-y-4">
-      <h2 id="nota" className="text-section font-semibold">Nota para quien entra (opcional)</h2>
-      {/* Mientras se edita, el campo ya muestra la nota: la cita sobraría. */}
-      {editing ? null : note.trim()
-        ? <blockquote className="max-w-[60ch] text-body text-pretty break-words whitespace-pre-line">{note}</blockquote>
-        : <p className="text-body text-muted-foreground">Sin nota. Es opcional.</p>}
-      <p className="text-aux text-muted-foreground">Resumen del turno · puedes enviarlo tal cual, editarlo o dejarlo vacío.</p>
-      <Plegable summary="Editar nota" open={editing} onToggle={setEditing}>
-        <NotaEditor note={note} disabled={locked} showErrors={showErrors}
-          onChange={value => { setNote(value); setDirty(true); }} />
-      </Plegable>
+    // Campo visible y editable desde el inicio, con el resumen fijo ya escrito: sin plegable ni salto de diseño.
+    <section aria-label="Nota para quien entra">
+      <NotaEditor note={note} disabled={locked} showErrors={showErrors}
+        onChange={value => { setNote(value); setDirty(true); }} />
     </section>
   );
 

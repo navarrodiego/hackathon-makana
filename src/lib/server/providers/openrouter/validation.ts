@@ -74,7 +74,7 @@ export function parseEvidence(value: unknown, text: string): FactEvidence {
 export function parseNote(value: unknown, input: NoteInput): NoteOutput {
   const result = exact(value, ["suggestions", "note"]);
   const expectedIds = new Set(input.tickets.map(ticket => ticket.id));
-  if (input.tickets.length !== 5 || expectedIds.size !== 5 || !Array.isArray(result.suggestions) || result.suggestions.length !== 5) throw new InvalidOutput();
+  if (expectedIds.size !== input.tickets.length || !Array.isArray(result.suggestions) || result.suggestions.length !== input.tickets.length) throw new InvalidOutput();
   const seen = new Set<string>();
   for (const item of result.suggestions) {
     const suggestion = exact(item, ["ticketId", "disposition", "reason"]);

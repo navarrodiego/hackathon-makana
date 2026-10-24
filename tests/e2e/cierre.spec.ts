@@ -93,20 +93,20 @@ test("ingreso sin JavaScript: el formulario hace POST, la contraseña no queda e
   await context.close();
 });
 
-test("muestra los cinco pendientes, destaca solo el de seguimiento y no afirma cobertura", async ({ page, request }, testInfo) => {
+test("muestra los tres pendientes, destaca solo el de seguimiento y no afirma cobertura", async ({ page, request }, testInfo) => {
   await freshReady(request);
   await openCierre(page);
-  for (const ref of ["#481", "#477", "#470", "#466", "#462"]) await expect(page.getByRole("list", { name: "Pendientes del turno" }).getByText(ref, { exact: true })).toBeVisible();
+  for (const ref of ["#470", "#481", "#462"]) await expect(page.getByRole("list", { name: "Pendientes del turno" }).getByText(ref, { exact: true })).toBeVisible();
   const lista = page.getByRole("list", { name: "Pendientes del turno" });
   await expect(lista.getByText("Para seguimiento.")).toHaveCount(1);
   const t470 = lista.getByRole("listitem").filter({ hasText: "#470" });
   await expect(t470.getByText("Para seguimiento.")).toBeVisible();
   await expect(t470.getByText(/El cierre de caja de 6 locales no llegó a la central/)).toBeVisible();
   await expect(t470.getByText(/Revisa si el reintento de las 02:00 funcionó\./)).toBeVisible();
-  await expect(page.getByText("Solo #470 queda para seguimiento; eso no lo vuelve urgente.")).toBeVisible();
   await expect(page.getByRole("radio")).toHaveCount(0);
-  await expect(page.getByText(/Resumen del turno · puedes enviarlo tal cual/)).toBeVisible();
-  await expect(page.getByLabel("Nota del relevo")).toHaveValue(/^Paula: dejo cinco pendientes\. Solo el #470 necesita seguimiento/);
+  await expect(page.getByText(/Resumen del turno: puedes enviarlo tal cual/)).toBeVisible();
+  await expect(page.getByText("Editar nota", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Nota para quien entra (opcional)")).toHaveValue(/^Paula: dejo tres pendientes\. Solo el #470 necesita seguimiento/);
   await expect(page.getByText(/Cobertura activa|Programado|Esperando aceptación/)).toHaveCount(0);
   expect(await noScroll(page)).toBe(true);
   await page.screenshot({ path: `.impeccable/review/cierre-borrador-${testInfo.project.name}.png`, fullPage: true });
@@ -131,7 +131,7 @@ test("el cierre no usa IA: sin Regenerar, sin avisos de preparación y con el re
   await expect(page.getByRole("button", { name: "Regenerar" })).toHaveCount(0);
   await expect(page.getByText(/\bIA\b/)).toHaveCount(0);
   await expect(page.getByText(/La nota aún se está preparando|La nota no se generó/)).toHaveCount(0);
-  await expect(page.getByLabel("Nota del relevo")).toHaveValue(/ninguno detiene las ventas\.$/);
+  await expect(page.getByLabel("Nota para quien entra (opcional)")).toHaveValue(/Los otros dos pueden esperar a la mañana\.$/);
   await expect(sendButton(page)).toBeEnabled();
 });
 
@@ -151,11 +151,11 @@ test("enviar muestra espera de aceptación, bloquea la edición y no reaviza inc
   await expect(page.getByText(/Esperando aceptación de/)).toBeVisible();
   await expect(page.getByText(/Cobertura activa|Programado/)).toHaveCount(0);
   await expect(sendButton(page)).toHaveCount(0);
-  await expect(page.getByLabel("Nota del relevo")).toBeDisabled();
+  await expect(page.getByLabel("Nota para quien entra (opcional)")).toBeDisabled();
   // El estado del relevo manda: pendientes y nota quedan plegados bajo «Lo que dejaste».
   await expect(page.getByRole("heading", { name: "Estado del relevo" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Pendientes que dejas" })).toBeHidden();
-  await expect(page.getByText(/^Lo que dejaste: 5 pendientes y una nota$/)).toBeVisible();
+  await expect(page.getByText(/^Lo que dejaste: 3 pendientes y una nota$/)).toBeVisible();
   await page.screenshot({ path: `.impeccable/review/cierre-enviado-${testInfo.project.name}.png`, fullPage: true });
   const after = await state(request);
   expect(after.handoff.status).toBe("awaiting_candidate");
@@ -207,5 +207,5 @@ test("si el candidato no responde, el relevo se deriva y se avisa que no hay que
   await openCierre(page);
   await sendButton(page).click();
   await expect(page.getByText(/Esperando aceptación de/)).toBeVisible();
-  await expect(page.getByText(/Relevo enviado a .+; no necesitas reenviarlo\./)).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByText(/^Paula no aceptó a tiempo\. El relevo pasó a .+; no necesitas reenviarlo\.$/)).toBeVisible({ timeout: 45_000 });
 });
