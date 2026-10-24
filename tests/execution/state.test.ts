@@ -42,7 +42,7 @@ test('estado público saneado (S02/S03)', async t => {
       assert.ok(closing);
       assert.equal(closing.outgoing.displayName, 'Rodrigo');
       assert.equal(closing.firstCandidate.displayName, 'Paula');
-      assert.equal(closing.pendingCount, 5);
+      assert.equal(closing.pendingCount, BASE_FIXTURE.tickets.length);
       assert.equal(closing.followUpCount, 1, 'solo #470 queda para seguimiento');
       assert.deepEqual(walk(result.value), []);
       const json = JSON.stringify(result.value);

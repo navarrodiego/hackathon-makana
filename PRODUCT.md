@@ -80,7 +80,7 @@ Nombre Relevo; eslogan aprobado. Tuteo chileno sobrio, sin modismos ni humor en 
 
 ## Evidence on Hand
 
-Existe un master plan de decisiones, un diseño visual previo y una skill editorial. Este paquete deriva de ellos. Se incorporó la base técnica; su evidencia de ejecución se registra en docs/SETUP.md. No se verificaron credenciales, API del modelo, entrega al S26 o URL de producción. No existen aquí entrevistas con Rodrigo, pruebas longitudinales, clientes, ROI ni resultados clínicos. Los cinco pendientes y los reportes de demo son sintéticos.
+Existe un master plan de decisiones, un diseño visual previo y una skill editorial. Este paquete deriva de ellos. Se incorporó la base técnica; su evidencia de ejecución se registra en docs/SETUP.md. No se verificaron credenciales, API del modelo, entrega al S26 o URL de producción. No existen aquí entrevistas con Rodrigo, pruebas longitudinales, clientes, ROI ni resultados clínicos. Los tres pendientes y los reportes de demo son sintéticos.
 
 Fuentes del caso/reglas: https://hack.makana.cl/ y https://hack.makana.cl/bases.html . No se atribuye al organizador validación de esta solución.
 

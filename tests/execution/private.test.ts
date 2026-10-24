@@ -21,7 +21,7 @@ test('lecturas privadas autorizadas (S04/S05)', async t => {
       const view = await w.read.outgoing(w.ctx({ kind: 'outgoing', actorId: w.ids.Rodrigo }, w.ids.Rodrigo, BASE_FIXTURE.operationalAt));
       assert.ok(view.ok, JSON.stringify(view));
       assert.equal(view.value.audience, 'outgoing');
-      assert.equal(view.value.tickets.length, 5);
+      assert.equal(view.value.tickets.length, BASE_FIXTURE.tickets.length);
       assert.equal(view.value.handoff, null);
       assert.equal(view.value.note.saved, null);
       assert.deepEqual(leaks(view.value), []);
@@ -51,7 +51,7 @@ test('lecturas privadas autorizadas (S04/S05)', async t => {
       const view = await w.read.recipient(paula, w.prepared.handoff.id);
       assert.ok(view.ok, JSON.stringify(view));
       assert.equal(view.value.audience, 'recipient');
-      assert.equal(view.value.tickets.length, 5);
+      assert.equal(view.value.tickets.length, BASE_FIXTURE.tickets.length);
       assert.deepEqual(leaks(view.value), []);
       const wrongId = await w.read.recipient(paula, 'handoff_otro');
       assert.deepEqual(wrongId, { ok: false, code: 'NOT_FOUND' });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createHandoffNoteService } from "../../src/lib/server/handoff-note/service";
 import type { SuggestHandoff } from "../../src/lib/contracts/http";
+import { BASE_FIXTURE } from "../../src/lib/contracts/fixtures";
 import { EXECUTION, HANDOFF, OUTPUT, context, memoryUnitOfWork, okResult, provider } from "./fakes";
 
 const input = (over: Partial<SuggestHandoff> = {}): SuggestHandoff => ({ executionId: EXECUTION, idempotencyKey: "key-1", expectedVersion: 1, handoffId: HANDOFF, ...over });
@@ -20,11 +21,11 @@ describe("HandoffNoteService.suggest", () => {
     assert.equal(r.value.note.saved?.output.suggestions.filter(s => s.disposition === "transferir").length, 1);
   });
 
-  it("envía al proveedor los cinco pendientes, el nombre de quien recibe y la política fija", async () => {
+  it("envía al proveedor todos los pendientes, el nombre de quien recibe y la política fija", async () => {
     const p = provider(okResult);
     await createHandoffNoteService({ unitOfWork: memoryUnitOfWork().unitOfWork, provider: p.impl }).suggest(context(), input());
     const req = p.calls[0];
-    assert.equal(req.input.tickets.length, 5);
+    assert.equal(req.input.tickets.length, BASE_FIXTURE.tickets.length);
     assert.equal(req.input.receiverName, "Paula");
     assert.equal(req.input.policyVersion, "C05-v1");
     assert.deepEqual(req.fence.entity, { kind: "handoff", id: HANDOFF });

@@ -53,7 +53,7 @@ export default function Home() {
             <p>En Control, pulsa «Reiniciar demostración» y luego «Reiniciar ahora». Así empiezas desde cero.</p>
           </Step>
           <Step title="3. Envía el relevo como Rodrigo" screen={<Screen href="/rodrigo">Abrir cierre de turno</Screen>}>
-            <p>Mejor en tu teléfono. Revisa sus cinco pendientes y pulsa «Enviar relevo». El proyector pasa a «Esperando aceptación de Paula».</p>
+            <p>Mejor en tu teléfono. Revisa sus tres pendientes y pulsa «Enviar relevo». El proyector pasa a «Esperando aceptación de Paula».</p>
           </Step>
           <Step title="4. Espera un minuto">
             <p>

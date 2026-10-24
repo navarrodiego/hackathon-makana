@@ -1,4 +1,5 @@
 import { LIMITS, type Id } from "@/lib/contracts/core";
+import { BASE_FIXTURE } from "@/lib/contracts/fixtures";
 import type { ApiRoutes, RequestValidator, RouteKey, ServiceResult } from "@/lib/contracts/http";
 
 type Obj = Record<string, unknown>;
@@ -9,7 +10,8 @@ const IDEMPOTENCY_KEY = /^[A-Za-z0-9._-]{1,128}$/;
 // Controles salvo salto de línea y tabulación, más separadores y marcas bidireccionales invisibles.
 const FORBIDDEN_TEXT = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u200B-\u200F\u2028-\u202E\u2066-\u2069\uFEFF]/u;
 const NICKNAME_MAX = 40;
-const TICKETS_PER_HANDOFF = 5;
+/** Una decisión por pendiente del escenario. */
+const TICKETS_PER_HANDOFF = BASE_FIXTURE.tickets.length;
 const REASON_MAX = 280;
 
 class Invalid extends Error {}

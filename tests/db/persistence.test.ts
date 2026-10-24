@@ -31,7 +31,7 @@ test('fixtures aislados, rollback, CAS, cuotas, equivalencia y reset en PostgreS
           assert.ok(!seen.has(p.executionId)); seen.add(p.executionId);
           assert.notEqual(p.handoff.outgoingActorId, 'actor_outgoing'); assert.equal(p.handoff.savedSuggestion, null);
           const result = await store.run(context(p), async r => {
-            assert.equal((await r.aggregates.tickets.list()).length, 5);
+            assert.equal((await r.aggregates.tickets.list()).length, f.tickets.length);
             assert.equal((await r.reference.actors()).length, 4);
             if (f === INCIDENT_FIXTURE) assert.equal((await r.aggregates.incidents.list()).length, 1);
             return success(null);

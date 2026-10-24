@@ -5,7 +5,7 @@ import { createRequestValidator } from '../../src/lib/server/http/validate';
 const v = createRequestValidator();
 const base = { executionId: 'execution_a1', idempotencyKey: 'key-1.ok_2' };
 const versioned = { ...base, expectedVersion: 3 };
-const tickets = ['481', '477', '470', '466', '462'].map(n => ({ ticketId: `ticket_${n}`, disposition: 'puede_esperar', reason: 'Motivo breve.' }));
+const tickets = ['481', '470', '462'].map(n => ({ ticketId: `ticket_${n}`, disposition: 'puede_esperar', reason: 'Motivo breve.' }));
 const bad = (route: Parameters<typeof v.parse>[0], body: unknown, params: unknown = null) =>
   assert.deepEqual(v.parse(route, { body, params }), { ok: false, code: 'INVALID_INPUT' }, JSON.stringify(body));
 
@@ -41,16 +41,16 @@ test('reporte: recorta, cuenta puntos de código y rechaza control, vacío y apo
   assert.equal(v.parse('POST /api/messages', { body: { ...base, nickname: '<b>x</b>', text: '<img src=x onerror=1>' }, params: null }).ok, true, 'el HTML se conserva como texto; se escapa al mostrar');
 });
 
-test('enviar relevo: cinco decisiones únicas, razón y nota de hasta 60 palabras', () => {
+test('enviar relevo: una decisión única por pendiente del escenario, razón y nota de hasta 60 palabras', () => {
   const body = { ...versioned, handoffId: 'handoff_1', note: 'Nota breve.', tickets };
   assert.equal(v.parse('POST /api/handoff', { body, params: null }).ok, true);
   assert.equal(v.parse('POST /api/handoff', { body: { ...body, note: Array(60).fill('a').join(' ') }, params: null }).ok, true);
   bad('POST /api/handoff', { ...body, note: Array(61).fill('a').join(' ') });
-  bad('POST /api/handoff', { ...body, tickets: tickets.slice(0, 4) });
-  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 4), tickets[0]] });
-  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 4), { ...tickets[4], disposition: 'urgente' }] });
-  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 4), { ...tickets[4], reason: '  ' }] });
-  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 4), { ...tickets[4], extra: true }] });
+  bad('POST /api/handoff', { ...body, tickets: tickets.slice(0, 2) });
+  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 2), tickets[0]] });
+  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 2), { ...tickets[2], disposition: 'urgente' }] });
+  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 2), { ...tickets[2], reason: '  ' }] });
+  bad('POST /api/handoff', { ...body, tickets: [...tickets.slice(0, 2), { ...tickets[2], extra: true }] });
   bad('POST /api/handoff', { ...body, handoffId: 'ticket_1' });
 });
 

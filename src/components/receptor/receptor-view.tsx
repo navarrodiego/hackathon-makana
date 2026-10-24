@@ -140,7 +140,7 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
         <PendingList label="Pendientes del relevo">
           {pkg.tickets.map(t => (
             <PendingRow key={t.id} ticketId={t.reference} title={t.text}
-              proposal={t.disposition === "transferir" ? <><span className="font-semibold">Para seguimiento.</span> {t.reason}</> : null} />
+              proposal={t.disposition === "transferir" ? <><span className="font-semibold text-primary">Para seguimiento.</span> {t.reason}</> : null} />
           ))}
         </PendingList>
       </section>

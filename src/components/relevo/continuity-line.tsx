@@ -42,7 +42,7 @@ function message(p: ContinuityLineProps) {
   }
 }
 
-/** Saliente → entrante. La línea queda cortada hasta que haya aceptación; el texto explica el estado. */
+/** Saliente → entrante. Sin aceptación, la línea llega sólida hasta un nodo de espera y sigue punteada; el texto explica el estado. */
 export function ContinuityLine(props: ContinuityLineProps) {
   const { outgoing, incoming, state, emphasis, className } = props;
   const joined = state === "scheduled" || state === "active";
@@ -50,16 +50,18 @@ export function ContinuityLine(props: ContinuityLineProps) {
     <section aria-label="Continuidad del turno" className={cn("py-2", className)}>
       <div className="flex items-center gap-3">
         <span className={cn("text-people font-semibold", emphasis && "text-title")}>{outgoing.displayName}</span>
-        <svg aria-hidden="true" viewBox="0 0 64 12" className="h-3 min-w-10 flex-1 text-foreground" preserveAspectRatio="none">
+        {/* Bordes CSS y no un SVG estirado: el patrón conserva su tamaño a cualquier ancho. */}
+        <span aria-hidden="true" className="flex min-w-10 flex-1 items-center">
           {joined ? (
-            <line x1="0" y1="6" x2="64" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray={state === "scheduled" ? "6 4" : undefined} />
+            <span className={cn("flex-1 border-t-2 border-foreground", state === "scheduled" && "border-dashed")} />
           ) : (
             <>
-              <line x1="0" y1="6" x2="26" y2="6" stroke="currentColor" strokeWidth="2" />
-              <line x1="38" y1="6" x2="64" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray="2 4" />
+              <span className="flex-1 border-t-2 border-foreground" />
+              <span className="mx-2 size-2.5 shrink-0 rounded-full border-2 border-dashed border-foreground" />
+              <span className="flex-1 border-t-2 border-dotted border-muted-foreground" />
             </>
           )}
-        </svg>
+        </span>
         <span className={cn("text-people font-semibold", emphasis && "text-title", !incoming && "text-muted-foreground")}>
           {incoming ? incoming.displayName : "Sin definir"}
         </span>

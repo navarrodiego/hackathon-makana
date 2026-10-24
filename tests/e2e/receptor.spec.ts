@@ -65,7 +65,7 @@ test("abrir el enlace muestra el paquete y no acepta (S02)", async ({ page, requ
   await expect(page.getByText("Abrir este enlace no lo acepta")).toBeVisible();
   await expect(page.getByRole("button", { name: "Aceptar relevo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "No puedo cubrir" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Pendientes del relevo" }).getByRole("listitem")).toHaveCount(5);
+  await expect(page.getByRole("list", { name: "Pendientes del relevo" }).getByRole("listitem")).toHaveCount(3);
   expect((await attempts(s.executionId)).map(a => a.status)).toEqual(["pending"]);
   await expect(page.locator('meta[name="referrer"]')).toHaveAttribute("content", "no-referrer");
   await expect(page.locator('a[href^="http"]')).toHaveCount(0);

@@ -25,7 +25,7 @@ test('reset escénico (S04)', async t => {
       assert.equal(state.coverage?.status, 'unconfirmed');
       assert.deepEqual(state.events.map(e => e.kind), ['execution_started']);
       const tickets = await w.readTx(async tx => ({ ok: true, value: await tx.aggregates.tickets.list() }), result.value.executionId);
-      assert.deepEqual(tickets.map(x => x.reference).sort(), ['#462', '#466', '#470', '#477', '#481']);
+      assert.deepEqual(tickets.map(x => x.reference).sort(), ['#462', '#470', '#481']);
       // Cada pendiente trae la decisión y la razón del escenario, no un texto de relleno.
       for (const f of BASE_FIXTURE.tickets) {
         const seeded = tickets.find(x => x.reference === f.reference);
