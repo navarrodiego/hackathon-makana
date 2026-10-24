@@ -1,7 +1,7 @@
 import type {
   ActorId, ClockSnapshot, CoverageStatus, EventId, ExecutionId, HandoffAttemptId, HandoffId,
   HandoffStatus, IncidentAttemptId, IncidentId, IncidentStatus, Instant, NotificationId,
-  Origin, PreparationStatus, ReportId, SceneId, Service, Version, WindowId,
+  Condition, Origin, PreparationStatus, ReportId, Scope, SceneId, Service, Version, WindowId,
 } from "./core";
 import type { EventKind } from "./domain";
 
@@ -59,11 +59,15 @@ export interface PublicStateDTO {
 }
 export interface ReportReceiptDTO {
   readonly audience: "reporter"; readonly executionId: ExecutionId; readonly reportId: ReportId;
-  readonly status: "processing" | "queued" | "review" | "incident";
+  readonly status: "processing" | "queued" | "review" | "incident" | "out_of_scope";
   readonly classificationMode: "pending" | "model" | "degraded";
   readonly incidentId: IncidentId | null; readonly duplicate: boolean;
   readonly notificationStatus: "none" | "pending" | "provider_accepted" | "in_app_recorded" | "failed";
   readonly nextAttentionAt: Instant | null;
+  /** Etiquetas de la clasificación del modelo; null en modo degradado, pendiente o fuera de TI. Nunca texto libre del modelo. */
+  readonly classified: { readonly service: Service; readonly condition: Condition; readonly scope: Scope } | null;
+  /** El modelo vio una emergencia física: el recibo orienta a números de emergencia. No cambia la ruta. */
+  readonly physicalEmergency: boolean;
 }
 export interface ChannelViewDTO {
   readonly audience: "reporter"; readonly executionId: ExecutionId; readonly channelOpen: boolean;

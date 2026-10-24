@@ -26,14 +26,15 @@ export function modelName(envelope: unknown): string {
   nonempty(model);
   return model;
 }
-function choice(value: unknown, labels: readonly string[]) {
-  const answer = exact(value, ["type", "choice", "confidence", "probabilities"]);
-  if (answer.type !== "choice" || typeof answer.choice !== "string" || !labels.includes(answer.choice)) throw new InvalidOutput();
-  probability(answer.confidence);
-  const probabilities = exact(answer.probabilities, labels);
+function answer(value: unknown, labels: readonly string[]) {
+  const result = exact(value, ["type", "choice", "confidence", "probabilities"]);
+  if (result.type !== "choice" || typeof result.choice !== "string" || !labels.includes(result.choice)) throw new InvalidOutput();
+  probability(result.confidence);
+  const probabilities = exact(result.probabilities, labels) as Record<string, number>;
   for (const value of Object.values(probabilities)) probability(value);
-  return answer.choice;
+  return { choice: result.choice, probabilities };
 }
+const choice = (value: unknown, labels: readonly string[]) => answer(value, labels).choice;
 export function parseDecisions(envelope: unknown): Omit<ClassificationOutput, "evidence"> {
   modelName(envelope);
   const answers = exact(object(envelope).answers, [...Object.keys(DECISION_LABELS), "pc"]);
@@ -45,9 +46,12 @@ export function parseDecisions(envelope: unknown): Omit<ClassificationOutput, "e
   const scope = choice(answers.scope, DECISION_LABELS.scope) as ClassificationOutput["scope"];
   const manipulation = choice(answers.manipulation, DECISION_LABELS.manipulation) === "true";
   const blocksBilling = choice(answers.blocksBilling, DECISION_LABELS.blocksBilling);
+  const topic = answer(answers.topic, DECISION_LABELS.topic);
   return { service, condition, scope, pc: pc.noul, manipulation,
     blocksBilling: blocksBilling === "unknown" ? null : blocksBilling === "true",
-    sufficientInformation: choice(answers.sufficientInformation, DECISION_LABELS.sufficientInformation) === "true" };
+    sufficientInformation: choice(answers.sufficientInformation, DECISION_LABELS.sufficientInformation) === "true",
+    topic: topic.choice as ClassificationOutput["topic"], noTiProbability: topic.probabilities.no_ti,
+    physicalEmergency: choice(answers.physicalEmergency, DECISION_LABELS.physicalEmergency) === "true" };
 }
 export function parseChat(envelope: unknown): unknown {
   modelName(envelope);

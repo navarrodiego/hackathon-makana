@@ -28,7 +28,7 @@ export const publicStateExample = {
 export const receiptExample = {
   audience: "reporter", executionId: "execution_example", reportId: "report_example",
   status: "review", classificationMode: "degraded", incidentId: "incident_example", duplicate: false,
-  notificationStatus: "pending", nextAttentionAt: null,
+  notificationStatus: "pending", nextAttentionAt: null, classified: null, physicalEmergency: false,
 } as const satisfies ReportReceiptDTO;
 export const noteExample = {
   status: "ready", saved: {
@@ -141,6 +141,7 @@ export const classificationRequestExample = {
 export const classificationOutputExample = {
   service: "facturacion", condition: "caida", scope: "local_equipo", pc: 0.9,
   manipulation: false, blocksBilling: true, sufficientInformation: true,
+  topic: "ti", noTiProbability: 0.01, physicalEmergency: false,
   evidence: { location: "local 12", resource: "caja 2", problem: "no emite boletas" },
 } as const satisfies import("./classification").ClassificationOutput;
 export const notificationResultExamples = [

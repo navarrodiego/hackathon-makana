@@ -45,7 +45,7 @@ export const LIMITS = {
   sessionMaxAgeMs: 43_200_000, equivalenceWindowMs: 600_000,
   classificationTimeoutMs: 6_000, classificationTimeoutMinMs: 1_000, classificationTimeoutMaxMs: 10_000, classificationStallMs: 30_000, noteWords: 60,
 } as const;
-export const POLICY_THRESHOLDS = { review: 0.40, notify: 0.70 } as const;
+export const POLICY_THRESHOLDS = { review: 0.40, notify: 0.70, outOfScope: 0.85 } as const;
 export const SERVICES = ["facturacion", "red_locales", "correo", "vpn", "impresora", "cuentas", "otro"] as const;
 export type Service = typeof SERVICES[number];
 export type Condition = "caida" | "degradacion" | "solicitud";

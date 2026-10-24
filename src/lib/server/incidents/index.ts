@@ -40,7 +40,7 @@ export function createIncidentService(deps: IncidentDeps): IncidentService {
     tx.aggregates.incidents.compareAndSwap(next, { executionId: current.executionId, version: current.version, status: current.status, currentAttemptId: current.currentAttemptId });
 
   async function register(tx: TransactionRepositories, context: CommandContext, report: Parameters<IncidentService["register"]>[2], _classification: Parameters<IncidentService["register"]>[3], decision: Parameters<IncidentService["register"]>[4], key: Parameters<IncidentService["register"]>[5]): ReturnType<IncidentService["register"]> {
-    if (decision.route === "queue") return { ok: true, value: { incident: null, duplicate: false } };
+    if (decision.route === "queue" || decision.route === "out_of_scope") return { ok: true, value: { incident: null, duplicate: false } };
     await tx.equivalence.lock(key);
     const existing = await tx.equivalence.findWithinWindow(key, report.narrativeAt);
     if (existing) {

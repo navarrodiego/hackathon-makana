@@ -10,7 +10,7 @@ test("classify combines Jev decisions with literal evidence and preserves the fe
   assert.equal(result.ok, true);
   if (!result.ok) return;
   assert.deepEqual(result.output, { service: "facturacion", condition: "caida", scope: "local_equipo", pc: 0.85,
-    manipulation: false, blocksBilling: true, sufficientInformation: true, evidence });
+    manipulation: false, blocksBilling: true, sufficientInformation: true, topic: "ti", noTiProbability: 0, physicalEmergency: false, evidence });
   assert.deepEqual(result.fence, classifyRequest.fence);
   assert.equal(result.provenance.api, "decisions");
   assert.equal(result.provenance.model, "typesafe/jev-1.14-20261014");

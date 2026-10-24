@@ -16,7 +16,19 @@ const invalidClassifications: [string, (value: ReturnType<typeof decisions>) => 
   ["unvalidated confidence", v => { v.answers.service.confidence = -1; }],
   ["incomplete probability map", v => { delete v.answers.service.probabilities.facturacion; }],
   ["extra answer", v => { Object.assign(v.answers, { recipient: "Rodrigo" }); }],
+  ["unknown topic", v => { v.answers.topic.choice = "deporte"; }],
+  ["missing topic", v => { delete (v.answers as Partial<typeof v.answers>).topic; }],
+  ["missing physical emergency", v => { delete (v.answers as Partial<typeof v.answers>).physicalEmergency; }],
 ];
+test("classify takes noTiProbability from the topic probabilities, not from its confidence", async () => {
+  const output = decisions();
+  output.answers.topic = { type: "choice", choice: "no_ti", confidence: 0.5, probabilities: { ti: 0.03, no_ti: 0.91, dudoso: 0.06 } };
+  output.answers.physicalEmergency.choice = "true";
+  const provider = createOpenRouterProvider({ timing: stableTiming, apiKey: "test", fetch: async url => Response.json(String(url).endsWith("/decisions") ? output : chat(evidence)) });
+  const result = await provider.classify(classifyRequest);
+  assert.ok(result.ok);
+  assert.deepEqual([result.output.topic, result.output.noTiProbability, result.output.physicalEmergency], ["no_ti", 0.91, true]);
+});
 for (const [name, mutate] of invalidClassifications) {
   test(`classify rejects ${name}`, async () => {
     const output = decisions(); mutate(output);
