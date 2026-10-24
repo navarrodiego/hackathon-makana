@@ -2,44 +2,61 @@
 
 **Entrega el turno. Recupera la noche.**
 
-Proyecto para el caso Rodrigo de la Hackatón Señales: un relevo explícito para terminar el trabajo sabiendo quién sigue.
+Hackatón Señales · Caso 02 · Rodrigo. Un traspaso de turno con responsable y respaldo, para que Rodrigo pueda cerrar el notebook sabiendo quién sigue.
 
-> Estado: el recorrido de relevo, reportes, avisos y cobertura está implementado y cubierto por pruebas de flujo (`tests/e2e/flujos`). La portada `/` explica al jurado cómo probar la demo por su cuenta. Este documento no acredita deploy ni URL pública.
+- Demo: <https://relevo-dun.vercel.app/>. La portada `/` explica cómo probarla por tu cuenta.
+- Hecho por Diego Navarro durante el evento, 23 y 24 de octubre de 2026.
 
-## Qué problema elegimos y por qué
+## Qué problema decidimos atacar
 
-Rodrigo trabaja en soporte TI con turnos rotativos y duerme poco. No deja de revisar tickets por temor a que algo quede sin atender. Su situación es multifactorial: horarios, café tardío, normalización y ronquido merecen atención; no afirmamos que la guardia sea el factor principal.
+Rodrigo tiene 41 años y trabaja en soporte TI en Concepción, con turnos que rotan cada semana y guardia por WhatsApp. Hace catorce meses que duerme cinco o seis horas y ya lo da por normal. Probó melatonina, sacar el celular de la pieza y un reloj. Dice que si no revisa los tickets antes de acostarse, igual no se duerme.
 
-Elegimos conectar su cierre con cobertura aceptada, avisos y respaldo. Dos observaciones de su ficha relacionan cierre temprano y más sueño, pero no prueban causalidad. El ronquido requiere considerar consulta profesional, no una solución clínica de esta app.
+Atacamos una barrera concreta: **no logra dar por terminado el trabajo**, por miedo a que algo quede sin atender. Nuestra hipótesis es que revisa porque no sabe quién sigue. Un traspaso explícito, aceptado por otra persona y con un respaldo si esa persona no responde, puede darle una razón para dejar de revisar.
 
-## Qué busca mostrar la demo
+## Por qué ese y no otro
 
-Rodrigo revisa y envía pendientes. Paula acepta el relevo. El público reporta por QR: lo diferible va a cola y un crítico avisa al S26 de Paula. Sin acuse, escala a Tomás, que toma el incidente desde el control del escenario. Rodrigo no es respaldo elegible en esa ventana.
+- **Dos noches de su ficha nos dieron la pista.** Cerró el notebook a las 23:58 y durmió 4 h 20; otro día lo cerró a las 22:10 y durmió 6 h 40. Cerrar antes coincidió con dormir más. Son dos observaciones, no una prueba de causa.
+- **Sus intentos eran rutinas de sueño.** Ninguno le daba una forma de dejar de estar disponible. Relevo no le suma otra rutina: reemplaza la revisión nocturna de tickets.
+- **Es un problema multifactorial y elegimos una parte.** Turnos rotativos, tercer café a las 19:20, ronquido fuerte y la idea de que «siempre ha sido así» también pesan. No afirmamos que el trabajo sea el factor principal. El ronquido fuerte merece una consulta profesional, que no depende de esta app.
+- **Elegimos el caso 02 porque nos interesa el sueño.** De los seis casos, es el tema que más queríamos trabajar.
 
-Aceptar relevo, tomar incidente y resolverlo son estados diferentes. La rama sin aceptación deriva al respaldo y, si falla, avisa a jefatura sin prolongar automáticamente al saliente. El registro es continuo, no solo nocturno.
+## Qué construimos
 
-## Qué queda fuera
+Una noche completa en Despensa Sur, una cadena ficticia de 30 supermercados del Biobío:
 
-Integraciones reales con WhatsApp/ticketera, gestión completa de turnos, resolución del hueco por jefatura, scheduler autónomo, medición de sueño y validación legal/clínica. Un relevo aceptado no demuestra dormir una hora más. El canal y los datos son de demostración; solo se prevé push físico a Paula.
+1. **Entregar.** Rodrigo envía el relevo en un paso desde `/rodrigo`. Paula lo acepta desde su teléfono. Enviar el relevo no confirma cobertura: la confirma la aceptación.
+2. **Decidir.** El público reporta fallas por QR en `/canal`. La IA (OpenRouter) clasifica cada reporte; una política visible de la empresa, no el modelo, decide si avisa. Lo que puede esperar queda en cola; un local que no puede cobrar avisa a Paula por ntfy.
+3. **Escalar.** Si Paula no toma el incidente en 30 s, el aviso pasa a Tomás, su respaldo. Rodrigo no es respaldo elegible en esa ventana.
+4. **Revisar.** En la mañana, `/rodrigo` y el proyector muestran quién quedó a cargo y qué pasó. El incidente queda tomado, no necesariamente resuelto.
 
-## Ejecución y acceso
+Si nadie acepta el relevo, se avisa a jefatura y queda «Sin cobertura confirmada». El turno de Rodrigo nunca se prolonga automáticamente. Aceptar el relevo, tomar un incidente y resolverlo son estados distintos.
 
-Next.js App Router, React, TypeScript, Tailwind, configuración de shadcn/ui y Prisma con adaptador PostgreSQL. PostgreSQL local para desarrollo; Neon y Vercel previstos para la demo. OpenRouter y ntfy aún sin implementación.
+## Qué dejamos fuera
 
-Requisitos: Node 24 (ver `.nvmrc`) y pnpm 12. La pantalla inicial funciona sin secretos.
+- Integraciones reales con WhatsApp y ticketera. El canal de la demo es simulado.
+- Gestión de turnos: rotación, preferencias e intercambios.
+- Editor de políticas: la de Despensa Sur está fija en el código.
+- Que jefatura resuelva el hueco de cobertura, y un scheduler autónomo: los plazos avanzan cuando el proyector consulta el estado.
+- Medición del sueño y cualquier dato de salud.
+- Validación legal laboral y clínica.
+
+Solo Paula recibe avisos en un teléfono físico; Tomás y Carla (jefatura) se ven dentro de la app. Un relevo aceptado no demuestra que Rodrigo duerma una hora más: eso exigiría medirlo durante semanas.
+
+## Ejecutar localmente
+
+Next.js (App Router), React, TypeScript, Tailwind, shadcn/ui y Prisma sobre PostgreSQL. OpenRouter clasifica los reportes y ntfy envía el aviso a Paula. Requisitos: Node 24 (`.nvmrc`), pnpm 12 y un PostgreSQL local.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm db:generate
+cp .env.example .env   # DATABASE_URL, OPERATOR_SECRET, APP_ORIGIN
+pnpm db:migrate:local && pnpm db:seed:local
 pnpm dev
 ```
 
-Abre `http://127.0.0.1:3000`. Para preparar conexión privada, copia `.env.example` a `.env` y configura `DATABASE_URL` de tu base local. No hay modelos de negocio, migraciones ni seed.
-
-Verificación: `pnpm lint`, `pnpm typecheck`, `pnpm db:validate`, `pnpm build`. Para navegador: `pnpm exec playwright install chromium` y `pnpm test:e2e` tras el build. Instalación, versiones, conexión y resultados: [SETUP](docs/SETUP.md).
+Abre `http://127.0.0.1:3000`. Pruebas: `pnpm test`; después de `pnpm build`, `pnpm test:e2e` y `pnpm test:e2e:flujos` (recorrido de la demo y ramas del relevo). Detalle de bases, variables y resultados en [SETUP](docs/SETUP.md).
 
 ## Documentación
 
 [Producto](PRODUCT.md) · [Contratos](docs/CONTRACTS.md) · [Diseño](DESIGN.md) · [Lenguaje](docs/LANGUAGE.md) · [Demo](docs/DEMO.md) · [QA](docs/QA.md) · [Instrucciones para agentes](AGENTS.md)
 
-Todos los datos operacionales de la demo son ficticios. No se cargan contactos, tickets, teléfonos ni datos de salud de personas reales. No publicar secretos. Repositorio y README de una página requeridos por las [bases oficiales](https://hack.makana.cl/bases.html).
+Todos los datos son ficticios: Despensa Sur, Paula, Tomás, Carla, tickets y reportes. No se cargan contactos, teléfonos ni datos de salud de personas reales. README de una página según las [bases oficiales](https://hack.makana.cl/bases.html).
