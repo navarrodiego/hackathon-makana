@@ -55,12 +55,9 @@ function readName(): string | null {
   if (memoryName !== undefined) return memoryName;
   try { return window.localStorage.getItem(NAME_KEY); } catch { return null; }
 }
-function writeName(name: string | null) {
+function writeName(name: string) {
   memoryName = name;
-  try {
-    if (name === null) window.localStorage.removeItem(NAME_KEY);
-    else window.localStorage.setItem(NAME_KEY, name);
-  } catch { /* queda en memoria */ }
+  try { window.localStorage.setItem(NAME_KEY, name); } catch { /* queda en memoria */ }
   for (const listener of nameListeners) listener();
 }
 const subscribeName = (listener: () => void) => { nameListeners.add(listener); return () => { nameListeners.delete(listener); }; };
@@ -101,24 +98,13 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
           <p>Tus reportes pueden no estar al día. Lo que escribiste se conserva en este teléfono y la página vuelve a consultar sola.</p>
         </DegradedNotice>
       ) : null}
-      {name === undefined ? null : name === null ? <NameStep onEnter={writeName} /> : (
-        <>
-          <div className="flex flex-wrap items-baseline justify-between gap-x-6">
-            <p className="text-people font-semibold break-words">Hola, {name}.</p>
-            {/* Secundario y discreto: corrige un error de tipeo sin competir con el paso actual. */}
-            <button type="button" onClick={() => writeName(null)}
-              className="-mx-2 min-h-12 px-2 text-aux text-muted-foreground underline underline-offset-4 hover:text-foreground">
-              Cambiar nombre
-            </button>
-          </div>
-          {!view.channelOpen ? (
-            <div className="space-y-2">
-              <Status kind="pending">El canal abre pronto</Status>
-              <p className="text-body">Esta página se actualiza sola.</p>
-            </div>
-          ) : !ready ? <Waiting remaining={remaining} /> : <SendStep view={view} name={name} />}
-        </>
-      )}
+      {name === undefined ? null : name === null ? <NameStep onEnter={writeName} /> : !view.channelOpen ? (
+        <section className="space-y-3">
+          <p className="text-people font-semibold break-words">Hola, {name}.</p>
+          <Status kind="pending">El canal abre pronto</Status>
+          <p className="text-body">Esta página se actualiza sola.</p>
+        </section>
+      ) : !ready ? <Waiting name={name} remaining={remaining} /> : <SendStep view={view} name={name} />}
       {/* Una sola vez, sin mover el foco: el envío quedó disponible para todos a la vez. */}
       <p aria-live="polite" className="sr-only">{name && ready ? "Ya puedes enviar reportes." : ""}</p>
       {view.ownReports.length > 0 ? <OwnReports reports={view.ownReports} /> : null}
@@ -143,10 +129,11 @@ function NameStep({ onEnter }: { onEnter: (name: string) => void }) {
   );
 }
 
-function Waiting({ remaining }: { remaining: number | null }) {
+function Waiting({ name, remaining }: { name: string; remaining: number | null }) {
   const seconds = remaining === null ? null : Math.ceil(remaining / 1000);
   return (
     <section aria-labelledby="espera" className="space-y-3">
+      <p className="text-people font-semibold break-words">Hola, {name}.</p>
       <h2 id="espera" className="text-title font-semibold tracking-[-0.02em] tabular-nums">
         <span className="sr-only">Podrás enviar en unos segundos</span>
         <span aria-hidden="true">{seconds === null ? "En unos segundos puedes enviar" : `En ${seconds} s puedes enviar`}</span>
@@ -230,17 +217,17 @@ function SendStep({ view, name }: { view: ChannelViewDTO; name: string }) {
     );
   }
   return (
-    <section aria-labelledby="enviar" className="flex flex-col gap-6">
-      <div className="space-y-3">
-        <h2 id="enviar" className="text-section font-semibold">Trabajas en la empresa de Rodrigo</h2>
+    <section aria-labelledby="enviar" className="flex flex-col gap-5">
+      {/* Saludo y encuadre en un solo encabezado: el botón de envío debe caber en la primera pantalla del teléfono. */}
+      <div className="space-y-2">
+        <h2 id="enviar" className="text-section font-semibold break-words">{name}, trabajas en la empresa de Rodrigo</h2>
         <p className="max-w-prose text-body">
           Algo dejó de funcionar en tu local u oficina. Cuéntale a soporte qué pasó y dónde, como lo escribirías un día normal.
-          Puedes enviar hasta {PER_SESSION} reportes.
         </p>
       </div>
-      <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
+      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <TextAreaField
-          label="Qué pasó" value={text} onChange={e => setText(e.target.value)} rows={4} error={textError}
+          label="Qué pasó" value={text} onChange={e => setText(e.target.value)} rows={3} error={textError}
           hint={<>
             Por ejemplo: «No imprime la boleta en la caja 2 del local 12».
             <span className="mt-1 block tabular-nums">{length} de {MAX_TEXT} caracteres · Te quedan {view.remainingSessionReports} de {PER_SESSION} reportes</span>

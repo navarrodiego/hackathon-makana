@@ -67,7 +67,7 @@ test("recargar la página no pierde el borrador", async ({ page, request, baseUR
   await page.getByRole("textbox", { name: "Qué pasó" }).fill("VPN lenta en el local 3");
   await page.reload();
   await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveValue("VPN lenta en el local 3");
-  await expect(page.getByText("Hola, Visita.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Visita, trabajas/ })).toBeVisible();
 });
 
 test("sin red: aviso de conexión, texto conservado y vuelta sola al recuperarla", async ({ page, context, request, baseURL }) => {

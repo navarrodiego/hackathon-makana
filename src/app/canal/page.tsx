@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const view = await loadChannelView((await headers()).get("cookie"));
+  // Título solo para lectores de pantalla: en el teléfono el primer paso ya dice qué hacer.
   return (
-    <SurfaceShell title="Canal">
+    <SurfaceShell title="Canal" titleHidden>
       {view ? <Channel view={view} /> : (
         <DegradedNotice title="No se pudo abrir tu sesión del canal">
           <p>No se registró ningún reporte. Recarga la página; si sigue igual, avisa a quien presenta.</p>
