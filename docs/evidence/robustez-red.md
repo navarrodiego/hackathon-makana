@@ -45,3 +45,50 @@ Primera medición de esta rama, ya con estado compartido pero sin gzip: el estr�
 - Entre instancias de Vercel la invalidación no se comparte: ahí un cambio puede tardar hasta 1 s más en verse.
 - No se comprobó si Vercel comprime por su cuenta. Con `content-encoding: gzip` propio, la respuesta pasa tal cual.
 - No se probó en un teléfono real ni con lector de pantalla.
+
+## Prueba de carga contra producción · 24-10-2026
+Base `f7f2798` desplegada en `relevo-dun.vercel.app` (funciones `iad1`, Neon `us-east-1`, `/api/state` con gzip). Autorizada por Diego: producción completa, con OpenRouter real. Carga desde un solo equipo y red. `pnpm load:canal -- --remote --production`, que ahora respeta la espera común de 30 s, simula el proyector (1 consulta/s) y admite `--burst` y `--reset-after`.
+
+| Corrida | Proyector p50 / p95 | `/api/state` teléfonos p50 / p95 | Envío p50 / p95 | Envíos aceptados | Errores |
+|---|---|---|---|---|---|
+| 40 teléfonos, 2 reportes, 90 s | 281 ms / 10,1 s | 411 ms / 11,6 s | 1,6 s / 15,8 s | 57 de 80 | 22 `AUTH_REQUIRED`, 1 `STORAGE_UNAVAILABLE` |
+| 50 teléfonos, 3 reportes, ráfaga al terminar la espera, 120 s | 326 ms / 20,8 s | 4,8 s / 26,9 s | 6,3 s / 22,0 s | 59 de 150 | 54 `AUTH_REQUIRED`, 123 `STORAGE_UNAVAILABLE` (82 en estado, 4 en proyector, 37 en envío) |
+
+- El proyector completó solo 56 consultas en 90 s y 28 en 120 s, con máximos de 17,7 s y 23,2 s. Supera su plazo de 8 s, así que la sala vería «Sin conexión» y los plazos no avanzarían.
+- En la ráfaga quedaron 73 reportes guardados, pero solo 59 recibieron 201: 14 se admitieron después de que el teléfono ya había visto un error. Clasificación: 67 por modelo y 6 degradados. Ninguno quedó en `processing`.
+- `AUTH_REQUIRED`: con la base saturada, `channelEntry` en `src/proxy.ts` captura el fallo de `sessions.enter` y entrega `/canal` sin cookie. Ese teléfono no puede enviar. Un navegador real podría recuperar la sesión en la relectura siguiente; el script conserva la cookie inicial, así que esta cifra puede estar exagerada, pero el fallo silencioso es real.
+- Después de la última corrida se reinició la ejecución: escena Cierre, canal cerrado, 0 incidentes y relevo en borrador.
+
+**Resultado: A09 no pasa en producción con 40 ni con 50 teléfonos.** Con los criterios de DEMO, el canal se abre solo al jurado mientras no cambie esto. Causa probable, sin medir: el candado global (`executionLock`, `pg_advisory_xact_lock`) serializa cada escritura y cada evaluación de vencimientos, y cada vuelta a Neon cuesta milisegundos de red en vez de microsegundos.
+
+## Diagnóstico del cuello de botella · 24-10-2026
+Medición local con un proxy TCP entre la app y PostgreSQL, que cuenta las idas y vueltas a la base y agrega latencia. Sin cambios de código en la app.
+
+| Petición | Idas y vueltas a la base |
+|---|---|
+| `GET /canal` con sesión nueva | 19 |
+| `GET /api/state` con 0 / 10 / 50 / 100 / 145 reportes | 47 / 125 / 147 / 247 / 337 |
+| `POST /api/messages` | 61–73 |
+
+- Casi todas ocurren dentro de transacciones que toman el candado global (`executionLock`), incluidas las de solo lectura (`publicState`, `ownReports`) y la creación de sesión. Cada consulta de estado abre además tres transacciones con candado para revisar vencimientos aunque no haya ninguno.
+- Cada reporte cuesta dos consultas más al armar el estado: su clasificación y su decisión se leen una por una (`hydrate` en `repositories/index.ts`).
+- Con unos 3 ms simulados por ida y vuelta (Neon desde `iad1` estaría entre 1 y 3 ms; la estimación con producción en reposo es imprecisa), 40 teléfonos en local reproducen el colapso de producción: proyector p95 14,1 s, envío p95 17,3 s, 69 `STORAGE_UNAVAILABLE`. Sin latencia, el mismo escenario daba p95 de 106 ms.
+- Conclusión: el problema no es la capacidad de Neon. Cientos de idas y vueltas por segundo se hacen en fila detrás de un solo candado; con latencia de red, el candado se ocupa más tiempo del que pasa entre consultas.
+
+## Arreglos 1–4 y nueva medición local · 24-10-2026
+Cambios sin desplegar: lecturas y evaluaciones sin nada vencido en una foto de solo lectura sin el candado (`runReadFirst`), clasificaciones y decisiones en dos consultas por lista, y la sesión del canal con un insert suelto. Tests nuevos: `tests/db/read-first.test.ts` (7) y `tests/execution/lock-free.test.ts` (4), escritos antes del código y vistos fallar.
+
+Corrección al diagnóstico anterior: sin sesión, `/canal` sí muestra «No se pudo abrir tu sesión del canal». No es una falla silenciosa para una persona; el script no renderiza la página.
+
+Medición local con unos 3 ms simulados por ida y vuelta (proxy), pool de 3 conexiones como en producción:
+
+| Escenario | Proyector p95 | `/api/state` p95 | Envío p95 | Errores |
+|---|---|---|---|---|
+| 40 teléfonos, 2 reportes, antes | 14,1 s | 16,7 s | 17,3 s | 69 `STORAGE_UNAVAILABLE` |
+| 40 teléfonos, 2 reportes, después | 0,8 s | 1,9 s | 3,9 s | 0 |
+| 50 teléfonos, 1 reporte, ráfaga, después | 1,9 s | 7,8 s | 12,1 s | 42 `STORAGE_UNAVAILABLE` |
+| 50 teléfonos, 2 reportes, ráfaga, después | 11,6 s | 14,6 s | 13,7 s | 42 `STORAGE_UNAVAILABLE` |
+| 50 teléfonos, 3 reportes, ráfaga, después | 9,3 s | 19,5 s | 16,7 s | 119 `STORAGE_UNAVAILABLE` |
+
+- La ráfaga sigue colapsando: cada envío toma el candado en tres transacciones (admitir, guardar clasificación, drenar la cola) y 50 envíos simultáneos forman una fila de más de 10 s. Con un pool de 10 conexiones (experimento revertido) tampoco alcanza. El siguiente arreglo sería acortar el envío; no está implementado.
+- Decisión de Diego (24-10-2026): en la demo solo el jurado escanea el QR.

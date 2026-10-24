@@ -58,6 +58,7 @@ Preparar 20 casos etiquetados: 6 críticos, 4 degradados, 5 solicitudes/localiza
 - [ ] A07: nota opcional hasta 60 palabras, editable; cierre sin clasificación manual ni razones por ticket; conserva hechos/pendientes; reset genera/guarda y Regenerar hace llamada real. No fingir llamada en vivo ni resolución/aceptación por texto.
 - [ ] A08: canal cerrado rechaza entradas; límite 280 caracteres, sesión/nombre y límite global; espera común de 30 s tras abrir. Cambiar el nombre no debe ser la única barrera al abuso. Verificar saturación concurrente y escape de HTML/XSS.
 - [ ] A09: red mala en el canal. Respuesta perdida, recarga, red caída 1 min y consulta colgada (8 s): texto conservado, aviso visible, un solo reporte al reenviar (`tests/e2e/canal-conexion.spec.ts`). Prueba de carga con 20/40/60 teléfonos contra el entorno real: 0 `STORAGE_UNAVAILABLE` y p95 de `/api/state` < 1,5 s antes de abrir el canal al público.
+  - 24-10-2026, producción: no pasa. Decisión de Diego: el QR solo para el jurado. Con 40 teléfonos, p95 del proyector 10,1 s; con 50 en ráfaga, 123 `STORAGE_UNAVAILABLE`. Ver `docs/evidence/robustez-red.md`.
 
 ## Seguridad y reset · C08/C09
 

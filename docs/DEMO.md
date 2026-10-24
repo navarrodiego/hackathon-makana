@@ -33,7 +33,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - Si cambia el entorno, aplicar la migración `202610240001_report_quota` en Neon antes de la demo (requiere autorización explícita). Sin ella, el reporte 51 falla con almacenamiento no disponible.
 - Calentar funciones abriendo `/canal`, `/proyector` y `/control` 2 minutos antes.
 - Ensayo con red cortada: escribir en el canal, apagar el wifi 1 minuto y enviar. Comprobar el aviso «Sin conexión», que el texto sigue ahí y que reenviar al volver la red deja un solo reporte.
-- Abrir el canal al público solo si la prueba de carga (`pnpm load:canal`, ver evidencia de robustez) pasa contra el entorno real. Si no, invitar solo al jurado.
+- Solo el jurado escanea el QR (decisión de Diego del 24-10-2026): la prueba de carga contra producción no pasó con 40 ni con 50 teléfonos (ver evidencia de robustez).
 
 ## Recorrido principal: cinco minutos
 
