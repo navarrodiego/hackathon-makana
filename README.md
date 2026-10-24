@@ -4,7 +4,7 @@
 
 Proyecto para el caso Rodrigo de la Hackatón Señales: un relevo explícito para terminar el trabajo sabiendo quién sigue.
 
-> Estado: base técnica inicializada con autorización de Diego. Incluye una pantalla inicial; el recorrido de relevo, reportes, avisos y cobertura aún no está implementado. No hay deploy ni URL pública verificados.
+> Estado: el recorrido de relevo, reportes, avisos y cobertura está implementado y cubierto por pruebas de flujo (`tests/e2e/flujos`). La portada `/` explica al jurado cómo probar la demo por su cuenta. Este documento no acredita deploy ni URL pública.
 
 ## Qué problema elegimos y por qué
 
