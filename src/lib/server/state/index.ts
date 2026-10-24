@@ -25,7 +25,7 @@ export function createReadService(deps: ReadDeps): ReadService {
     const execution = await deps.store.current();
     if (!execution) return { ok: false, code: "STORAGE_UNAVAILABLE" };
     const now = deps.now();
-    const result = await deps.store.run(systemContext(execution, now), async tx => {
+    const result = await deps.store.runReadFirst(systemContext(execution, now), async tx => {
       const fresh = await tx.aggregates.executions.get(execution.executionId);
       return fresh ? { ok: true, value: await buildPublicState(tx, fresh, now) } : { ok: false, code: "STORAGE_UNAVAILABLE" };
     });
@@ -35,9 +35,9 @@ export function createReadService(deps: ReadDeps): ReadService {
   }
   return {
     publicState: () => publicState(),
-    outgoing: context => deps.store.run(context, tx => outgoingView(tx, context)),
-    recipient: (context, id) => deps.store.run(context, tx => recipientView(tx, context, id)),
-    control: context => deps.store.run(context, tx => controlView(tx, context, context.operationalNow)),
-    ownReports: context => deps.store.run(context, tx => ownReportsView(tx, context)),
+    outgoing: context => deps.store.runReadFirst(context, tx => outgoingView(tx, context)),
+    recipient: (context, id) => deps.store.runReadFirst(context, tx => recipientView(tx, context, id)),
+    control: context => deps.store.runReadFirst(context, tx => controlView(tx, context, context.operationalNow)),
+    ownReports: context => deps.store.runReadFirst(context, tx => ownReportsView(tx, context)),
   };
 }

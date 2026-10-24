@@ -2,9 +2,8 @@ import "server-only";
 import type { CommandContext, PublicSessionService } from "@/lib/contracts/auth";
 import { LIMITS, type Instant, type ReportSessionId } from "@/lib/contracts/core";
 import type { ReportSession } from "@/lib/contracts/domain";
-import type { CredentialReader, ExecutionReader, TransactionRepositories, UnitOfWork } from "@/lib/contracts/repositories";
+import type { CredentialReader, ExecutionReader, SessionWriter, TransactionRepositories } from "@/lib/contracts/repositories";
 import { generateOpaqueToken, hashCredential, isWellFormedToken } from "@/lib/server/auth/credentials";
-import { systemContext } from "@/lib/server/state/context";
 
 const at = (instant: Instant) => Date.parse(instant);
 
@@ -25,7 +24,7 @@ export async function scenarioSessionId(tx: TransactionRepositories, context: Co
 }
 
 export interface PublicSessionDeps {
-  readonly store: UnitOfWork & ExecutionReader & CredentialReader;
+  readonly store: ExecutionReader & CredentialReader & SessionWriter;
 }
 
 /** Entrada GET del canal (C12): reutiliza una sesión vigente o emite una nueva. Nunca envía reportes. */
@@ -43,11 +42,7 @@ export function createPublicSessionService(deps: PublicSessionDeps): PublicSessi
         id: `session_${crypto.randomUUID()}` as ReportSessionId, credentialHash: hashCredential(token),
         expiresAt: new Date(at(operationalNow) + LIMITS.sessionMaxAgeMs).toISOString() as Instant,
       };
-      const saved = await deps.store.run(systemContext(execution, operationalNow), async tx => {
-        await tx.credentials.saveSession(session);
-        return { ok: true as const, value: null };
-      });
-      if (!saved.ok) return saved;
+      await deps.store.saveSession(session);
       return { ok: true, value: { sessionId: session.id, expiresAt: session.expiresAt, newOpaqueCookie: token } };
     },
   };
