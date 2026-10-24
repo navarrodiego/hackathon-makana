@@ -16,11 +16,11 @@ export function toEntries(events: readonly PublicEventDTO[], limit = VISIBLE_EVE
 export function RegistroContinuo({ events, limit = VISIBLE_EVENTS }: { events: readonly PublicEventDTO[]; limit?: number }) {
   const shown = Math.min(events.length, limit);
   return (
-    <section aria-labelledby="registro-titulo" className="flex flex-col gap-3">
-      <h2 id="registro-titulo" className="text-section font-semibold">Registro</h2>
-      <p className="text-aux text-muted-foreground">
-        Horas de la escena. Se muestran {shown} de {events.length} eventos, del más reciente al más antiguo.
-      </p>
+    <section aria-labelledby="registro-titulo" className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h2 id="registro-titulo" className="text-aux font-semibold text-muted-foreground">Registro</h2>
+        <p className="text-aux text-muted-foreground">Horas de la escena · {shown} de {events.length}, del más reciente</p>
+      </div>
       <EventLog entries={toEntries(events, limit)} />
     </section>
   );

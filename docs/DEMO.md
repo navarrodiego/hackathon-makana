@@ -20,6 +20,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - Tomás/Carla solo in-app con canal/origen visible; no prometer otro teléfono.
 - Abrir proyector y control protegido en superficies separadas. No proyectar tokens, contraseñas, consola ni botones de control público.
 - Probar QR a URL real de producción, zoom, resolución, adaptadores y lectura a distancia. No depender de audio.
+- Al abrir el canal, el proyector muestra el QR a pantalla completa con la cadena y los avisos a Rodrigo; vuelve solo al panel a los 45 s o con el primer incidente, lo que ocurra antes. El QR pequeño sigue en el pie. El tiempo cuenta desde que esa pestaña ve el canal abierto: recargarla lo reinicia.
 - Video local de un ensayo real y red alternativa probados. No existe un video acreditado por este documento.
 
 ## Recorrido principal: cinco minutos
