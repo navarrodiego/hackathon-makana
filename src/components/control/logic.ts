@@ -62,6 +62,8 @@ type Execution = Pick<PublicStateDTO, "executionId" | "version">;
 
 export const buildSceneRequest = (s: Execution, sceneId: SceneId, channelOpen: boolean, idempotencyKey: string) =>
   ({ executionId: s.executionId, idempotencyKey, expectedVersion: s.version, sceneId, channelOpen });
+export const buildQrRequest = (s: Execution, action: "extend" | "show", idempotencyKey: string) =>
+  ({ executionId: s.executionId, idempotencyKey, expectedVersion: s.version, action });
 export const buildResetRequest = (s: Execution, idempotencyKey: string) =>
   ({ executionId: s.executionId, idempotencyKey, expectedVersion: s.version });
 
@@ -98,7 +100,7 @@ const clock = new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-dig
 export const clockLabel = (instant: string) => clock.format(new Date(instant));
 
 const EVENT_TEXT: Readonly<Record<string, string>> = {
-  execution_started: "Nueva ejecución", scene_changed: "Cambio de escena", handoff_sent: "Relevo enviado",
+  execution_started: "Nueva ejecución", scene_changed: "Cambio de escena", qr_extended: "QR ampliado 30 s", qr_shown: "QR mostrado otra vez", handoff_sent: "Relevo enviado",
   handoff_accepted: "Relevo aceptado", handoff_rejected: "Relevo rechazado", handoff_expired: "Relevo sin respuesta a tiempo",
   handoff_derived: "Relevo derivado", coverage_activated: "Cobertura activa", coverage_unconfirmed: "Sin cobertura confirmada",
   outgoing_ended: "Termina el turno saliente", report_admitted: "Reporte recibido", report_classified: "Reporte clasificado",

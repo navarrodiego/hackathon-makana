@@ -12,7 +12,7 @@ const APP = 'https://relevo.example';
 const T0 = '2026-10-23T15:00:00.000Z' as Instant;
 const EXEC: Execution = {
   executionId: 'execution_now', version: 4, status: 'active', sceneId: 'scene_closing',
-  anchor: { operationalAt: T0, narrativeAt: '2026-10-24T01:09:50.000Z' }, channelOpen: true, channelOpenedAt: null, admittedReports: 0,
+  anchor: { operationalAt: T0, narrativeAt: '2026-10-24T01:09:50.000Z' }, channelOpen: true, channelOpenedAt: null, lobbyEndsAt: null, qrEndsAt: null, admittedReports: 0,
   preparation: 'ready', createdAt: T0, supersededBy: null,
 };
 const basic = (u: string, s: string) => 'Basic ' + Buffer.from(`${u}:${s}`).toString('base64');

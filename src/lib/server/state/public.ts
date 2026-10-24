@@ -55,6 +55,7 @@ export async function buildPublicState(tx: TransactionRepositories, execution: E
     preparation: preparationOf(execution, Boolean(state?.handoff.savedSuggestion)),
     clocks: { operationalNow: now, narrativeNow: narrativeNow(execution, now), timeZone: "America/Santiago" },
     channelOpen: execution.channelOpen, channelOpenedAt: execution.channelOpenedAt,
+    lobbyEndsAt: execution.lobbyEndsAt, qrEndsAt: execution.qrEndsAt,
     coverage: state ? coverageDto(state.coverage, state.window, actors) : null,
     handoff: state ? handoffSummary(state.handoff, state.attempt, actors) : null,
     // Solo conteos: ni referencias ni textos de tickets (decisión de Diego del 24-10-2026).

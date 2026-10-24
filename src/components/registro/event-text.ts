@@ -8,6 +8,8 @@ export function eventText(e: Pick<PublicEventDTO, "kind" | "actor" | "result" | 
   const text: Record<EventKind, string> = {
     execution_started: "Nueva ejecución de la demostración",
     scene_changed: "Cambió la escena",
+    qr_extended: "Se sumaron 30 s al QR",
+    qr_shown: "El QR volvió a la pantalla",
     handoff_sent: `Relevo enviado${by}`,
     handoff_accepted: `${who ?? "El candidato"} aceptó el relevo`,
     handoff_rejected: `${who ?? "El candidato"} no puede cubrir`,

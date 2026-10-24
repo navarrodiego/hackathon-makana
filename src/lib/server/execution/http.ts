@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { AuthorizationService, CommandContext } from "@/lib/contracts/auth";
 import type { CorrelationId } from "@/lib/contracts/core";
-import type { ChangeScene, ErrorCode, RequestValidator, ResetExecution } from "@/lib/contracts/http";
+import type { ChangeQr, ChangeScene, ErrorCode, RequestValidator, ResetExecution } from "@/lib/contracts/http";
 import { failure, success } from "@/lib/server/http/errors";
 import { authHeaders } from "@/lib/server/http/request";
 import { gzipped, jsonResponse } from "@/lib/server/http/response";
@@ -33,7 +33,7 @@ export async function handleState(deps: { readonly service: Pick<ExecutionRuntim
   }
 }
 
-type CommandRoute = "POST /api/scene" | "POST /api/reset";
+type CommandRoute = "POST /api/scene" | "POST /api/qr" | "POST /api/reset";
 
 /** Orden de C11: formato → validación → autorización/origen → servicio. Solo control, con el origen del escenario. */
 export async function handleCommand(deps: ExecutionHttpDeps, route: CommandRoute, request: Request): Promise<Response> {
@@ -44,7 +44,7 @@ export async function handleCommand(deps: ExecutionHttpDeps, route: CommandRoute
   // Un único literal evita instanciar el mapa completo de rutas (desbordaba la pila de tsc, como en T06).
   const parsed = deps.validator.parse(route as "POST /api/reset", { body, params: null });
   if (!parsed.ok) return fail(parsed.code, early);
-  const input: ResetExecution & Partial<ChangeScene> = parsed.value.input;
+  const input: ResetExecution & Partial<ChangeScene> & Partial<ChangeQr> = parsed.value.input;
   // La credencial de control no depende de la ejecución. En reset se autoriza contra la vigente y el servicio recibe la
   // ejecución que el cliente conoce: así un reintento tras un reset exitoso llega al replay idempotente en vez de
   // morir como ejecución retirada. Cualquier otra ejecución sigue fallando en el servicio.
@@ -55,6 +55,10 @@ export async function handleCommand(deps: ExecutionHttpDeps, route: CommandRoute
   try {
     if (route === "POST /api/scene") {
       const result = await deps.service.changeScene(context, input as ChangeScene);
+      return result.ok ? jsonResponse(success(result.value, 200, context.correlationId)) : fail(result.code, context.correlationId);
+    }
+    if (route === "POST /api/qr") {
+      const result = await deps.service.changeQr(context, input as ChangeQr);
       return result.ok ? jsonResponse(success(result.value, 200, context.correlationId)) : fail(result.code, context.correlationId);
     }
     const result = await deps.service.reset(context, input);

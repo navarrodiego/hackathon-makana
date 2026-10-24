@@ -14,6 +14,10 @@ export interface Execution extends Revision {
   readonly channelOpen: boolean;
   /** Cuándo pasó de cerrado a abierto; null con el canal cerrado. */
   readonly channelOpenedAt: Instant | null;
+  /** Hasta cuándo se rechazan reportes del público (espera común); control puede alargarla. Null con el canal cerrado. */
+  readonly lobbyEndsAt: Instant | null;
+  /** Hasta cuándo el proyector muestra el QR grande; control puede alargarlo o volver a mostrarlo. Null con el canal cerrado. */
+  readonly qrEndsAt: Instant | null;
   readonly admittedReports: number;
   readonly preparation: PreparationStatus;
   readonly createdAt: Instant;
@@ -73,7 +77,7 @@ export interface IncidentAttempt extends Revision {
   readonly requestedAt: Instant; readonly deadlineAt: Instant; readonly respondedAt: Instant | null;
 }
 export type EventKind =
-  | "execution_started" | "scene_changed" | "handoff_sent" | "handoff_accepted" | "handoff_rejected"
+  | "execution_started" | "scene_changed" | "qr_extended" | "qr_shown" | "handoff_sent" | "handoff_accepted" | "handoff_rejected"
   | "handoff_expired" | "handoff_derived" | "coverage_activated" | "coverage_unconfirmed" | "outgoing_ended"
   | "report_admitted" | "report_classified" | "policy_decided" | "report_linked"
   | "incident_created" | "incident_taken" | "incident_escalated" | "incident_unacknowledged"

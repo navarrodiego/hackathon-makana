@@ -6,7 +6,7 @@ import { Status } from "@/components/ui/status";
 import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, EmptyState, LoadingState } from "@/components/ui/feedback";
 import { hhmm } from "@/components/registro/time";
-import { useLobbyRemaining, usePublicState } from "@/lib/client/state";
+import { qrOnScreen, useLobbyRemaining, usePublicState } from "@/lib/client/state";
 import type { ActorDTO, IncidentSummaryDTO, PublicStateDTO } from "@/lib/contracts/client";
 import { cierre } from "./cierre";
 import { Conexion } from "./conexion";
@@ -220,10 +220,12 @@ function Panel({ state }: { state: PublicStateDTO }) {
 export function ProyectorView({ qr }: { qr: CanalQr | null }) {
   const view = usePublicState(1000, { keepPaceHidden: true });
   const state = view.state;
-  // Fase QR: al abrirse el canal el QR ocupa la pantalla durante la misma espera que ven los teléfonos (ancla del
-  // servidor, así recargar no la reinicia) y cede antes si aparece un incidente.
-  const lobby = useLobbyRemaining(view, state?.channelOpen ? state.channelOpenedAt : null);
-  const enEspera = Boolean(state?.channelOpen) && lobby !== 0 && (state?.incidents.length ?? 0) === 0;
+  // Fase QR: el QR ocupa la pantalla hasta `qrEndsAt` (hora del servidor, así recargar no lo reinicia). Durante la
+  // espera común cede antes si aparece un incidente; si control lo vuelve a mostrar después, dura su plazo.
+  const open = Boolean(state?.channelOpen);
+  const qrLeft = useLobbyRemaining(view, open ? state?.qrEndsAt ?? null : null);
+  const lobbyLeft = useLobbyRemaining(view, open ? state?.lobbyEndsAt ?? null : null);
+  const enEspera = qrOnScreen(open, qrLeft, lobbyLeft, state?.incidents.length ?? 0);
   const faseQr = enEspera && qr !== null;
 
   if (!state) {
@@ -238,7 +240,7 @@ export function ProyectorView({ qr }: { qr: CanalQr | null }) {
     <div className="flex flex-1 flex-col gap-10">
       <Cabecera state={state} live={view.status === "live" ? <Conexion view={view} /> : null} />
       {view.status === "lost" ? <Conexion view={view} /> : null}
-      {/* Pasada la espera el QR desaparece: el panel gana espacio y no se suman teléfonos (decisión de Diego del 24-10-2026). */}
+      {/* Pasado su plazo el QR desaparece y el panel gana espacio; control puede alargarlo o volver a mostrarlo (decisión de Diego del 24-10-2026). */}
       {enEspera && !qr ? (
         <DegradedNotice title="QR no disponible"><p>Falta configurar la dirección pública de la aplicación. Nadie puede enviar reportes desde este QR.</p></DegradedNotice>
       ) : null}

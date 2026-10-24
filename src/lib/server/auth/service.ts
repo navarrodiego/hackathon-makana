@@ -51,6 +51,7 @@ const RULES: Partial<Record<AuthRoute, Rule>> = {
   "POST /api/handoff/[id]/reject": { post: true, roles: ["recipient", "control"], entity: "handoff", action: "reject_handoff", actor: "candidate" },
   "POST /api/ack/[id]": { post: true, roles: ["recipient", "control"], entity: "incident", action: "take_incident", actor: "candidate" },
   "POST /api/scene": { post: true, roles: ["control"] },
+  "POST /api/qr": { post: true, roles: ["control"] },
   "POST /api/reset": { post: true, roles: ["control"] },
   read_outgoing: { post: false, roles: ["outgoing", "control"], actor: "outgoing" },
   read_handoff: { post: false, roles: ["recipient"], entity: "handoff", action: "read_handoff" },

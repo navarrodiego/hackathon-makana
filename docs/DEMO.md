@@ -20,7 +20,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - Tomás/Carla solo in-app con canal/origen visible; no prometer otro teléfono.
 - Abrir proyector y control protegido en superficies separadas. No proyectar tokens, contraseñas, consola ni botones de control público.
 - Probar QR a URL real de producción, zoom, resolución, adaptadores y lectura a distancia. No depender de audio.
-- Al abrir el canal, el proyector muestra el QR a pantalla completa con quién está a cargo y los avisos a Rodrigo; vuelve solo al panel a los 30 s o con el primer incidente, lo que ocurra antes. Esos 30 s son la misma espera común de los teléfonos: cuentan desde que control abre el canal (hora guardada en el servidor), así que recargar el proyector no la reinicia y todos los teléfonos pasan al formulario cuando el QR grande cede. Después el QR ya no aparece (decisión de Diego del 24-10-2026): el panel gana espacio y no se suman teléfonos; quien llegue tarde o cierre la página no puede volver a entrar.
+- Al abrir el canal, el proyector muestra el QR a pantalla completa con quién está a cargo y los avisos a Rodrigo; vuelve solo al panel a los 30 s o con el primer incidente, lo que ocurra antes. Esos 30 s son la misma espera común de los teléfonos: cuentan desde que control abre el canal (hora guardada en el servidor), así que recargar el proyector no la reinicia y todos los teléfonos pasan al formulario cuando el QR grande cede. Desde control (sección «QR en el proyector», con su cuenta regresiva) se puede **Sumar 30 s al QR** si la gente no alcanzó a entrar (durante la espera también la alarga para todos) y, pasado el QR, **Mostrar QR otra vez** por 30 s para quien llegó tarde, sin volver a bloquear los envíos (decisión de Diego del 24-10-2026).
 - El panel muestra «Reportes de la sala»: los últimos 6 reportes con el nombre y el texto que escribió cada persona (recortados a 40 y 100 caracteres) y qué pasó con cada uno. Se proyectan tal cual, sin moderación: riesgo asumido por el equipo.
 - El proyector es para la sala y la única pantalla que mira durante el pitch: antes del envío, el cierre de Rodrigo (solo conteos); después, quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo y un relato breve de lo que pasó. No muestra escenas, ejecuciones ni resultados por ntfy/in-app; para mostrarlos al jurado técnico, usar el registro reciente de /control sin proyectar sus botones ni credenciales.
 - Video local de un ensayo real y red alternativa probados. No existe un video acreditado por este documento.
@@ -67,7 +67,7 @@ Si a los 15 s de abrirse el envío (45 s desde abrir el canal) hay menos de tres
 | P | Caída de facturación |
 | R R | Reset escénico protegido |
 
-El guion tiene tres escenas: Cierre (22:09:50), Canal (22:10) y Registro de mañana (07:00). Las escenas no retroceden. El QR grande lo decide el proyector cuando ve el canal abierto, y la demo no usa audio: por eso control no tiene atajos para QR, audio ni escena anterior.
+El guion tiene tres escenas: Cierre (22:09:50), Canal (22:10) y Registro de mañana (07:00). Las escenas no retroceden. El QR grande aparece al abrir el canal; control solo puede alargarlo o volver a mostrarlo con botones (sin atajo de teclado). La demo no usa audio: control no tiene atajos para audio ni escena anterior.
 
 No ejecutar atajos al escribir en un input/textarea. Control invoca los mismos contratos que UI/ntfy; nunca pone un resultado ficticio solo en pantalla. Ningún atajo acorta deadlines sin hacerlo visible; el pitch principal usa espera real.
 

@@ -18,6 +18,10 @@ test('mutación común: ejecución, clave idempotente y campos desconocidos', ()
   bad('POST /api/scene', { ...versioned, idempotencyKey: '', sceneId: 'scene_channel', channelOpen: true });
   bad('POST /api/scene', { ...versioned, idempotencyKey: 'a'.repeat(129), sceneId: 'scene_channel', channelOpen: true });
   bad('POST /api/scene', { ...versioned, idempotencyKey: 'con espacio', sceneId: 'scene_channel', channelOpen: true });
+  for (const action of ['extend', 'show']) assert.equal(v.parse('POST /api/qr', { body: { ...versioned, action }, params: null }).ok, true);
+  bad('POST /api/qr', versioned);
+  bad('POST /api/qr', { ...versioned, action: 'hide' });
+  bad('POST /api/qr', { ...versioned, action: 'extend', seconds: 60 });
   for (const expectedVersion of [0, -1, 1.5, '3', null]) bad('POST /api/reset', { ...base, expectedVersion });
   bad('POST /api/reset', null); bad('POST /api/reset', []); bad('POST /api/reset', 'x');
 });

@@ -3,7 +3,7 @@ import type { CommandContext } from "./auth";
 import type { Classification, EquivalenceKey, PolicyDecision } from "./classification";
 import type { Event, Handoff, Incident, NotificationIntent, Report, StoredNote } from "./domain";
 import type {
-  ChangeScene, HandoffResultDTO, IncidentResultDTO, ResetExecution, ResetResultDTO,
+  ChangeQr, ChangeScene, HandoffResultDTO, IncidentResultDTO, ResetExecution, ResetResultDTO,
   RespondHandoff, SendHandoff, ServiceResult, SubmitReport, SuggestHandoff, SuggestionResultDTO, TakeIncident,
 } from "./http";
 import type { ChannelViewDTO, CoverageDTO, PublicStateDTO, ReportReceiptDTO } from "./public";
@@ -57,6 +57,7 @@ export interface NotificationService {
 }
 export interface ExecutionService {
   changeScene(context: CommandContext, input: ChangeScene): Promise<ServiceResult<PublicStateDTO>>;
+  changeQr(context: CommandContext, input: ChangeQr): Promise<ServiceResult<PublicStateDTO>>;
   reset(context: CommandContext, input: ResetExecution): Promise<ServiceResult<ResetResultDTO>>;
   /** Único ensamblador global; invoca motores y avisos sin duplicar sus reglas. */
   evaluate(context: CommandContext): Promise<ServiceResult<PublicStateDTO>>;
