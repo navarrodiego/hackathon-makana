@@ -14,6 +14,11 @@ export function Conexion({ view }: { view: PublicStateView }) {
     );
   }
   if (view.status === "loading") return <p role="status" className="text-body">Cargando estado…</p>;
-  // En vivo es una frase dentro del pie del proyector; hereda su estilo.
-  return <span>Conectado · actualizado a las {hhmmss(view.lastUpdatedAt!)}</span>;
+  // En vivo basta una marca discreta; la pérdida de conexión es la que ocupa espacio.
+  return (
+    <p className="inline-flex items-center gap-2 text-aux text-muted-foreground">
+      <span aria-hidden="true" className="inline-block size-2.5 rounded-full bg-foreground" />
+      En vivo<span className="sr-only">, actualizado a las {hhmmss(view.lastUpdatedAt!)}</span>
+    </p>
+  );
 }

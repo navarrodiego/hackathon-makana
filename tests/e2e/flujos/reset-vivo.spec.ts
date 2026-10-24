@@ -47,7 +47,7 @@ test("reset con superficies abiertas: enlaces y acciones viejas no actúan, nada
   await expect(pub.getByText(/^Reporte 1:/)).toHaveCount(0);
 
   // Proyector: cambia de ejecución sin eventos viejos ni cobertura que ya no existe.
-  await expect(proy.getByText("Sin incidentes registrados")).toBeVisible();
+  await expect(proy.getByRole("heading", { name: "Ahora" })).toHaveCount(0);
   await expect(proy.getByText("Cobertura activa de Paula")).toHaveCount(0);
   await expect(proy.getByText("Sin cobertura confirmada")).toBeVisible();
 

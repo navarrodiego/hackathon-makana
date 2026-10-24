@@ -91,7 +91,7 @@ Una dependencia significa **cambios integrados y contrato utilizable**. Una subp
 | T12 `cierre` | Cierre y envío de Rodrigo | T04, T06, T09, T11 | Con T13/T14/T15; máximo tres activos |
 | T13 `receptor` | Revisión del destinatario | T04, T06, T11 | Con otras superficies, archivos separados |
 | T14 `canal` | API pública, límites y canal | T04, T07, T10, T11 | Con otras superficies |
-| T15 `proyector` | Estado, QR y registro visual | T04, T11 | Con otras superficies |
+| T15 `proyector` | Relato para la sala y QR | T04, T11 | Con otras superficies |
 | T16 `control` | Control protegido y atajos | T04, T11 | Con T12–T15, sin editar sus archivos |
 | T17 `resumen` | Resumen, mañana y consulta | T12, T15 | Después de ambos; reserva `/rodrigo` |
 | T18 `regresion` | Verificación integrada y correcciones bloqueantes | T12–T17 | Verificador ajeno a lo revisado; sin cambios paralelos |
@@ -303,7 +303,8 @@ Implementa T15 en codex/t15-proyector; aplica docs/TASKS.md §2 y verifica T04/T
 Lee AGENTS, PRODUCT, CONTRACTS C07–C09, DESIGN, LANGUAGE, DEMO y QA I07/S03/U/E03. Usa impeccable Operate (adapt/harden), vercel-react-best-practices y relevo-lenguaje-claro.
 Propiedad: src/app/proyector/, src/components/proyector/, src/components/registro/, src/lib/client/state/ y tests/e2e/proyector.spec.ts. Si se necesita dependencia QR, coordínala con integrador. No escribas control ni APIs.
 Consulta estado saneado cada segundo; indica desconexión y última actualización. Limpia intervalos/listeners y descarta respuestas de ejecución anterior o fuera de orden. Publica un consumidor compartido para T16/T17, sin motor de plazos cliente.
-Muestra escenas, cadena de responsabilidad, relojes, registro continuo y QR a /canal; datos sintéticos y conteos derivados del registro. Separa resultados ntfy, acuse y origen escenario. No expongas tokens ni botones privilegiados.
+Muestra a la sala quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo, un relato breve de hechos y QR a /canal; datos sintéticos y conteos derivados del registro. Acuse y origen escenario siguen visibles en lenguaje llano. No expongas tokens ni botones privilegiados.
+Actualización del 23-10-2026 (decisión de Diego): el proyector es para el público, no para operar. Sin nombre de escena, hora real del servidor, eventos de puesta en escena (cambio de escena, nueva ejecución) ni resultados por canal (ntfy, in-app): el registro completo y los resultados de aviso separados viven en /control. «Lo que pasó» muestra hasta cinco hechos del relato (relevo, cobertura, reportes agrupados, incidente, escalada, toma); una acción de personaje hecha desde control se marca «registrado por quien presenta». Conexión: marca discreta «En vivo» y aviso destacado solo al perderla. Al abrirse el canal, el QR ocupa la pantalla durante 45 s o hasta el primer incidente. La consulta cada segundo no cambia: evalúa plazos.
 Aceptación: lectura a distancia, reconexión sin falsa cobertura, cambio de ejecución limpio. Avisos a Rodrigo: 0 solo cuando lo respalda el registro y su definición; no despertares ni resolución inferida.
 Pruebas: perfiles Base/Navegador, montaje/desmontaje/reconexión/reset, capturas a resolución de proyección y revisión física pendiente si no hay pantalla disponible.
 Entrega consumidor, capturas y evidencia I/S/U/E. Detente antes de fabricar métricas o adelantar plazos para una animación.
@@ -329,7 +330,7 @@ Implementa T17 en codex/t17-resumen; aplica docs/TASKS.md §2 y verifica T12/T15
 Lee AGENTS, PRODUCT, CONTRACTS C02/C07, DESIGN, LANGUAGE, DEMO 3:25–3:50 y QA E03/U06. Usa impeccable Operate, vercel-react-best-practices y relevo-lenguaje-claro; TDD para cálculos nuevos.
 Propiedad: src/app/rodrigo/, src/components/rodrigo/resumen/ y tests/e2e/resumen.spec.ts. T12 ya terminó; no editar simultáneamente sus archivos. Consume registro compartido T15 y lecturas autorizadas T11 sin modificarlos.
 Añade vista de mañana como filtro del registro continuo y resumen de hechos observados. Presenta consulta profesional por ronquido fuerte sin diagnóstico/medicación y sin condicionar la consulta al éxito de la app. No recojas salud/sueño reales.
-Actualización del 23-10-2026 (decisión de Diego): `/rodrigo` muestra una fase a la vez (cierre, seguimiento, resumen de la noche en la escena de mañana); el registro y los conteos quedan solo en el proyector y la consulta por ronquido sale de la app.
+Actualización del 23-10-2026 (decisión de Diego): `/rodrigo` muestra una fase a la vez (cierre, seguimiento, resumen de la noche en la escena de mañana); el registro y los conteos quedan solo en el proyector y la consulta por ronquido sale de la app. Desde la misma fecha el registro completo y los resultados de aviso están en /control; el proyector muestra el relato y Avisos a Rodrigo (ver T15).
 Aceptación: incidente tomado no se presenta resuelto, cobertura y acuse diferenciados, conteos solo de ejecución vigente y datos reales del registro. Sin prometer sueño extra ni anonimato no comprobado; sin módulo separado de jefatura.
 Pruebas: perfiles Base/Navegador, ejecución vacía/con eventos/reset, render móvil/proyector relevante y revisión editorial.
 Entrega evidencia E03/U06 y capturas. Detente si el resumen necesita hechos no registrados; no los inventes para completar el pitch.

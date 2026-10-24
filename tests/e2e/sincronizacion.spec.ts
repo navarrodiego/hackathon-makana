@@ -29,7 +29,7 @@ test("una acción en control avisa al proyector del mismo navegador sin esperar 
   const reads: number[] = [];
   projector.on("request", r => { if (r.url().endsWith("/api/state")) reads.push(Date.now()); });
   await projector.goto("/proyector");
-  await expect(projector.getByText(/Conectado · actualizado a las/)).toBeVisible();
+  await expect(projector.getByText(/^En vivo/)).toBeVisible();
   await panel.goto("/control");
   await expect(panel.getByRole("button", { name: "Abrir canal" })).toBeEnabled();
 

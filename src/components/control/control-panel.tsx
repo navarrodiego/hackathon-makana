@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ControlViewDTO } from "@/lib/contracts/private";
 import { EventLog } from "@/components/relevo/event-log";
+import { ResultadosAviso } from "@/components/registro/resultados-aviso";
 import { SurfaceShell } from "@/components/relevo/surface-shell";
 import { Button } from "@/components/ui/button";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
@@ -244,6 +245,8 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
         <h2 id="registro" className="text-section font-semibold">Registro reciente</h2>
         <EventLog entries={entries} />
       </section>
+
+      <div className="border-t border-line pt-6"><ResultadosAviso state={state} /></div>
 
       <section aria-labelledby="reinicio" className="flex flex-col gap-3 border-t border-line pt-6">
         <h2 id="reinicio" className="text-section font-semibold">Reiniciar demostración</h2>

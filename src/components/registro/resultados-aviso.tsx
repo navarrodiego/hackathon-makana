@@ -22,31 +22,27 @@ export function tallyNotices(state: Pick<PublicStateDTO, "notifications" | "inci
   };
 }
 
-/** Versión compacta para el pie del proyector: cifras en una línea y las salvedades en una sola frase. */
 export function ResultadosAviso({ state }: { state: PublicStateDTO }) {
   const t = tallyNotices(state);
-  const rows: [string, number][] = [
-    ["Aceptados por ntfy", t.ntfyAccepted],
-    ["In-app registrados", t.inAppRecorded],
-    ["Fallidos", t.failed],
-    ["Pendientes", t.pending],
-    ["Incidentes tomados", t.taken],
-    ["Acciones de escenario", t.scenarioEvents],
+  const rows: [string, number, string][] = [
+    ["Envíos aceptados por ntfy", t.ntfyAccepted, "El proveedor lo aceptó; no prueba que el teléfono lo recibió."],
+    ["Avisos in-app registrados", t.inAppRecorded, "Representación en pantalla; no es un dispositivo físico."],
+    ["Avisos fallidos", t.failed, "Falló el envío; no hay recepción."],
+    ["Avisos pendientes", t.pending, "Intención registrada, sin resultado todavía."],
+    ["Incidentes tomados", t.taken, "Alguien asumió atender; no significa resuelto."],
+    ["Eventos de origen escenario", t.scenarioEvents, "Acciones hechas desde el control de la demostración."],
   ];
   return (
     <section aria-labelledby="avisos-titulo" className="flex flex-col gap-2">
-      <h2 id="avisos-titulo" className="text-aux font-semibold text-muted-foreground">Resultados de aviso</h2>
-      <dl className="flex flex-wrap gap-x-8 gap-y-1">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex items-baseline gap-2">
-            <dt className="text-aux text-muted-foreground">{label}</dt>
-            <dd className="text-body font-semibold tabular-nums">{value}</dd>
+      <h2 id="avisos-titulo" className="text-section font-semibold">Resultados de aviso</h2>
+      <dl className="divide-y divide-line border-y border-line">
+        {rows.map(([label, value, note]) => (
+          <div key={label} className="flex items-baseline gap-4 py-2">
+            <dt className="flex-1"><span className="text-body">{label}</span> <span className="block text-aux text-muted-foreground">{note}</span></dt>
+            <dd className="text-people font-semibold">{value}</dd>
           </div>
         ))}
       </dl>
-      <p className="text-aux text-muted-foreground">
-        Aceptado por ntfy no prueba que el teléfono lo recibió. In-app es una representación en pantalla, no un dispositivo. Tomado no significa resuelto.
-      </p>
     </section>
   );
 }

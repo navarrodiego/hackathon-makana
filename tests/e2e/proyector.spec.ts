@@ -6,10 +6,12 @@ test.skip(!process.env.APP_ORIGIN, "Falta APP_ORIGIN");
 test("proyector: estado, QR, sin controles ni secretos", async ({ page }) => {
   await page.goto("/proyector");
   await expect(page.getByRole("heading", { name: "Proyector" })).toBeVisible();
-  await expect(page.getByText(/Conectado · actualizado a las/)).toBeVisible();
+  await expect(page.getByText(/^En vivo/)).toBeVisible();
   await expect(page.getByRole("img", { name: /Código QR que abre .*\/canal/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Avisos a Rodrigo: \d+/ })).toBeVisible();
   await expect(page.getByText(/despertares:/i)).toHaveCount(0);
+  // Para la sala: sin escenas, jerga de proveedor ni resultados por canal (viven en /control).
+  await expect(page.getByText(/Escena|ntfy|in-app|Cambió la escena|Nueva ejecución/i)).toHaveCount(0);
   for (const [name, width, height] of [["1920x1080", 1920, 1080], ["1280x720", 1280, 720]] as const) {
     await page.setViewportSize({ width, height });
     await page.screenshot({ path: `docs/evidence/T15-proyector-${name}.png`, fullPage: true });
@@ -21,12 +23,12 @@ test("proyector: estado, QR, sin controles ni secretos", async ({ page }) => {
 
 test("proyector: marca la desconexión y se recupera", async ({ page, context }) => {
   await page.goto("/proyector");
-  await expect(page.getByText(/Conectado · actualizado a las/)).toBeVisible();
+  await expect(page.getByText(/^En vivo/)).toBeVisible();
   await context.setOffline(true);
   await expect(page.getByText(/Sin conexión desde las/)).toBeVisible();
   await expect(page.getByText(/no el estado actual/)).toBeVisible();
   await context.setOffline(false);
-  await expect(page.getByText(/Conectado · actualizado a las/)).toBeVisible();
+  await expect(page.getByText(/^En vivo/)).toBeVisible();
 });
 
 test("proyector: consulta cada segundo y deja de consultar al salir", async ({ page }) => {

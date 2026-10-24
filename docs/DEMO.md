@@ -20,7 +20,8 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - Tomás/Carla solo in-app con canal/origen visible; no prometer otro teléfono.
 - Abrir proyector y control protegido en superficies separadas. No proyectar tokens, contraseñas, consola ni botones de control público.
 - Probar QR a URL real de producción, zoom, resolución, adaptadores y lectura a distancia. No depender de audio.
-- Al abrir el canal, el proyector muestra el QR a pantalla completa con la cadena y los avisos a Rodrigo; vuelve solo al panel a los 45 s o con el primer incidente, lo que ocurra antes. El QR pequeño sigue en el pie. El tiempo cuenta desde que esa pestaña ve el canal abierto: recargarla lo reinicia.
+- Al abrir el canal, el proyector muestra el QR a pantalla completa con quién está a cargo y los avisos a Rodrigo; vuelve solo al panel a los 45 s o con el primer incidente, lo que ocurra antes. El QR pequeño sigue en el pie. El tiempo cuenta desde que esa pestaña ve el canal abierto: recargarla lo reinicia.
+- El proyector es para la sala: quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo y un relato breve de lo que pasó. No muestra escenas, ejecuciones ni resultados por ntfy/in-app; para mostrarlos al jurado técnico, usar /control (registro completo y resultados de aviso) sin proyectar sus botones ni credenciales.
 - Video local de un ensayo real y red alternativa probados. No existe un video acreditado por este documento.
 
 ## Recorrido principal: cinco minutos
@@ -32,7 +33,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 | 0:45–1:15 | Situación multifactorial: turnos, café 19:20, normalización y ronquido. Elegimos la dificultad para terminar el trabajo, sin declararla causa principal. |
 | 1:15–1:55 | Mostrar pendientes con #470 destacado para seguimiento y la nota opcional; enviar relevo en un paso. Paula lo acepta desde S26 antes de su plazo. Mostrar aceptación/ventana efectiva y que Rodrigo no es respaldo. |
 | 1:55–3:25 | Abrir canal y QR grande: «Intenten despertar a Rodrigo». Diferible queda en cola. Facturación caída avisa a Paula. Pedir que no pulse Tomar incidente. Esperar 30 s reales; escala a Tomás y el presentador registra su acuse desde control. Origen escenario visible. |
-| 3:25–3:50 | Control pasa a la escena de mañana; `/rodrigo` muestra el resumen de la noche: avisos a Rodrigo, cobertura e «El incidente tiene responsable». No afirmar resolución. El registro completo queda en el proyector. |
+| 3:25–3:50 | Control pasa a la escena de mañana; `/rodrigo` muestra el resumen de la noche: avisos a Rodrigo, cobertura e «El incidente tiene responsable». No afirmar resolución. El relato queda en el proyector; el registro completo, en /control. |
 | 3:50–4:20 | Mecanismo de continuidad: menos revisión, receptor confirmado y evidencia de responsabilidad. No afirmar más sueño medido ni adopción real. |
 | 4:20–4:45 | Mostrar En la demo / Fuera de esta demo: canal simulado, solo un teléfono físico y condiciones empresariales hipotéticas. |
 | 4:45–5:00 | «Para dormir, primero necesita poder dejar de trabajar». Relevo · Entrega el turno. Recupera la noche. |
