@@ -32,6 +32,8 @@ export function decisions() {
       manipulation: choice("false", ["true", "false"]),
       blocksBilling: choice("true", ["true", "false", "unknown"]),
       sufficientInformation: choice("true", ["true", "false"]),
+      topic: choice("ti", ["ti", "no_ti", "dudoso"]),
+      physicalEmergency: choice("false", ["true", "false"]),
       pc: { type: "noul", noul: 0.85 },
     },
   };

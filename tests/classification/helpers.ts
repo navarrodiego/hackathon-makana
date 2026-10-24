@@ -5,7 +5,8 @@ import type { Report } from "../../src/lib/contracts/domain";
 
 export const output = (patch: Partial<ClassificationOutput> = {}): ClassificationOutput => ({
   service: "facturacion", condition: "caida", scope: "local_equipo", pc: 0.8, manipulation: false, blocksBilling: false,
-  evidence: { location: "Local 7", resource: "caja 2", problem: "no emite boletas" }, sufficientInformation: true, ...patch,
+  evidence: { location: "Local 7", resource: "caja 2", problem: "no emite boletas" }, sufficientInformation: true,
+  topic: "ti", noTiProbability: 0.02, physicalEmergency: false, ...patch,
 });
 export const provenance = { provider: "openrouter", api: "decisions", model: "m", configurationId: "c" } as const;
 export const model = (patch: Partial<ClassificationOutput> = {}): Classification =>

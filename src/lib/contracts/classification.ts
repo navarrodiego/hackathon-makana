@@ -16,7 +16,14 @@ export interface ClassificationOutput {
   readonly blocksBilling: boolean | null;
   readonly evidence: FactEvidence;
   readonly sufficientInformation: boolean;
+  /** Si el texto es un reporte de TI. Clasificaciones guardadas antes de v2 no lo traen. */
+  readonly topic: Topic;
+  /** Probabilidad de `no_ti` según el modelo, finita entre 0 y 1. */
+  readonly noTiProbability: number;
+  /** El texto describe una persona herida o una emergencia de salud o seguridad. Solo agrega orientación al recibo. */
+  readonly physicalEmergency: boolean;
 }
+export type Topic = "ti" | "no_ti" | "dudoso";
 export interface ProviderProvenance {
   readonly provider: "openrouter";
   readonly api: "decisions" | "structured_chat";
@@ -29,7 +36,7 @@ export type Classification =
   | { readonly mode: "degraded"; readonly reportId: ReportId; readonly reason: DegradedReason; readonly output: ClassificationOutput | null };
 export type PolicyDecision =
   | { readonly route: "queue"; readonly reason: string; readonly nextAttentionAt: Instant | null }
-  | { readonly route: "review" | "notify"; readonly reason: string };
+  | { readonly route: "review" | "notify" | "out_of_scope"; readonly reason: string };
 /** equality = comparación exacta de todas las partes normalizadas, incluida ejecución fuera de esta clave. */
 export type EquivalenceKey =
   | { readonly mode: "facts"; readonly service: Service; readonly condition: Condition; readonly scope: Scope; readonly location: string | null; readonly resource: string | null; readonly problem: string }

@@ -271,6 +271,8 @@ function OwnReports({ reports }: { reports: ChannelViewDTO["ownReports"] }) {
             <li key={report.reportId} className="space-y-1 py-4">
               <p className="line-clamp-2 text-body break-words">{report.text}</p>
               <Status kind={line.kind} className="text-aux">{line.text}</Status>
+              {line.emergency ? <p className="text-body font-semibold">{line.emergency}</p> : null}
+              {line.classified ? <p className="text-aux text-muted-foreground">{line.classified}</p> : null}
             </li>
           );
         })}

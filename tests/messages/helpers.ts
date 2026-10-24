@@ -20,7 +20,8 @@ export const at = (base: Instant, ms: number): Instant => new Date(Date.parse(ba
 
 export const outputOf = (patch: Partial<ClassificationOutput> = {}): ClassificationOutput => ({
   service: 'facturacion', condition: 'caida', scope: 'local_equipo', pc: 0.9, manipulation: false, blocksBilling: false,
-  evidence: { location: 'local 7', resource: 'caja 2', problem: 'no emite boletas' }, sufficientInformation: true, ...patch,
+  evidence: { location: 'local 7', resource: 'caja 2', problem: 'no emite boletas' }, sufficientInformation: true,
+  topic: 'ti', noTiProbability: 0.02, physicalEmergency: false, ...patch,
 });
 export type Classify = (text: string, signal?: AbortSignal) => Promise<ProviderResult<ClassificationOutput>> | ProviderResult<ClassificationOutput>;
 const provenance = { provider: 'openrouter', api: 'decisions', model: 'test-double', configurationId: 'test-only' } as const;

@@ -57,6 +57,9 @@ Ejemplos de la escena aprobada, sujetos al evento real. Sustituir actores/horas 
 | Incidente aceptado por candidato vigente | «Tomado por Tomás»; origen escenario si se actuó desde control |
 | Envío ntfy aceptado | «Envío aceptado por ntfy»; no «Paula recibió el aviso» |
 | Reporte diferible registrado | «En cola»; mostrar próxima atención solo si está definida |
+| Reporte clasificado por el modelo (no degradado ni fuera de TI) | «Clasificación IA: red de locales, no funciona, un local o equipo.»; etiquetas fijas por servicio/condición/alcance, nunca texto libre del modelo. Servicios: facturación y cajas, red de locales, correo, VPN, impresora, cuentas y accesos, otro servicio. Condición: no funciona, funciona con fallas, solicitud. Alcance: una persona, un local o equipo, afecta a muchas personas |
+| Reporte fuera de TI (ruta `out_of_scope`) | «No parece un reporte de TI. No se creó un incidente ni se envió un aviso»; «parece» porque es una clasificación, no un hecho comprobado. Sin línea de modo degradado |
+| El modelo ve una emergencia física (cualquier ruta) | «Este canal es de soporte TI y no atiende emergencias. Si alguien está herido o en peligro, llama al 131 (SAMU), 132 (Bomberos) o 133 (Carabineros) y avisa a tu jefatura.» No promete atención ni aviso |
 | Reporte enviado desde /canal y aceptado por el servidor | «Reporte enviado. Su estado aparece en Tus reportes.»; no promete clasificación ni atención |
 | /canal: primer paso | Campo «Tu nombre» y botón **Entrar**; luego «Hola, Diego.» con **Cambiar nombre** |
 | /canal: espera común tras abrir | «En 18 s puedes enviar» (cifra `aria-hidden`; lector: «Podrás enviar en unos segundos») y «Esperamos a que entren los demás.»; canal cerrado: «El canal abre pronto» |
