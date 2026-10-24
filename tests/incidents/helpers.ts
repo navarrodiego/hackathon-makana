@@ -5,6 +5,8 @@ import { fixturePreparer } from '../helpers/db/fixtures';
 import type { CommandContext, Principal } from '../../src/lib/contracts/auth';
 import type { ActorId, Instant } from '../../src/lib/contracts/core';
 import type { ExecutionFixture } from '../../src/lib/contracts/fixtures';
+import type { ServiceResult } from '../../src/lib/contracts/http';
+import type { TransactionRepositories } from '../../src/lib/contracts/repositories';
 import type { Classification, EquivalenceKey, PolicyDecision } from '../../src/lib/contracts/classification';
 import type { Report } from '../../src/lib/contracts/domain';
 import type { PreparedExecution } from '../../src/lib/contracts/services';
@@ -31,7 +33,7 @@ export async function world(fixture: ExecutionFixture) {
   const ctx = (principal: Principal, actorId: ActorId | null, operationalNow: Instant, narrativeNow: Instant = fixture.narrativeAt, origin: CommandContext['origin'] = 'system'): CommandContext =>
     ({ executionId: prepared.executionId, executionVersion: 1, principal, actorId, origin, operationalNow, narrativeNow, correlationId: `correlation_${randomUUID()}` });
   const system = (now: Instant, narrative: Instant = fixture.narrativeAt) => ctx({ kind: 'system' }, null, now, narrative);
-  const read = async <T>(work: Parameters<typeof store.run<T>>[1]) => {
+  const read = async <T>(work: (tx: TransactionRepositories) => Promise<ServiceResult<T>>) => {
     const r = await store.run(system(fixture.operationalAt), work); if (!r.ok) throw new Error(r.code); return r.value;
   };
   const actors = await read(async tx => ({ ok: true, value: await tx.reference.actors() }));
