@@ -4,6 +4,8 @@ import { fixturePreparer } from '../helpers/db/fixtures';
 import type { CommandContext } from '../../src/lib/contracts/auth';
 import type { ActorId, Instant } from '../../src/lib/contracts/core';
 import type { ExecutionFixture } from '../../src/lib/contracts/fixtures';
+import type { ServiceResult } from '../../src/lib/contracts/http';
+import type { TransactionRepositories } from '../../src/lib/contracts/repositories';
 import type { Principal } from '../../src/lib/contracts/auth';
 import type { PreparedExecution } from '../../src/lib/contracts/services';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
@@ -20,7 +22,7 @@ export async function world(fixture: ExecutionFixture) {
   const store = new PostgresPersistence(db);
   const prepared: PreparedExecution = await fixtures.prepare(fixture);
   const system = baseContext(prepared, { kind: 'system' }, null, fixture.operationalAt, fixture.narrativeAt);
-  const read = async <T>(work: Parameters<typeof store.run<T>>[1]) => {
+  const read = async <T>(work: (tx: TransactionRepositories) => Promise<ServiceResult<T>>) => {
     const r = await store.run(system, work); if (!r.ok) throw new Error(r.code); return r.value;
   };
   const actors = await read(async tx => ({ ok: true, value: await tx.reference.actors() }));

@@ -7,6 +7,7 @@ import type { ActorId, Instant } from '../../src/lib/contracts/core';
 import type { NoteOutput, ProviderResult, StructuredProvider } from '../../src/lib/contracts/classification';
 import type { ExecutionFixture } from '../../src/lib/contracts/fixtures';
 import type { ServiceResult } from '../../src/lib/contracts/http';
+import type { TransactionRepositories } from '../../src/lib/contracts/repositories';
 import type { NotificationService } from '../../src/lib/contracts/services';
 import { PostgresPersistence } from '../../src/lib/server/repositories';
 import { createHandoffService } from '../../src/lib/server/handoff';
@@ -64,7 +65,7 @@ export async function world(fixture: ExecutionFixture, options: WorldOptions = {
   const control = (operationalNow: Instant = clock, executionId = prepared.executionId, represented: ActorId | null = null) =>
     ctx({ kind: 'control', operatorId: 'demo_control' }, represented, operationalNow, fixture.narrativeAt, executionId, 'scenario');
   const system = (operationalNow: Instant = clock) => ctx({ kind: 'system' }, null, operationalNow, fixture.narrativeAt, prepared.executionId, 'system');
-  const readTx = async <T>(work: Parameters<typeof store.run<T>>[1], executionId = prepared.executionId): Promise<T> => {
+  const readTx = async <T>(work: (tx: TransactionRepositories) => Promise<ServiceResult<T>>, executionId = prepared.executionId): Promise<T> => {
     const r: ServiceResult<T> = await store.run(ctx({ kind: 'system' }, null, clock, fixture.narrativeAt, executionId, 'system'), work);
     if (!r.ok) throw new Error(r.code);
     return r.value;
