@@ -123,7 +123,7 @@ function NameStep({ onEnter }: { onEnter: (name: string) => void }) {
   };
   return (
     <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
-      <TextField label="Tu nombre" value={value} onChange={e => setValue(e.target.value)} autoComplete="given-name" enterKeyHint="go" error={error} />
+      <TextField label="Tu nombre" hint="Se verá en la pantalla de la sala junto a tus reportes." value={value} onChange={e => setValue(e.target.value)} autoComplete="given-name" enterKeyHint="go" error={error} />
       <Button type="submit" variant="primary" disabled={length === 0 || Boolean(error)}>Entrar</Button>
     </form>
   );
@@ -223,6 +223,7 @@ function SendStep({ view, name }: { view: ChannelViewDTO; name: string }) {
         <h2 id="enviar" className="text-section font-semibold break-words">{name}, trabajas en la empresa de Rodrigo</h2>
         <p className="max-w-prose text-body">
           Algo dejó de funcionar en tu local u oficina. Cuéntale a soporte qué pasó y dónde, como lo escribirías un día normal.
+          Tu nombre y lo que escribas se verán en la pantalla de la sala.
         </p>
       </div>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>

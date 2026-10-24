@@ -20,7 +20,8 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - Tomás/Carla solo in-app con canal/origen visible; no prometer otro teléfono.
 - Abrir proyector y control protegido en superficies separadas. No proyectar tokens, contraseñas, consola ni botones de control público.
 - Probar QR a URL real de producción, zoom, resolución, adaptadores y lectura a distancia. No depender de audio.
-- Al abrir el canal, el proyector muestra el QR a pantalla completa con quién está a cargo y los avisos a Rodrigo; vuelve solo al panel a los 30 s o con el primer incidente, lo que ocurra antes. Esos 30 s son la misma espera común de los teléfonos: cuentan desde que control abre el canal (hora guardada en el servidor), así que recargar el proyector no la reinicia y todos los teléfonos pasan al formulario cuando el QR grande cede. El QR pequeño sigue en el pie.
+- Al abrir el canal, el proyector muestra el QR a pantalla completa con quién está a cargo y los avisos a Rodrigo; vuelve solo al panel a los 30 s o con el primer incidente, lo que ocurra antes. Esos 30 s son la misma espera común de los teléfonos: cuentan desde que control abre el canal (hora guardada en el servidor), así que recargar el proyector no la reinicia y todos los teléfonos pasan al formulario cuando el QR grande cede. Después el QR ya no aparece (decisión de Diego del 24-10-2026): el panel gana espacio y no se suman teléfonos; quien llegue tarde o cierre la página no puede volver a entrar.
+- El panel muestra «Reportes de la sala»: los últimos 6 reportes con el nombre y el texto que escribió cada persona (recortados a 40 y 100 caracteres) y qué pasó con cada uno. Se proyectan tal cual, sin moderación: riesgo asumido por el equipo.
 - El proyector es para la sala y la única pantalla que mira durante el pitch: antes del envío, el cierre de Rodrigo (solo conteos); después, quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo y un relato breve de lo que pasó. No muestra escenas, ejecuciones ni resultados por ntfy/in-app; para mostrarlos al jurado técnico, usar el registro reciente de /control sin proyectar sus botones ni credenciales.
 - Video local de un ensayo real y red alternativa probados. No existe un video acreditado por este documento.
 
@@ -38,7 +39,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 
 | Tiempo | Acción y relato |
 |---|---|
-| 0:00–0:15 | Abrir con el cierre 23:58 de Rodrigo; QR pequeño disponible. Audio breve opcional. |
+| 0:00–0:15 | Abrir con el cierre 23:58 de Rodrigo; el QR aparece recién al abrir el canal. Audio breve opcional. |
 | 0:15–0:45 | Contrastar dos observaciones: cierre 23:58/4 h 20 de sueño y 22:10/6 h 40. Coincidencia, no causalidad probada. |
 | 0:45–1:15 | Situación multifactorial: turnos, café 19:20, normalización y ronquido. Elegimos la dificultad para terminar el trabajo, sin declararla causa principal. |
 | 1:15–1:55 | La sala mira solo el proyector: «Rodrigo cierra su turno», cuántos pendientes deja y cuántos quedan para seguimiento. Rodrigo envía el relevo en un paso desde `/rodrigo` en su teléfono (pendientes con #470 destacado y nota opcional viven ahí); el proyector pasa solo a «Esperando aceptación de Paula». Paula lo acepta desde S26 antes de su plazo. Mostrar aceptación/ventana efectiva y que Rodrigo no es respaldo. |

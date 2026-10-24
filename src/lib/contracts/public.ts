@@ -43,6 +43,14 @@ export interface ClosingSummaryDTO {
   readonly outgoing: ActorDTO; readonly firstCandidate: ActorDTO;
   readonly pendingCount: number; readonly followUpCount: number;
 }
+/**
+ * Reporte de la sala para el proyector (decisión de Diego, 24-10-2026): apodo y texto recortados, escapados al
+ * mostrarse, y el mismo estado que ve quien lo envió. Sin sesión, principal, clasificación ni decisión.
+ */
+export interface PublicReportDTO {
+  readonly id: ReportId; readonly nickname: string; readonly text: string;
+  readonly status: ReportReceiptDTO["status"]; readonly duplicate: boolean; readonly narrativeAt: Instant;
+}
 /** Construir explícitamente esta lista; no serializar entidades ni usar spreads privados. */
 export interface PublicStateDTO {
   readonly audience: "public";
@@ -56,6 +64,8 @@ export interface PublicStateDTO {
   readonly closing: ClosingSummaryDTO | null;
   readonly incidents: readonly IncidentSummaryDTO[]; readonly notifications: readonly NotificationDTO[];
   readonly events: readonly PublicEventDTO[];
+  /** Últimos reportes de la sala, más recientes primero. */
+  readonly reports: readonly PublicReportDTO[];
   /** Derivado de intenciones de aviso a ese actor, no de despertares. */
   readonly outgoingNoticeCount: number;
 }

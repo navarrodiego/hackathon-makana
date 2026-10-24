@@ -6,5 +6,5 @@ export type {
 } from "./core";
 export type {
   ActorDTO, ChannelViewDTO, ClosingSummaryDTO, CoverageDTO, HandoffSummaryDTO, IncidentSummaryDTO,
-  NotificationDTO, PublicEventDTO, PublicStateDTO, ReportReceiptDTO,
+  NotificationDTO, PublicEventDTO, PublicReportDTO, PublicStateDTO, ReportReceiptDTO,
 } from "./public";

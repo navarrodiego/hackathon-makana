@@ -24,7 +24,7 @@ export const publicStateExample = {
   scene: { id: "scene_closing", label: "Cierre" }, preparation: "ready",
   clocks: { operationalNow: "2026-10-23T15:00:00.000Z", narrativeNow: "2026-10-24T01:09:50.000Z", timeZone: "America/Santiago" },
   channelOpen: false, channelOpenedAt: null, coverage: coverageExample, handoff: handoffExample, closing: null,
-  incidents: [], notifications: [], events: [], outgoingNoticeCount: 0,
+  incidents: [], notifications: [], events: [], reports: [], outgoingNoticeCount: 0,
 } as const satisfies PublicStateDTO;
 export const receiptExample = {
   audience: "reporter", executionId: "execution_example", reportId: "report_example",
