@@ -31,6 +31,9 @@ async function seedSuccessor(tx: TransactionRepositories, execution: Execution):
   }
   const mapped = (id: string) => actor.get(id)!;
   if (!scenes.length) return fail("STATE_CONFLICT");
+  // Las escenas se copian de la anterior: una que salió del escenario se retira aquí, o seguiría en cada reset.
+  const labels = new Set<string>(fixture.scenes.map(s => s.label));
+  await tx.reference.removeScenes(scenes.filter(s => !labels.has(s.label)).map(s => s.id));
   const executionId = execution.executionId;
   const windowId = `window_${randomUUID()}` as const;
   const window: CoverageWindow = {

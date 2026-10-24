@@ -34,8 +34,7 @@ export const BASE_FIXTURE = {
   scenes: [
     { id: "scene_closing", order: 0, label: "Cierre", narrativeAt: "2026-10-24T01:09:50.000Z" },
     { id: "scene_channel", order: 1, label: "Canal", narrativeAt: "2026-10-24T01:10:00.000Z" },
-    { id: "scene_night", order: 2, label: "Registro de noche", narrativeAt: "2026-10-24T06:00:00.000Z" },
-    { id: "scene_morning", order: 3, label: "Registro de mañana", narrativeAt: "2026-10-24T10:00:00.000Z" },
+    { id: "scene_morning", order: 2, label: "Registro de mañana", narrativeAt: "2026-10-24T10:00:00.000Z" },
   ],
   initialSceneId: "scene_closing", operationalAt: "2026-10-23T15:00:00.000Z", narrativeAt: "2026-10-24T01:09:50.000Z",
   channelOpen: false,

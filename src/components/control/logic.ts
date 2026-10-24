@@ -6,8 +6,7 @@ import type {
 export const RESET_ARM_MS = 4000;
 
 export type ShortcutAction =
-  | "next_scene" | "previous_scene" | "toggle_channel" | "next_report" | "billing_report"
-  | "toggle_qr" | "mute" | "reset_arm" | "reset_open";
+  | "next_step" | "toggle_channel" | "next_report" | "billing_report" | "reset_arm" | "reset_open";
 
 /** `armedAt`: instante de la primera R; `resetOpen`: la confirmación explícita está abierta y captura el teclado. */
 export interface ShortcutState { readonly armedAt: number | null; readonly resetOpen: boolean }
@@ -24,8 +23,7 @@ export function isEditableTarget(target: ShortcutKey["target"]): boolean {
 }
 
 const KEYS: Readonly<Record<string, ShortcutAction>> = {
-  arrowright: "next_scene", " ": "next_scene", arrowleft: "previous_scene", o: "toggle_channel",
-  i: "next_report", p: "billing_report", q: "toggle_qr", m: "mute",
+  arrowright: "next_step", " ": "next_step", o: "toggle_channel", i: "next_report", p: "billing_report",
 };
 
 /** Decide qué atajo corresponde y el estado resultante. Función pura: el reset nunca se ejecuta aquí, solo se pide confirmarlo. */
@@ -45,10 +43,19 @@ export function resolveShortcut(e: ShortcutKey, state: ShortcutState): { action:
 
 export interface SceneOption { readonly id: SceneId; readonly label: string }
 
-/** Escena vecina en el orden del guion; `null` en los extremos o si la actual no está en la lista. */
-export function adjacentScene<T extends SceneOption>(options: readonly T[], currentId: string, step: 1 | -1): T | null {
-  const index = options.findIndex(o => o.id === currentId);
-  return index < 0 ? null : options[index + step] ?? null;
+/** Momento del guion de DEMO. Se reconoce por la etiqueta del seed: los ids cambian en cada ejecución. */
+export type Moment = "closing" | "night" | "morning";
+const MOMENTS: Readonly<Record<string, { moment: Moment; next: string | null; opensChannel: boolean }>> = {
+  Cierre: { moment: "closing", next: "Canal", opensChannel: true },
+  Canal: { moment: "night", next: "Registro de mañana", opensChannel: false },
+  "Registro de mañana": { moment: "morning", next: null, opensChannel: false },
+};
+
+/** Momento actual y paso siguiente. Empezar la noche también abre el canal; la escena nunca retrocede. */
+export function scriptStep<T extends SceneOption>(options: readonly T[], currentLabel: string): { moment: Moment | null; next: T | null; opensChannel: boolean } {
+  const step = MOMENTS[currentLabel];
+  if (!step) return { moment: null, next: null, opensChannel: false };
+  return { moment: step.moment, next: options.find(o => o.label === step.next) ?? null, opensChannel: step.opensChannel };
 }
 
 type Execution = Pick<PublicStateDTO, "executionId" | "version">;

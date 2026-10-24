@@ -19,13 +19,13 @@ test('evaluación de plazos al consultar el estado (I06/I07)', async t => {
       assert.equal(state.value.incidents[0].status, 'awaiting_ack');
 
       const scene = await w.readTx(async tx => ({ ok: true, value: await tx.reference.scenes() }));
-      const night = scene.find(s => s.label === 'Registro de noche')!;
+      const morning = scene.find(s => s.label === 'Registro de mañana')!;
       const exec0 = state.value;
       const changed = await w.execution.changeScene(w.control(base), {
-        executionId: w.prepared.executionId, idempotencyKey: 'scene-night', expectedVersion: exec0.version, sceneId: night.id, channelOpen: true,
+        executionId: w.prepared.executionId, idempotencyKey: 'scene-morning', expectedVersion: exec0.version, sceneId: morning.id, channelOpen: true,
       });
       assert.ok(changed.ok, JSON.stringify(changed));
-      // Seis horas narrativas después, siguen a 0 s reales: el incidente conserva su candidato y plazo.
+      // Diez horas narrativas después, siguen a 0 s reales: el incidente conserva su candidato y plazo.
       assert.equal(changed.value.incidents[0].status, 'awaiting_ack');
       assert.equal(changed.value.incidents[0].candidate?.displayName, 'Paula');
       assert.equal(changed.value.incidents[0].deadlineAt, state.value.incidents[0].deadlineAt);

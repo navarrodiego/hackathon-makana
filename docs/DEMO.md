@@ -22,7 +22,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - Probar QR a URL real de producción, zoom, resolución, adaptadores y lectura a distancia. No depender de audio.
 - Al abrir el canal, el proyector muestra el QR a pantalla completa con quién está a cargo y los avisos a Rodrigo; vuelve solo al panel a los 30 s o con el primer incidente, lo que ocurra antes. Esos 30 s son la misma espera común de los teléfonos: cuentan desde que control abre el canal (hora guardada en el servidor), así que recargar el proyector no la reinicia y todos los teléfonos pasan al formulario cuando el QR grande cede. Después el QR ya no aparece (decisión de Diego del 24-10-2026): el panel gana espacio y no se suman teléfonos; quien llegue tarde o cierre la página no puede volver a entrar.
 - El panel muestra «Reportes de la sala»: los últimos 6 reportes con el nombre y el texto que escribió cada persona (recortados a 40 y 100 caracteres) y qué pasó con cada uno. Se proyectan tal cual, sin moderación: riesgo asumido por el equipo.
-- El proyector es para la sala y la única pantalla que mira durante el pitch: antes del envío, el cierre de Rodrigo (solo conteos); después, quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo y un relato breve de lo que pasó. No muestra escenas, ejecuciones ni resultados por ntfy/in-app; para mostrarlos al jurado técnico, usar /control (registro completo y resultados de aviso) sin proyectar sus botones ni credenciales.
+- El proyector es para la sala y la única pantalla que mira durante el pitch: antes del envío, el cierre de Rodrigo (solo conteos); después, quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo y un relato breve de lo que pasó. No muestra escenas, ejecuciones ni resultados por ntfy/in-app; para mostrarlos al jurado técnico, usar el registro reciente de /control sin proyectar sus botones ni credenciales.
 - Video local de un ensayo real y red alternativa probados. No existe un video acreditado por este documento.
 
 ### Red mala y público en el canal
@@ -39,12 +39,12 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 
 | Tiempo | Acción y relato |
 |---|---|
-| 0:00–0:15 | Abrir con el cierre 23:58 de Rodrigo; QR pequeño disponible. Audio breve opcional. |
+| 0:00–0:15 | Abrir con el cierre 23:58 de Rodrigo; el QR aparece recién al abrir el canal. Audio breve opcional. |
 | 0:15–0:45 | Contrastar dos observaciones: cierre 23:58/4 h 20 de sueño y 22:10/6 h 40. Coincidencia, no causalidad probada. |
 | 0:45–1:15 | Situación multifactorial: turnos, café 19:20, normalización y ronquido. Elegimos la dificultad para terminar el trabajo, sin declararla causa principal. |
 | 1:15–1:55 | La sala mira solo el proyector: «Rodrigo cierra su turno», cuántos pendientes deja y cuántos quedan para seguimiento. Rodrigo envía el relevo en un paso desde `/rodrigo` en su teléfono (pendientes con #470 destacado y nota opcional viven ahí); el proyector pasa solo a «Esperando aceptación de Paula». Paula lo acepta desde S26 antes de su plazo. Mostrar aceptación/ventana efectiva y que Rodrigo no es respaldo. |
-| 1:55–3:25 | Abrir canal y QR grande: «Intenten despertar a Rodrigo». Durante 30 s el público solo escribe su nombre y espera; al ceder el QR, todos pueden enviar. Diferible queda en cola. Facturación caída avisa a Paula. Pedir que no pulse Tomar incidente. Esperar 30 s reales; escala a Tomás y el presentador registra su acuse desde control. Origen escenario visible. |
-| 3:25–3:50 | Control pasa a la escena de mañana; el proyector cuenta la noche: avisos a Rodrigo, quién quedó a cargo y el incidente tomado. No afirmar resolución. `/rodrigo` muestra el mismo resumen en el teléfono si se quiere enseñar; el registro completo, en /control. |
+| 1:55–3:25 | En control, «Empezar la noche y abrir el canal» (22:10): empieza la cobertura de Paula y el proyector muestra el QR grande: «Intenten despertar a Rodrigo». Durante 30 s el público solo escribe su nombre y espera; al ceder el QR, todos pueden enviar. Diferible queda en cola. Facturación caída avisa a Paula. Pedir que no pulse Tomar incidente. Esperar 30 s reales; escala a Tomás y el presentador registra su acuse desde control. Origen escenario visible. |
+| 3:25–3:50 | En control, «Pasar a la mañana» (07:00); el proyector cuenta la noche: avisos a Rodrigo, quién quedó a cargo y el incidente tomado. No afirmar resolución. `/rodrigo` muestra el mismo resumen en el teléfono si se quiere enseñar; el registro completo, en /control. |
 | 3:50–4:20 | Mecanismo de continuidad: menos revisión, receptor confirmado y evidencia de responsabilidad. No afirmar más sueño medido ni adopción real. |
 | 4:20–4:45 | Mostrar En la demo / Fuera de esta demo: canal simulado, solo un teléfono físico y condiciones empresariales hipotéticas. |
 | 4:45–5:00 | «Para dormir, primero necesita poder dejar de trabajar». Relevo · Entrega el turno. Recupera la noche. |
@@ -61,14 +61,13 @@ Si a los 15 s de abrirse el envío (45 s desde abrir el canal) hay menos de tres
 
 | Atajo aprobado | Función |
 |---|---|
-| → / Espacio | Siguiente escena |
-| ← | Escena anterior |
+| → / Espacio | Siguiente paso del guion: en el cierre, empezar la noche y abrir el canal; en la noche, pasar a la mañana |
 | O | Abrir/cerrar canal |
 | I | Siguiente reporte guionado |
 | P | Caída de facturación |
-| Q | QR |
-| M | Silencio del audio de la presentación, no prueba de silencio del teléfono |
 | R R | Reset escénico protegido |
+
+El guion tiene tres escenas: Cierre (22:09:50), Canal (22:10) y Registro de mañana (07:00). Las escenas no retroceden. El QR grande lo decide el proyector cuando ve el canal abierto, y la demo no usa audio: por eso control no tiene atajos para QR, audio ni escena anterior.
 
 No ejecutar atajos al escribir en un input/textarea. Control invoca los mismos contratos que UI/ntfy; nunca pone un resultado ficticio solo en pantalla. Ningún atajo acorta deadlines sin hacerlo visible; el pitch principal usa espera real.
 

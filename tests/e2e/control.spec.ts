@@ -36,26 +36,28 @@ test.describe("con credencial de control", () => {
     expect(r.status(), await r.text()).toBe(201);
   }
 
-  test("escenas, canal, atajos, RR con confirmación y reset", async ({ page, request, baseURL }) => {
+  test("paso del guion, canal, atajos, RR con confirmación y reset", async ({ page, request, baseURL }) => {
     await reset(request, baseURL!);
     const errors: string[] = [];
     page.on("pageerror", e => errors.push(e.message));
     await page.goto("/control");
     await expect(page.getByRole("heading", { name: "Control", exact: true })).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: /^Canal cerrado ·/ })).toBeVisible();
+    // Tras el reset el guion está en el cierre; solo queda a la vista lo que el presentador usa.
+    await expect(page.getByRole("status").filter({ hasText: /^Cierre de turno · / })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Empezar la noche y abrir el canal" })).toBeEnabled();
+    await expect(page.getByText("En vivo")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Resultados de aviso" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Escena anterior|Mostrar QR/ })).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: /Canal cerrado/ })).toBeVisible();
 
     // Atajo O abre el canal con origen escenario; el estado viene del servidor.
     await page.keyboard.press("o");
-    await expect(page.getByRole("status").filter({ hasText: /^Canal abierto ·/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("status").filter({ hasText: /Canal abierto/ })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("origen escenario").first()).toBeVisible({ timeout: 15_000 });
 
     // Reporte guionado entra por el servicio común.
     await page.getByRole("button", { name: "VPN lenta" }).click();
     await expect(page.getByText(/Reporte guionado «VPN lenta» enviado/)).toBeVisible();
-
-    // M no inventa audio.
-    await page.keyboard.press("m");
-    await expect(page.getByText(/Audio de presentación no disponible/)).toBeVisible();
 
     // Los atajos no se disparan al escribir en un campo editable.
     await page.evaluate(() => {
@@ -64,8 +66,8 @@ test.describe("con credencial de control", () => {
       document.body.append(input);
       input.focus();
     });
-    await page.keyboard.type("oiqrr");
-    await expect(page.getByRole("status").filter({ hasText: /^Canal abierto ·/ })).toBeVisible();
+    await page.keyboard.type("oirr");
+    await expect(page.getByRole("status").filter({ hasText: /Canal abierto/ })).toBeVisible();
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
 
     // RR solo pide confirmación; Escape cancela y no reinicia.
@@ -82,9 +84,21 @@ test.describe("con credencial de control", () => {
     // Confirmado, crea una ejecución nueva con el canal cerrado.
     await page.getByRole("button", { name: "Reiniciar demostración" }).click();
     await page.getByRole("button", { name: "Reiniciar ahora" }).click();
-    await expect(page.getByRole("status").filter({ hasText: /^Canal cerrado ·/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("status").filter({ hasText: /Canal cerrado/ })).toBeVisible({ timeout: 15_000 });
     expect((await state(request, baseURL!)).executionId).not.toBe(before.executionId);
     expect(errors).toEqual([]);
+  });
+
+  test("el guion avanza a la noche con el canal abierto y luego a la mañana", async ({ page, request, baseURL }) => {
+    await reset(request, baseURL!);
+    await page.goto("/control");
+    await page.getByRole("button", { name: "Empezar la noche y abrir el canal" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Noche · 22:1\d.*Canal abierto/ })).toBeVisible({ timeout: 15_000 });
+    // El atajo se ignora mientras la acción anterior termina: se espera su confirmación.
+    await expect(page.getByText(/el canal está abierto\. Registrado con origen escenario/)).toBeVisible({ timeout: 15_000 });
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("status").filter({ hasText: /^Mañana · 07:0\d.*Canal abierto/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Terminó el guion. Para repetirlo, reinicia la demostración.")).toBeVisible();
   });
 
   test("con el canal cerrado el reporte guionado no se envía y se explica", async ({ page, request, baseURL }) => {
