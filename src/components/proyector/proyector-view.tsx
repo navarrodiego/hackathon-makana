@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ContinuityLine, continuityState } from "@/components/relevo/continuity-line";
 import { Status } from "@/components/ui/status";
 import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, EmptyState, LoadingState } from "@/components/ui/feedback";
 import { hhmm } from "@/components/registro/time";
-import { usePublicState } from "@/lib/client/state";
+import { useLobbyRemaining, usePublicState } from "@/lib/client/state";
 import type { ActorDTO, IncidentSummaryDTO, PublicStateDTO } from "@/lib/contracts/client";
 import { Conexion } from "./conexion";
 import { QrImage, type CanalQr } from "./qr-image";
@@ -19,29 +19,7 @@ const SERVICE: Record<string, string> = {
 
 const OUTGOING_FALLBACK: ActorDTO = { id: "actor_saliente" as ActorDTO["id"], displayName: "Turno saliente" };
 
-/** Tiempo que el QR ocupa la pantalla al abrirse el canal, salvo que antes aparezca un incidente. */
-export const QR_FASE_MS = 45_000;
-
 const LABEL = "text-aux font-semibold text-muted-foreground";
-
-/**
- * Fase QR: al abrirse el canal el QR ocupa la pantalla; cede al panel tras QR_FASE_MS o con el primer incidente.
- * Solo mira lo observado por esta pestaña: no adelanta ni decide plazos.
- */
-function useQrFase(channelOpen: boolean, hasIncident: boolean): boolean {
-  const [prevOpen, setPrevOpen] = useState(channelOpen);
-  const [expired, setExpired] = useState(false);
-  if (channelOpen !== prevOpen) {
-    setPrevOpen(channelOpen);
-    setExpired(false);
-  }
-  useEffect(() => {
-    if (!channelOpen || expired) return;
-    const id = setTimeout(() => setExpired(true), QR_FASE_MS);
-    return () => clearTimeout(id);
-  }, [channelOpen, expired]);
-  return channelOpen && !expired && !hasIncident;
-}
 
 function Cabecera({ state, live }: { state: PublicStateDTO; live: ReactNode }) {
   return (
@@ -217,7 +195,10 @@ function QrPequeno({ qr }: { qr: CanalQr | null }) {
 export function ProyectorView({ qr }: { qr: CanalQr | null }) {
   const view = usePublicState(1000, { keepPaceHidden: true });
   const state = view.state;
-  const faseQr = useQrFase(state?.channelOpen ?? false, (state?.incidents.length ?? 0) > 0) && qr !== null;
+  // Fase QR: al abrirse el canal el QR ocupa la pantalla durante la misma espera que ven los teléfonos (ancla del
+  // servidor, así recargar no la reinicia) y cede antes si aparece un incidente.
+  const lobby = useLobbyRemaining(view, state?.channelOpen ? state.channelOpenedAt : null);
+  const faseQr = Boolean(state?.channelOpen) && lobby !== 0 && (state?.incidents.length ?? 0) === 0 && qr !== null;
 
   if (!state) {
     return view.status === "loading" ? <LoadingState title="Cargando estado" /> : (

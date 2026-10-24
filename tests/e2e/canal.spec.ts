@@ -2,6 +2,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 import { config } from "dotenv";
 import { Client } from "pg";
 import { OPERATOR_SECRET, basicAs } from "./support/acceso";
+import { enterChannel, sendReport } from "./support/canal";
 
 config({ quiet: true });
 
@@ -33,7 +34,8 @@ async function state(request: APIRequestContext, baseURL: string) {
 
 test.skip(!OPERATOR_SECRET || !process.env.APP_ORIGIN, "Faltan APP_ORIGIN y las credenciales de control descartables");
 
-test("canal: cerrado, abre sin recargar, recibe reportes propios, escapa HTML y respeta el límite de 5", async ({ page, request, baseURL }) => {
+test("canal: nombre, espera común sin recargar, reportes propios con texto escapado y límite de 5", async ({ page, request, baseURL }) => {
+  test.setTimeout(150_000);
   const origin = baseURL!;
   const before = await state(request, origin);
   await command(request, origin, "/api/reset", { executionId: before.executionId, expectedVersion: before.version });
@@ -45,39 +47,56 @@ test("canal: cerrado, abre sin recargar, recibe reportes propios, escapa HTML y 
 
   await page.goto("/canal");
   await expect(page.getByRole("heading", { name: "Canal", exact: true })).toBeVisible();
-  await expect(page.getByText("El canal está cerrado por ahora")).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Enviar reporte" })).toBeDisabled();
+  // Primero solo el nombre; el máximo se avisa antes de entrar.
+  await page.getByRole("textbox", { name: "Tu nombre" }).fill("x".repeat(41));
+  await expect(page.getByText("Tu nombre tiene 41 caracteres. El máximo es 40.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar" })).toBeDisabled();
+  await enterChannel(page);
+  await expect(page.getByText("El canal abre pronto")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveCount(0);
 
-  // Control abre el canal con la escena real; la página lo detecta sola.
+  // Control abre el canal; la página lo detecta sola y espera la cuenta común (30 s desde la apertura).
   const now = await state(request, origin);
-  await command(request, origin, "/api/scene", { executionId: now.executionId, expectedVersion: now.version, sceneId: await sceneId("Canal"), channelOpen: true });
-  await expect(page.getByText("El canal está cerrado por ahora")).toBeHidden({ timeout: 15_000 });
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toBeEnabled();
+  const opened = await command(request, origin, "/api/scene", { executionId: now.executionId, expectedVersion: now.version, sceneId: await sceneId("Canal"), channelOpen: true });
+  expect(opened.channelOpenedAt).toBeTruthy();
+  await expect(page.getByText("Esperamos a que entren los demás.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveCount(0);
+  // Durante la espera el servidor tampoco admite reportes del público.
+  const early = await page.evaluate(async executionId => (await fetch("/api/messages", {
+    method: "POST", headers: { "content-type": "application/json", "x-relevo-canal": "1" },
+    body: JSON.stringify({ executionId, idempotencyKey: "e2e-espera", nickname: "Visita", text: "Llegó antes" }),
+  })).status, opened.executionId);
+  expect(early).toBe(409);
+  await expect(page.getByRole("heading", { name: "Trabajas en la empresa de Rodrigo" })).toBeVisible({ timeout: 40_000 });
 
-  const send = async (text: string) => {
-    await page.getByRole("textbox", { name: "Apodo" }).fill("Visita");
-    await page.getByRole("textbox", { name: "Reporte" }).fill(text);
-    await page.getByRole("button", { name: "Enviar reporte" }).click();
-  };
   const list = page.getByRole("region", { name: "Tus reportes" });
-
-  await send("<img src=x onerror=alert(1)> Local 7: la caja 2 no emite boletas");
-  await expect(list.getByText(/^Reporte 1:/)).toBeVisible();
-  await expect(list.getByText(/No se pudo clasificar el reporte con certeza/)).toBeVisible();
+  const html = "<img src=x onerror=alert(1)> Local 7: la caja 2 no emite boletas";
+  await sendReport(page, html);
+  await expect(list.getByText(html)).toBeVisible();
+  // Sin IA la clasificación es degradada y la facturación pasa a incidente; sin relevo aceptado nadie lo tiene aún.
+  // El estado dice a quién le toca, sin texto técnico del proveedor ni de la clasificación.
+  await expect(list.getByText("Incidente registrado. Nadie lo ha tomado")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/No se pudo clasificar/)).toHaveCount(0);
+  await expect(page.getByText(/ntfy/)).toHaveCount(0);
   expect(await page.locator("img[src='x']").count()).toBe(0);
 
   // Texto largo: el contador avisa y no se envía.
-  await page.getByRole("textbox", { name: "Reporte" }).fill("x".repeat(281));
+  await page.getByRole("textbox", { name: "Qué pasó" }).fill("x".repeat(281));
   await expect(page.getByText("El reporte tiene 281 caracteres. El máximo es 280.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Enviar reporte" })).toBeDisabled();
 
   for (const n of [2, 3, 4, 5]) {
-    await send(`Hecho distinto número ${n} en otro local`);
-    await expect(list.getByText(new RegExp(`^Reporte ${n}:`))).toBeVisible();
+    await sendReport(page, `Hecho distinto número ${n} en otro local`);
+    await expect(list.getByText(`Hecho distinto número ${n} en otro local`)).toBeVisible();
   }
-  await expect(page.getByText("Ya enviaste los 5 reportes de esta sesión.")).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Reporte" })).toBeDisabled();
+  await expect(page.getByText("Ya enviaste tus 5 reportes.")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Qué pasó" })).toHaveCount(0);
+  // El más reciente queda arriba.
+  await expect(list.getByRole("listitem").first()).toContainText("número 5");
+
+  // El nombre se recuerda en este navegador.
+  await page.reload();
+  await expect(page.getByText("Hola, Visita.")).toBeVisible();
 
   // La cookie de sesión no es legible desde la página y el DOM no la contiene.
   expect(await page.evaluate(() => document.cookie)).not.toContain("relevo_session");

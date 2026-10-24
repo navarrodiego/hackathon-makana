@@ -17,6 +17,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   IDEMPOTENCY_CONFLICT: "Esa clave de operación ya se usó con otro contenido. No se guardó ningún cambio.",
   OPERATION_PENDING: "La misma operación sigue en curso. Espera su resultado antes de repetirla.",
   CHANNEL_CLOSED: "El canal está cerrado por ahora. No se recibió el reporte.",
+  CHANNEL_WAITING: "Todavía no se reciben mensajes. Espera unos segundos.",
   ACTION_EXPIRED: "El plazo para esta acción terminó. No se cambió la cobertura.",
   QUOTA_EXCEEDED: "Se alcanzó el límite de reportes. No se recibió este reporte.",
   PROVIDER_FAILED: "El servicio de sugerencias falló. Se conserva lo guardado antes.",

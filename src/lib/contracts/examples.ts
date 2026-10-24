@@ -22,13 +22,13 @@ export const publicStateExample = {
   audience: "public", executionId: "execution_example", version: 1,
   scene: { id: "scene_closing", label: "Cierre" }, preparation: "ready",
   clocks: { operationalNow: "2026-10-23T15:00:00.000Z", narrativeNow: "2026-10-24T01:09:50.000Z", timeZone: "America/Santiago" },
-  channelOpen: false, coverage: coverageExample, handoff: handoffExample,
+  channelOpen: false, channelOpenedAt: null, coverage: coverageExample, handoff: handoffExample,
   incidents: [], notifications: [], events: [], outgoingNoticeCount: 0,
 } as const satisfies PublicStateDTO;
 export const receiptExample = {
   audience: "reporter", executionId: "execution_example", reportId: "report_example",
-  status: "review", classificationMode: "degraded", incidentId: "incident_example", duplicate: false,
-  notificationStatus: "pending", nextAttentionAt: null,
+  text: "No podemos emitir boletas en el local 12.", status: "review", classificationMode: "degraded", incidentId: "incident_example", duplicate: false,
+  notificationStatus: "pending", nextAttentionAt: null, notifiedTo: "Paula", takenBy: null,
 } as const satisfies ReportReceiptDTO;
 export const noteExample = {
   status: "ready", saved: {
@@ -94,7 +94,7 @@ export const routeExamples = {
   "POST /api/scene": {
     params: null, input: { ...versioned, sceneId: "scene_channel", channelOpen: true },
     response: { status: 200, body: { ok: true, data: { ...publicStateExample, version: 3,
-      scene: { id: "scene_channel", label: "Canal" }, channelOpen: true,
+      scene: { id: "scene_channel", label: "Canal" }, channelOpen: true, channelOpenedAt: "2026-10-23T15:00:00.000Z",
       clocks: { ...publicStateExample.clocks, narrativeNow: "2026-10-24T01:10:00.000Z" },
     }, correlationId } },
   },
@@ -113,7 +113,7 @@ const ticketViewExamples = [
   { id: "ticket_462", reference: "#462", text: "Cuenta para el lunes.", disposition: "puede_esperar", reason: "Solicitud para el lunes." },
 ] as const satisfies readonly import("./private").TicketDTO[];
 export const pageExamples = {
-  "/canal": { audience: "reporter", executionId: "execution_example", channelOpen: false, remainingSessionReports: 5, remainingExecutionReports: 50, ownReports: [] },
+  "/canal": { audience: "reporter", executionId: "execution_example", channelOpen: false, channelOpenedAt: null, remainingSessionReports: 5, remainingExecutionReports: 50, ownReports: [] },
   "/rodrigo": {
     audience: "outgoing", executionId: "execution_example", actorId: "actor_outgoing", draftVersion: 1,
     tickets: ticketViewExamples, note: noteExample, handoff: handoffExample, coverage: coverageExample, activeIncidents: [],

@@ -16,6 +16,7 @@ export const errorExamples = {
   IDEMPOTENCY_CONFLICT: { status: 409, body: { ok: false, error: { code: "IDEMPOTENCY_CONFLICT", message: "La clave de esta operación ya se usó con otros datos." }, correlationId: "correlation_example" } },
   OPERATION_PENDING: { status: 409, body: { ok: false, error: { code: "OPERATION_PENDING", message: "Esta operación sigue en curso. Conserva su clave para consultar de nuevo." }, correlationId: "correlation_example" } },
   CHANNEL_CLOSED: { status: 409, body: { ok: false, error: { code: "CHANNEL_CLOSED", message: "El canal está cerrado para nuevos reportes." }, correlationId: "correlation_example" } },
+  CHANNEL_WAITING: { status: 409, body: { ok: false, error: { code: "CHANNEL_WAITING", message: "Todavía no se reciben mensajes. Espera unos segundos." }, correlationId: "correlation_example" } },
   ACTION_EXPIRED: { status: 410, body: { ok: false, error: { code: "ACTION_EXPIRED", message: "Venció el plazo para esta acción. No se aplicó." }, correlationId: "correlation_example" } },
   QUOTA_EXCEEDED: { status: 429, body: { ok: false, error: { code: "QUOTA_EXCEEDED", message: "Se alcanzó el límite de reportes de la sesión o de esta ejecución." }, correlationId: "correlation_example" } },
   PROVIDER_FAILED: { status: 502, body: { ok: false, error: { code: "PROVIDER_FAILED", message: "No se pudo generar la sugerencia. Se conserva el borrador guardado." }, correlationId: "correlation_example" } },

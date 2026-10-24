@@ -2,6 +2,7 @@ import "server-only";
 import type { CommandContext } from "@/lib/contracts/auth";
 import type { Classification } from "@/lib/contracts/classification";
 import type { ReportId, ReportSessionId } from "@/lib/contracts/core";
+import { LIMITS } from "@/lib/contracts/core";
 import type { Execution, Report } from "@/lib/contracts/domain";
 import type { ApiSuccess, ErrorCode, ServiceResult, SubmitReport } from "@/lib/contracts/http";
 import type { ReportReceiptDTO } from "@/lib/contracts/public";
@@ -60,6 +61,9 @@ export function createMessageService(deps: MessageDeps): MessageService {
       const execution = await tx.aggregates.executions.get(context.executionId);
       if (!execution) return fail("STORAGE_UNAVAILABLE");
       if (!execution.channelOpen) return fail("CHANNEL_CLOSED");
+      // Espera común tras abrir: da tiempo a escanear el QR. Los reportes guionados de control no esperan.
+      if (p.kind === "reporter" && execution.channelOpenedAt
+        && Date.parse(context.operationalNow) < Date.parse(execution.channelOpenedAt) + LIMITS.channelLobbyMs) return fail("CHANNEL_WAITING");
       const sessionId: ReportSessionId = p.kind === "reporter" ? p.sessionId : await scenarioSessionId(tx, context);
       const quota = await tx.reserveReportQuota(sessionId);
       if (!quota.ok) return quota;
@@ -106,10 +110,11 @@ export function createMessageService(deps: MessageDeps): MessageService {
   }
 
   async function receiptOf(tx: TransactionRepositories, report: Report): Promise<ServiceResult<ReportReceiptDTO>> {
-    const [execution, incidents, notifications] = await Promise.all([
-      tx.aggregates.executions.get(report.executionId), tx.aggregates.incidents.list(), tx.aggregates.notifications.list(),
+    const [execution, incidents, attempts, notifications, actors] = await Promise.all([
+      tx.aggregates.executions.get(report.executionId), tx.aggregates.incidents.list(), tx.aggregates.incidentAttempts.list(),
+      tx.aggregates.notifications.list(), tx.reference.actors(),
     ]);
-    return execution ? { ok: true, value: receipt(report, execution as Execution, { incidents, notifications }) } : fail("STORAGE_UNAVAILABLE");
+    return execution ? { ok: true, value: receipt(report, execution as Execution, { incidents, attempts, notifications, actors }) } : fail("STORAGE_UNAVAILABLE");
   }
 
   /** Fase 2a: guarda la clasificación solo si la ejecución y la versión del reporte siguen vigentes. */

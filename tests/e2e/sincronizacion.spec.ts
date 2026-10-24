@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { OPERATOR_SECRET, basicAs, loginAs } from "./support/acceso";
+import { enterChannel } from "./support/canal";
 
 /**
  * Sincronización entre pantallas sin recargar, contra el servidor real y la base local del worktree.
@@ -49,14 +50,15 @@ test("otro dispositivo ve abrirse el canal sin recargar", async ({ browser, requ
   await loginAs(controlContext, "control", origin);
   const panel = await controlContext.newPage();
   await audience.goto("/canal");
-  await expect(audience.getByText("El canal está cerrado por ahora")).toBeVisible();
+  await enterChannel(audience);
+  await expect(audience.getByText("El canal abre pronto")).toBeVisible();
   // Una recarga completa borraría esta marca; un refresco de la vista la conserva.
   await audience.evaluate(() => { (window as unknown as { sinRecarga: boolean }).sinRecarga = true; });
   await panel.goto("/control");
   await panel.getByRole("button", { name: "Abrir canal" }).click();
   // Canal cerrado: consulta cada 2 s y rehace la página en cuanto cambia el estado.
-  await expect(audience.getByText("El canal está cerrado por ahora")).toBeHidden({ timeout: 4000 });
-  await expect(audience.getByRole("textbox", { name: "Reporte" })).toBeEnabled();
+  await expect(audience.getByText("El canal abre pronto")).toBeHidden({ timeout: 4000 });
+  await expect(audience.getByText("Esperamos a que entren los demás.")).toBeVisible();
   expect(await audience.evaluate(() => (window as unknown as { sinRecarga?: boolean }).sinRecarga)).toBe(true);
 
   await panel.close();

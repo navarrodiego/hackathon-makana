@@ -13,6 +13,7 @@ model Execution {
   sceneId String
   anchor Json
   channelOpen Boolean
+  channelOpenedAt DateTime? @db.Timestamptz(3)
   admittedReports Int
   preparation String
   createdAt DateTime @db.Timestamptz(3)

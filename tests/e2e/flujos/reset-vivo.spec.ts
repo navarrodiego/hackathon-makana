@@ -3,6 +3,7 @@ import {
   BILLING, ORIGIN, activeCoverage, incidentNotice, pressNtfyAction, requireBackend, reset, rows, scriptedReport,
   state, waitNtfy, waitState,
 } from "./support/flow";
+import { enterChannel, sendReport, skipLobby } from "../support/canal";
 
 /**
  * S04/U04 · Reset con trabajo vivo: relevo aceptado, incidente esperando acuse, y receptor, canal y proyector
@@ -15,11 +16,11 @@ test("reset con superficies abiertas: enlaces y acciones viejas no actúan, nada
   const { s: old, handoffNotice } = await activeCoverage(request);
 
   const pub = await (await browser.newContext({ ...devices["Pixel 7"], baseURL: ORIGIN })).newPage();
+  await skipLobby();
   await pub.goto("/canal");
-  await pub.getByRole("textbox", { name: "Apodo" }).fill("Visita");
-  await pub.getByRole("textbox", { name: "Reporte" }).fill(BILLING);
-  await pub.getByRole("button", { name: "Enviar reporte" }).click();
-  await expect(pub.getByRole("region", { name: "Tus reportes" }).getByText(/^Reporte 1:/)).toBeVisible();
+  await enterChannel(pub);
+  await sendReport(pub, BILLING);
+  await expect(pub.getByRole("region", { name: "Tus reportes" }).getByText(BILLING)).toBeVisible();
   const s = await waitState(request, x => x.incidents[0]?.status === "awaiting_ack", "incidente esperando acuse", 45_000);
   const p1 = await waitNtfy(request, incidentNotice(s.incidents[0].id), "aviso P1 a Paula");
 
@@ -43,8 +44,8 @@ test("reset con superficies abiertas: enlaces y acciones viejas no actúan, nada
   await expect(paula.getByText("Este enlace no permite abrir el relevo")).toBeVisible();
 
   // Canal: cerrado y sin recibos de la ejecución anterior.
-  await expect(pub.getByText("El canal está cerrado por ahora")).toBeVisible();
-  await expect(pub.getByText(/^Reporte 1:/)).toHaveCount(0);
+  await expect(pub.getByText("El canal abre pronto")).toBeVisible();
+  await expect(pub.getByRole("region", { name: "Tus reportes" })).toHaveCount(0);
 
   // Proyector: cambia de ejecución sin eventos viejos ni cobertura que ya no existe.
   await expect(proy.getByRole("heading", { name: "Ahora" })).toHaveCount(0);

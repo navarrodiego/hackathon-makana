@@ -3,6 +3,7 @@ import {
   HAS_AI, ORIGIN, PRINTER, PRINTER_LABEL, loginAs, eventsOf, expectNoSecrets, handoffNotice,
   incidentNotice, pressNtfyAction, requireBackend, rows, state, waitNtfy, waitState, words,
 } from "./support/flow";
+import { enterChannel } from "../support/canal";
 import { campoNota } from "../support/nota";
 
 /**
@@ -84,7 +85,9 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   // 5. El chip guionado de la impresora (el mismo del pitch) queda en cola y no genera aviso. El canal público ya admite reportes.
   const pub = await (await browser.newContext({ ...devices["Pixel 7"], baseURL: ORIGIN })).newPage();
   await pub.goto("/canal");
-  await expect(pub.getByRole("textbox", { name: "Reporte" })).toBeEnabled();
+  await enterChannel(pub);
+  // El público espera la cuenta común; los reportes guionados de control no esperan.
+  await expect(pub.getByText("Esperamos a que entren los demás.")).toBeVisible();
   if (HAS_AI) {
     await ctl.getByRole("button", { name: PRINTER_LABEL }).click();
     await expect(ctl.getByText(`Reporte guionado «${PRINTER_LABEL}» enviado.`)).toBeVisible();

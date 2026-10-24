@@ -41,6 +41,8 @@ export interface PublicStateDTO {
   readonly executionId: ExecutionId; readonly version: Version;
   readonly scene: { readonly id: SceneId; readonly label: string };
   readonly preparation: PreparationStatus; readonly clocks: ClockSnapshot; readonly channelOpen: boolean;
+  /** Cuándo se abrió el canal; el envío público empieza `LIMITS.channelLobbyMs` después. */
+  readonly channelOpenedAt: Instant | null;
   readonly coverage: CoverageDTO | null; readonly handoff: HandoffSummaryDTO | null;
   readonly incidents: readonly IncidentSummaryDTO[]; readonly notifications: readonly NotificationDTO[];
   readonly events: readonly PublicEventDTO[];
@@ -49,14 +51,21 @@ export interface PublicStateDTO {
 }
 export interface ReportReceiptDTO {
   readonly audience: "reporter"; readonly executionId: ExecutionId; readonly reportId: ReportId;
+  /** Texto que envió esta misma sesión; se muestra escapado. */
+  readonly text: string;
   readonly status: "processing" | "queued" | "review" | "incident";
   readonly classificationMode: "pending" | "model" | "degraded";
   readonly incidentId: IncidentId | null; readonly duplicate: boolean;
   readonly notificationStatus: "none" | "pending" | "provider_accepted" | "in_app_recorded" | "failed";
   readonly nextAttentionAt: Instant | null;
+  /** Nombre de quien tiene el aviso vigente mientras nadie lo toma. */
+  readonly notifiedTo: string | null;
+  /** Nombre de quien tomó el incidente; tomar no es resolver. */
+  readonly takenBy: string | null;
 }
 export interface ChannelViewDTO {
   readonly audience: "reporter"; readonly executionId: ExecutionId; readonly channelOpen: boolean;
+  readonly channelOpenedAt: Instant | null;
   readonly remainingSessionReports: number; readonly remainingExecutionReports: number;
   readonly ownReports: readonly ReportReceiptDTO[];
 }
