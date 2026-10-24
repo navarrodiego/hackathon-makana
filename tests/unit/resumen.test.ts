@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { summarize } from "../../src/components/rodrigo/resumen/model";
+import { isMorning, reportCount, summarize } from "../../src/components/relevo/noche";
 
 const actor = (name: string) => ({ id: `actor_${name}`, displayName: name });
 const ev = (sequence: number, kind: string, extra: object = {}) =>
@@ -33,4 +33,16 @@ test("tomado no se presenta como resuelto", () => {
 
 test("el resumen de la noche no repite los conteos del proyector", () => {
   assert.deepEqual(Object.keys(summarize(state([ev(1, "report_admitted")]))).sort(), ["empty", "outgoingNotices", "taken"]);
+});
+
+test("la mañana exige la escena de mañana y un relevo enviado", () => {
+  const sent = { id: "h1", status: "accepted" };
+  assert.equal(isMorning({ scene: { label: "Registro de mañana" }, handoff: sent, closing: null } as never), true);
+  assert.equal(isMorning({ scene: { label: "Canal" }, handoff: sent, closing: null } as never), false);
+  assert.equal(isMorning({ scene: { label: "Registro de mañana" }, handoff: null, closing: { pendingCount: 3 } } as never), false);
+});
+
+test("la sala cuenta reportes admitidos de todo el registro, no clasificaciones ni incidentes", () => {
+  assert.equal(reportCount([ev(1, "report_admitted"), ev(2, "report_admitted"), ev(3, "report_classified"), ev(4, "incident_created"), ev(5, "report_admitted")] as never), 3);
+  assert.equal(reportCount([]), 0);
 });

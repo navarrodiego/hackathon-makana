@@ -149,7 +149,8 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
 
   return (
     <SurfaceShell surface="adaptive" title={phase === "morning" ? "Resumen de la noche" : "Cierre de turno"}
-      lead={phase === "closing" ? closingLead(tickets.length) : phase === "following" ? "Rodrigo envió el relevo." : undefined} action={action}>
+      lead={phase === "closing" ? closingLead(tickets.length) : phase === "following" ? "Rodrigo envió el relevo."
+        : snapshot ? `Son las ${clockLabel(snapshot.clocks.narrativeNow)}. Esto pasó después de que enviaste el relevo.` : undefined} action={action}>
       {stale ? (
         <DegradedNotice title="Esta vista quedó desactualizada">
           <p>El relevo cambió o se reinició la demostración. Tus cambios locales no se enviaron.</p>
