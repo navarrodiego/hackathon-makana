@@ -1,7 +1,7 @@
 import "server-only";
 import type { CommandContext } from "@/lib/contracts/auth";
 import type { Classification } from "@/lib/contracts/classification";
-import type { ReportId, ReportSessionId } from "@/lib/contracts/core";
+import { LIMITS, type ReportId, type ReportSessionId } from "@/lib/contracts/core";
 import type { Execution, Report } from "@/lib/contracts/domain";
 import type { ApiSuccess, ErrorCode, ServiceResult, SubmitReport } from "@/lib/contracts/http";
 import type { ReportReceiptDTO } from "@/lib/contracts/public";
@@ -112,19 +112,41 @@ export function createMessageService(deps: MessageDeps): MessageService {
     return execution ? { ok: true, value: receipt(report, execution as Execution, { incidents, notifications }) } : fail("STORAGE_UNAVAILABLE");
   }
 
+  /** Guarda la clasificación solo si la versión del reporte sigue siendo la clasificada y aún no tiene una. */
+  async function storeClassification(tx: TransactionRepositories, context: CommandContext, report: Report, classification: Classification): Promise<ServiceResult<null>> {
+    const current = await tx.aggregates.reports.get(report.id);
+    if (!current) return fail("NOT_FOUND");
+    if (current.version !== report.version || current.status !== "processing" || current.classification) return fail("EXECUTION_STALE");
+    const next: Report = { ...current, classification, version: current.version + 1 };
+    if (!(await tx.aggregates.reports.compareAndSwap(next, { executionId: current.executionId, version: current.version, status: "processing" }))) return fail("EXECUTION_STALE");
+    await recordEvent(tx, contextFor(report, context), {
+      kind: "report_classified", entity: { kind: "report", id: report.id }, entityVersion: next.version, channel: eventChannel(context),
+      details: { kind: "classification", mode: classification.mode, reason: classification.mode === "degraded" ? classification.reason : null }, result: "recorded",
+    });
+    return { ok: true, value: null };
+  }
+
   /** Fase 2a: guarda la clasificación solo si la ejecución y la versión del reporte siguen vigentes. */
   async function saveClassification(context: CommandContext, report: Report, classification: Classification): Promise<ServiceResult<null>> {
+    return deps.store.run(context, tx => storeClassification(tx, context, report, classification));
+  }
+
+  const ageMs = (report: Report, context: CommandContext) => Date.parse(context.operationalNow) - Date.parse(report.operationalAt);
+
+  /** Fases 2 y 3 para un reporte admitido; un rescate previo (EXECUTION_STALE de versión) no es error para quien envió. */
+  async function classifyAndDrain(context: CommandContext, report: Report): Promise<ServiceResult<ReportReceiptDTO>> {
+    const classified = await deps.classification.classify(context, report);
+    if (!classified.ok) return classified;
+    const stored = await saveClassification(context, report, classified.value);
+    if (!stored.ok && stored.code !== "EXECUTION_STALE") return stored;
     return deps.store.run(context, async tx => {
+      const drained = await drain(tx, context);
+      if (!drained.ok) return drained;
+      const own = drained.value.get(report.id);
+      if (own) return { ok: true, value: own };
+      // Un reporte anterior aún no tiene clasificación: el nuestro queda en procesamiento, sin fingir resultado.
       const current = await tx.aggregates.reports.get(report.id);
-      if (!current) return fail("NOT_FOUND");
-      if (current.version !== report.version || current.status !== "processing") return fail("EXECUTION_STALE");
-      const next: Report = { ...current, classification, version: current.version + 1 };
-      if (!(await tx.aggregates.reports.compareAndSwap(next, { executionId: current.executionId, version: current.version, status: "processing" }))) return fail("EXECUTION_STALE");
-      await recordEvent(tx, contextFor(report, context), {
-        kind: "report_classified", entity: { kind: "report", id: report.id }, entityVersion: next.version, channel: eventChannel(context),
-        details: { kind: "classification", mode: classification.mode, reason: classification.mode === "degraded" ? classification.reason : null }, result: "recorded",
-      });
-      return { ok: true, value: null };
+      return current ? receiptOf(tx, current) : fail("STORAGE_UNAVAILABLE");
     });
   }
 
@@ -135,28 +157,35 @@ export function createMessageService(deps: MessageDeps): MessageService {
       const a = admitted.value;
       if (a.kind === "done") return { ok: true, value: a.receipt };
       if (a.kind === "pending") {
-        // Reintento de una operación sin terminar: drena lo ya clasificado, sin repetir IA ni cuota.
+        // Reintento de una operación sin terminar: drena lo ya clasificado, sin repetir cuota. Repite la IA solo si el
+        // reporte propio sigue sin clasificación pasado el máximo de espera: la petición original ya no responderá.
+        let stalled: Report | null = null;
         const retried = await deps.store.run(context, async tx => {
           const drained = await drain(tx, context);
           if (!drained.ok) return drained;
           const found = await tx.idempotency.reserve({ executionId: context.executionId, principalKey: principalKey(context), operation: OPERATION, key: input.idempotencyKey,
             fingerprint: fingerprint(OPERATION, null, { ...input }), createdAt: context.operationalNow, status: "pending", response: null, successorExecutionId: null });
-          return found.record.status === "completed" && found.record.response ? { ok: true as const, value: savedData(found.record.response) } : fail("OPERATION_PENDING");
+          if (found.record.status === "completed" && found.record.response) return { ok: true as const, value: savedData(found.record.response) };
+          const own = (await tx.reportsAwaitingDecision()).find(r => r.principalKey === principalKey(context) && r.idempotencyKey === input.idempotencyKey);
+          if (own && !own.classification && ageMs(own, context) > LIMITS.classificationTimeoutMaxMs) stalled = own;
+          return fail("OPERATION_PENDING");
         });
-        return retried;
+        return stalled ? classifyAndDrain(context, stalled) : retried;
       }
-      const classified = await deps.classification.classify(context, a.report);
-      if (!classified.ok) return classified;
-      const stored = await saveClassification(context, a.report, classified.value);
-      if (!stored.ok) return stored;
+      return classifyAndDrain(context, a.report);
+    },
+    async rescueStalled(context) {
       return deps.store.run(context, async tx => {
+        let rescued = 0;
+        for (const report of await tx.reportsAwaitingDecision()) {
+          if (report.classification || ageMs(report, context) < LIMITS.classificationStallMs) continue;
+          const saved = await storeClassification(tx, context, report, { mode: "degraded", reportId: report.id, reason: "timeout", output: null });
+          if (!saved.ok) return saved;
+          rescued++;
+        }
+        if (rescued === 0) return { ok: true, value: 0 };
         const drained = await drain(tx, context);
-        if (!drained.ok) return drained;
-        const own = drained.value.get(a.report.id);
-        if (own) return { ok: true, value: own };
-        // Un reporte anterior aún no tiene clasificación: el nuestro queda en procesamiento, sin fingir resultado.
-        const current = await tx.aggregates.reports.get(a.report.id);
-        return current ? receiptOf(tx, current) : fail("STORAGE_UNAVAILABLE");
+        return drained.ok ? { ok: true, value: rescued } : drained;
       });
     },
   };

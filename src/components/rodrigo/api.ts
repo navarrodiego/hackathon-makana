@@ -1,3 +1,8 @@
+import { fetchWithTimeout } from "@/lib/client/fetch-timeout";
+
+/** Más que la espera máxima de la IA en el servidor: al vencer se trata como red caída y se reintenta con la misma clave. */
+const POST_TIMEOUT_MS = 25_000;
+
 export type ApiResult<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly code: string; readonly network: boolean };
@@ -17,8 +22,8 @@ async function parse<T>(response: Response): Promise<ApiResult<T>> {
 /** POST de navegador: JSON, mismo origen y la cookie de sesión de operador. */
 export async function postJson<T>(url: string, body: unknown): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(url, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store",
+    const response = await fetchWithTimeout(url, {
+      timeoutMs: POST_TIMEOUT_MS, method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store",
     });
     return await parse<T>(response);
   } catch {

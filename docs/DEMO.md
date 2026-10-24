@@ -24,6 +24,16 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 - El proyector es para la sala y la única pantalla que mira durante el pitch: antes del envío, el cierre de Rodrigo (solo conteos); después, quién está a cargo, el incidente en curso con su plazo, Avisos a Rodrigo y un relato breve de lo que pasó. No muestra escenas, ejecuciones ni resultados por ntfy/in-app; para mostrarlos al jurado técnico, usar /control (registro completo y resultados de aviso) sin proyectar sus botones ni credenciales.
 - Video local de un ensayo real y red alternativa probados. No existe un video acreditado por este documento.
 
+### Red mala y público en el canal
+
+- Proyector y control en un hotspot propio (teléfono del equipo), no en el wifi del lugar. 40 teléfonos en ese wifi compiten con el proyector.
+- Al mostrar el QR: «Si el wifi falla, usa tus datos móviles». El canal funciona igual con datos.
+- Vercel: `DATABASE_URL` con el host `-pooler` de Neon y región de funciones igual a la de Neon. Comprobar con `curl -H 'accept-encoding: gzip' -D - -o /dev/null <URL>/api/state` que la respuesta trae `content-encoding: gzip`.
+- Si cambia el entorno, aplicar la migración `202610240001_report_quota` en Neon antes de la demo (requiere autorización explícita). Sin ella, el reporte 51 falla con almacenamiento no disponible.
+- Calentar funciones abriendo `/canal`, `/proyector` y `/control` 2 minutos antes.
+- Ensayo con red cortada: escribir en el canal, apagar el wifi 1 minuto y enviar. Comprobar el aviso «Sin conexión», que el texto sigue ahí y que reenviar al volver la red deja un solo reporte.
+- Abrir el canal al público solo si la prueba de carga (`pnpm load:canal`, ver evidencia de robustez) pasa contra el entorno real. Si no, invitar solo al jurado.
+
 ## Recorrido principal: cinco minutos
 
 | Tiempo | Acción y relato |
@@ -42,7 +52,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 
 ## Participación y control
 
-Canal: apodo inventado, 280 caracteres, cinco envíos por sesión/apodo y límite global configurado. No solicitar datos personales reales. Chips/reportes guionados: impresora administrativa, VPN lenta, orden de despertar a Rodrigo y caída general de facturación. Una orden no cambia la elegibilidad.
+Canal: apodo inventado, 280 caracteres, cinco envíos por sesión/apodo y límite global de 150 reportes por ejecución. No solicitar datos personales reales. Chips/reportes guionados: impresora administrativa, VPN lenta, orden de despertar a Rodrigo y caída general de facturación. Una orden no cambia la elegibilidad.
 
 Si a los 20 s de abrir canal hay menos de tres participantes, inyectar reportes con I/P y origen identificado. No presentar entradas del control como aportes espontáneos del público. Deduplicar el mismo hecho para evitar una ráfaga de avisos.
 
@@ -75,7 +85,7 @@ Si R R muestra «El estado cambió mientras actuabas», un reporte terminó de c
 - **Poca participación:** reportes guionados identificados.
 - **Fallo del modelo:** ruta de respaldo estructurada/mode degradado conforme a contratos; revelar el fallo, no fingir clasificación.
 - **Push no observado:** verificar red/permisos/registro. «Envío aceptado por ntfy» no es recepción. Si se usa control para seguir, identificar acción de escenario y no afirmar push logrado.
-- **Red principal falla:** cambiar a red alternativa previamente probada, sin asumir conectividad.
+- **Red principal falla:** cambiar a red alternativa previamente probada, sin asumir conectividad. Si el proyector muestra «Sin conexión», los plazos no avanzan hasta que vuelva una consulta: decirlo, no reiniciar. Al volver la red, el proyector retoma solo y los teléfonos guardan lo escrito.
 - **Demo inviable:** reproducir video local del ensayo y declarar que es grabación, no ejecución en vivo. Evitar gastar el pitch depurando.
 
 ## Después del ensayo

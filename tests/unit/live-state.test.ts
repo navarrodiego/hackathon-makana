@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { freshest } from "../../src/lib/client/state/accept";
 import {
-  HIDDEN_INTERVAL_MS, MAX_BACKOFF_MS, combineCadence, nextDelay, refreshDecision, stateFingerprint,
+  HIDDEN_INTERVAL_MS, MAX_BACKOFF_MS, channelFingerprint, combineCadence, nextDelay, refreshDecision, stateFingerprint,
 } from "../../src/lib/client/state/sync";
 
 const state = (over: Record<string, unknown> = {}) => ({
@@ -57,4 +57,30 @@ test("una vista usa el snapshot más nuevo entre el de la página y el sondeo", 
   assert.equal(freshest(page, newer), newer);
   const older = state({ version: 2 });
   assert.equal(freshest(page, older), page);
+});
+
+test("el canal puede esperar más tras fallos seguidos, para que los teléfonos no saturen al volver la red", () => {
+  const delays = [1, 3, 4, 5, 9].map(failures => nextDelay({ intervalMs: 4000, keepPaceHidden: false, hidden: false, failures, maxBackoffMs: 15_000 }));
+  assert.deepEqual(delays, [4000, 4000, 8000, 15_000, 15_000]);
+  assert.deepEqual(combineCadence([{ intervalMs: 4000, keepPaceHidden: false, maxBackoffMs: 15_000 }, { intervalMs: 1000, keepPaceHidden: true }]),
+    { intervalMs: 1000, keepPaceHidden: true });
+});
+
+test("el jitter reparte las consultas hasta un 20 % alrededor del ritmo", () => {
+  const cadence = { intervalMs: 4000, keepPaceHidden: false, hidden: false, failures: 0, jitter: true } as const;
+  assert.equal(nextDelay({ ...cadence, random: 0 }), 3200);
+  assert.equal(nextDelay({ ...cadence, random: 0.5 }), 4000);
+  assert.equal(nextDelay({ ...cadence, random: 1 }), 4800);
+  assert.equal(nextDelay({ ...cadence, jitter: false, random: 0 }), 4000);
+  assert.deepEqual(combineCadence([{ intervalMs: 4000, keepPaceHidden: false, jitter: true }]), { intervalMs: 4000, keepPaceHidden: false, jitter: true });
+});
+
+test("el canal solo se rehace por apertura, ejecución o estado de avisos, no por eventos ajenos", () => {
+  const base = channelFingerprint(state());
+  assert.equal(channelFingerprint(state({ events: [{ id: "event_1" }], incidents: [{ id: "incident_1" }], version: 9 })), base);
+  assert.notEqual(channelFingerprint(state({ channelOpen: true })), base);
+  assert.notEqual(channelFingerprint(state({ executionId: "execution_2" })), base);
+  assert.notEqual(channelFingerprint(state({ notifications: [{ id: "notification_1", status: "pending" }] })), base);
+  assert.notEqual(channelFingerprint(state({ notifications: [{ id: "notification_1", status: "provider_accepted" }] })),
+    channelFingerprint(state({ notifications: [{ id: "notification_1", status: "pending" }] })));
 });

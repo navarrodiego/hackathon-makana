@@ -15,6 +15,8 @@ export interface OpenRouterOptions {
   apiKey?: string;
   fetch?: typeof fetch;
   noteTimeoutMs?: number;
+  /** Por defecto `CLASSIFICATION_TIMEOUT_MS` o `LIMITS.classificationTimeoutMs`, acotado a 1–10 s. */
+  classificationTimeoutMs?: number;
   timing?: ProviderTiming;
 }
 const systemTiming: ProviderTiming = {
@@ -22,6 +24,12 @@ const systemTiming: ProviderTiming = {
   schedule(delay, callback) { const timer = setTimeout(callback, delay); return () => clearTimeout(timer); },
 };
 type FailureReason = Extract<ProviderResult<never>, { ok: false }>["reason"];
+/** Un valor ausente o no numérico usa el límite del contrato; uno fuera de rango se acota. */
+function classificationTimeout(raw: string | undefined): number {
+  const value = Number(raw);
+  if (!raw?.trim() || !Number.isFinite(value)) return LIMITS.classificationTimeoutMs;
+  return Math.min(LIMITS.classificationTimeoutMaxMs, Math.max(LIMITS.classificationTimeoutMinMs, value));
+}
 class ProviderFailure extends Error {
   constructor(readonly reason: FailureReason) { super(reason); }
 }
@@ -31,6 +39,7 @@ export function createOpenRouterProvider(options: OpenRouterOptions = {}): Struc
   const key = options.apiKey ?? process.env.OPENROUTER_API_KEY;
   const timing = options.timing ?? systemTiming;
   const noteTimeoutMs = options.noteTimeoutMs ?? 15_000;
+  const classificationTimeoutMs = options.classificationTimeoutMs ?? classificationTimeout(process.env.CLASSIFICATION_TIMEOUT_MS);
   async function post(path: string, body: unknown, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted();
     const response = await send(`https://openrouter.ai${path}`, {
@@ -90,7 +99,7 @@ export function createOpenRouterProvider(options: OpenRouterOptions = {}): Struc
   }
   return {
     classify(request, signal) {
-      return run<ClassificationOutput>(request.fence, LIMITS.classificationTimeoutMs, signal, async internal => {
+      return run<ClassificationOutput>(request.fence, classificationTimeoutMs, signal, async internal => {
         const [decision, extraction] = await Promise.all([
           post("/api/alpha/decisions", decisionsBody(request.input.text), internal).then(envelope => ({
             output: parseDecisions(envelope), model: modelName(envelope),
