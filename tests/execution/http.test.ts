@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { ACCEPTED_FIXTURE, BASE_FIXTURE } from '../../src/lib/contracts/fixtures';
 import type { Instant } from '../../src/lib/contracts/core';
 import { createPersistedAuthorization } from '../../src/lib/server/auth/persistence';
+import { gunzipSync } from 'node:zlib';
 import { handleCommand, handleState, type ExecutionHttpDeps } from '../../src/lib/server/execution/http';
 import { createRequestValidator } from '../../src/lib/server/http/validate';
 import { world } from './helpers';
@@ -38,6 +39,20 @@ test('GET /api/state (S02/S03)', async t => {
       assert.equal(res.body.data.audience, 'public');
       assert.equal(res.body.data.handoff.candidate.displayName, 'Tomás', 'la consulta evaluó el plazo vencido de Paula');
       assert.doesNotMatch(JSON.stringify(res.body), /credentialHash|opaqueToken|topic|secret/i);
+    } finally { await w.close(); }
+  });
+
+  await t.test('con accept-encoding gzip responde comprimido y el contenido no cambia', async () => {
+    const w = await world(BASE_FIXTURE);
+    try {
+      const plain = await (await handleState({ service: w.execution })).json();
+      const res = await handleState({ service: w.execution }, new Request(`${APP}/api/state`, { headers: { 'accept-encoding': 'gzip, deflate, br' } }));
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get('content-encoding'), 'gzip');
+      assert.match(res.headers.get('vary') ?? '', /accept-encoding/i);
+      assert.equal(res.headers.get('cache-control'), 'no-store');
+      const body = JSON.parse(gunzipSync(Buffer.from(await res.arrayBuffer())).toString('utf8'));
+      assert.deepEqual({ ...body, correlationId: null, data: { ...body.data, clocks: null } }, { ...plain, correlationId: null, data: { ...plain.data, clocks: null } });
     } finally { await w.close(); }
   });
 

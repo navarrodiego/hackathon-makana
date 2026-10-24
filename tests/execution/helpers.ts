@@ -34,6 +34,10 @@ export interface WorldOptions {
   readonly provider?: (req: NoteRequest) => Promise<ProviderResult<NoteOutput>> | ProviderResult<NoteOutput>;
   readonly notifications?: NotificationService;
   readonly now?: () => Instant;
+  readonly deferDispatch?: (work: () => Promise<unknown>) => void;
+  readonly reports?: { rescueStalled(context: CommandContext): Promise<ServiceResult<number>> };
+  /** Ensambla la ejecución como en producción: sin servicio de nota ni proveedor. */
+  readonly withoutNote?: boolean;
 }
 
 export async function world(fixture: ExecutionFixture, options: WorldOptions = {}) {
@@ -58,7 +62,7 @@ export async function world(fixture: ExecutionFixture, options: WorldOptions = {
   };
   const note = createHandoffNoteService({ unitOfWork: store, provider });
   const read = createReadService({ store, now });
-  const execution = createExecutionService({ store, handoff, incidents, notifications, note, read, now });
+  const execution = createExecutionService({ store, handoff, incidents, notifications, note: options.withoutNote ? undefined : note, read, now, deferDispatch: options.deferDispatch, reports: options.reports });
 
   const ctx = (principal: Principal, actorId: ActorId | null, operationalNow: Instant, narrativeNow: Instant = fixture.narrativeAt, executionId = prepared.executionId, origin: CommandContext['origin'] = 'web'): CommandContext =>
     ({ executionId, executionVersion: 1, principal, actorId, origin, operationalNow, narrativeNow, correlationId: `correlation_${randomUUID()}` });

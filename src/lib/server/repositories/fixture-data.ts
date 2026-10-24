@@ -24,7 +24,7 @@ export async function materializeFixture(tx: Tx, fixture: ExecutionFixture): Pro
   for (const s of fixture.scenes) await insert(tx, 'scenes', { ...s, id: sceneIds.get(s.id), executionId });
   const windowId = `window_${randomUUID()}` as const;
   await insert(tx, 'coverage_windows', { ...fixture.window, id: windowId, executionId, outgoingActorId: actor(fixture.window.outgoingActorId), incomingActorId: actor(fixture.window.incomingActorId), backupActorIds: fixture.window.backupActorIds.map(actor), coordinatorActorId: actor(fixture.window.coordinatorActorId) });
-  for (const t of fixture.tickets) await insert(tx, 'tickets', { ...t, id: ticketIds.get(t.id), executionId, version: 1, suggestedDisposition: null, reason: 'Pendiente ficticio para revisión.', incidentId: null });
+  for (const t of fixture.tickets) await insert(tx, 'tickets', { ...t, id: ticketIds.get(t.id), executionId, version: 1, suggestedDisposition: null, incidentId: null });
   const sessionId = `session_${randomUUID()}` as const;
   await insert(tx, 'report_sessions', { id: sessionId, credentialHash: createHash('sha256').update(randomBytes(32)).digest('hex'), expiresAt: new Date(new Date(fixture.operationalAt).getTime() + 43_200_000).toISOString() });
   const handoffId = `handoff_${randomUUID()}` as const;

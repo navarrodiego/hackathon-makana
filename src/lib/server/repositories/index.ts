@@ -2,7 +2,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { Prisma, type PrismaClient } from '../../../generated/prisma/client';
 import type { CommandContext, RecipientGrant } from '../../contracts/auth';
-import type { ExecutionId, ReportSessionId, Version } from '../../contracts/core';
+import { LIMITS, type ExecutionId, type ReportSessionId, type Version } from '../../contracts/core';
 import type { Execution, Report, StoredNote, Event, ReportSession } from '../../contracts/domain';
 import type { ServiceResult } from '../../contracts/http';
 import type { AggregateMap, AggregateRepository, CredentialReader, ExecutionReader, IdempotencyRecord, IdempotencyScope, SavedResponse, TransactionRepositories, UnitOfWork } from '../../contracts/repositories';
@@ -172,10 +172,10 @@ function repositories(tx: Tx, executionId: ExecutionId): TransactionRepositories
       if (!session) throw new Error('Missing session');
       const execution = await aggregates.executions.get(executionId); if (!execution) throw new Error('Missing execution');
       const counts = await tx.$queryRaw<{ count: number }[]>`SELECT count(*)::int AS count FROM reports WHERE "executionId"=${executionId} AND "sessionId"=${sessionId}`;
-      if (counts[0].count >= 5 || execution.admittedReports >= 50) return { ok: false, code: 'QUOTA_EXCEEDED' };
+      if (counts[0].count >= LIMITS.reportsPerSession || execution.admittedReports >= LIMITS.reportsPerExecution) return { ok: false, code: 'QUOTA_EXCEEDED' };
       const next = execution.admittedReports + 1;
       if (!await aggregates.executions.compareAndSwap({ ...execution, admittedReports: next, version: execution.version + 1 }, { executionId, version: execution.version })) throw new Error('Quota conflict');
-      return ok({ executionId, sessionId, remainingSessionReports: 4 - counts[0].count, remainingExecutionReports: 50 - next, admissionSequence: next });
+      return ok({ executionId, sessionId, remainingSessionReports: LIMITS.reportsPerSession - 1 - counts[0].count, remainingExecutionReports: LIMITS.reportsPerExecution - next, admissionSequence: next });
     },
     async replaceExecution(next: Execution, expectedVersion: Version) {
       active(); const current = await aggregates.executions.get(executionId);

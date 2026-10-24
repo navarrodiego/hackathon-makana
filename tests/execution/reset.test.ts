@@ -26,6 +26,12 @@ test('reset escénico (S04)', async t => {
       assert.deepEqual(state.events.map(e => e.kind), ['execution_started']);
       const tickets = await w.readTx(async tx => ({ ok: true, value: await tx.aggregates.tickets.list() }), result.value.executionId);
       assert.deepEqual(tickets.map(x => x.reference).sort(), ['#462', '#466', '#470', '#477', '#481']);
+      // Cada pendiente trae la decisión y la razón del escenario, no un texto de relleno.
+      for (const f of BASE_FIXTURE.tickets) {
+        const seeded = tickets.find(x => x.reference === f.reference);
+        assert.equal(seeded?.disposition, f.disposition);
+        assert.equal(seeded?.reason, f.reason);
+      }
       const current = await w.read.publicState();
       assert.ok(current.ok);
       assert.equal(current.value.executionId, result.value.executionId);
@@ -105,6 +111,20 @@ test('reset escénico (S04)', async t => {
 });
 
 test('preparación de la nota tras el reset (C03/C09)', async t => {
+  await t.test('sin servicio de nota marca la preparación lista sin llamar al proveedor', async () => {
+    const w = await world(BASE_FIXTURE, { withoutNote: true });
+    try {
+      const reset = await w.execution.reset(w.control(), resetInput(w.prepared.executionId, await versionOf(w), 'p-0'));
+      assert.ok(reset.ok);
+      assert.deepEqual(await w.execution.prepareNote(w.control(undefined, reset.value.executionId)), { ok: true, value: 'ready' });
+      assert.equal(w.providerCalls.length, 0);
+      const state = await w.read.publicState();
+      assert.ok(state.ok);
+      assert.equal(state.value.preparation, 'ready');
+      assert.equal(await w.readTx(async tx => ({ ok: true, value: await tx.notes.get() }), reset.value.executionId), null);
+    } finally { await w.close(); }
+  });
+
   await t.test('genera y guarda la nota de la ejecución nueva y la marca lista', async () => {
     const w = await world(BASE_FIXTURE);
     try {

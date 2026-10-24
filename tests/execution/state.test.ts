@@ -28,7 +28,28 @@ test('estado público saneado (S02/S03)', async t => {
       assert.equal(state.coverage?.actor?.displayName, 'Paula');
       assert.equal(state.handoff?.status, 'accepted');
       assert.equal(state.preparation, 'pending');
+      assert.equal(state.closing, null, 'con el relevo enviado no hay resumen de cierre');
       assert.deepEqual(walk(state), []);
+    } finally { await w.close(); }
+  });
+
+  await t.test('relevo en borrador: resumen del cierre solo con conteos, sin tickets ni nota', async () => {
+    const w = await world(BASE_FIXTURE);
+    try {
+      const result = await w.read.publicState();
+      assert.ok(result.ok);
+      const closing = result.value.closing;
+      assert.ok(closing);
+      assert.equal(closing.outgoing.displayName, 'Rodrigo');
+      assert.equal(closing.firstCandidate.displayName, 'Paula');
+      assert.equal(closing.pendingCount, 5);
+      assert.equal(closing.followUpCount, 1, 'solo #470 queda para seguimiento');
+      assert.deepEqual(walk(result.value), []);
+      const json = JSON.stringify(result.value);
+      for (const ticket of BASE_FIXTURE.tickets) {
+        assert.ok(!json.includes(ticket.reference), `sin la referencia ${ticket.reference}`);
+        assert.ok(!json.includes(ticket.text), `sin el texto de ${ticket.reference}`);
+      }
     } finally { await w.close(); }
   });
 

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { LIMITS } from '../../src/lib/contracts/core';
 import { createHash, randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { ACCEPTED_FIXTURE, BASE_FIXTURE } from '../../src/lib/contracts/fixtures';
@@ -107,7 +108,7 @@ test('lecturas privadas autorizadas (S04/S05)', async t => {
       assert.equal(view.value.ownReports[0].status, 'processing');
       assert.equal(view.value.ownReports[0].classificationMode, 'pending');
       assert.equal(view.value.remainingSessionReports, 4);
-      assert.equal(view.value.remainingExecutionReports, 48);
+      assert.equal(view.value.remainingExecutionReports, LIMITS.reportsPerExecution - 2);
       assert.equal(view.value.channelOpen, false);
       assert.deepEqual(await w.read.ownReports(w.control()), { ok: false, code: 'FORBIDDEN' });
     } finally { await w.close(); await w.db.$executeRaw`DELETE FROM report_sessions`.catch(() => undefined); }

@@ -1,13 +1,16 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { SECURITY } from "@/lib/contracts/auth";
 import { LIMITS } from "@/lib/contracts/core";
 import { announceChange, useLobbyRemaining, useServerViewSync } from "@/lib/client/state";
+import { channelFingerprint } from "@/lib/client/state/sync";
 import type { ChannelViewDTO } from "@/lib/contracts/public";
 import { Button } from "@/components/ui/button";
-import { ErrorMessage } from "@/components/ui/feedback";
+import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
+import { hhmmss } from "@/components/registro/time";
+import { fetchWithTimeout } from "@/lib/client/fetch-timeout";
 import { TextAreaField, TextField } from "@/components/ui/field";
 import { Status } from "@/components/ui/status";
 import { receiptLine, reportLength } from "./receipt-text";
@@ -17,13 +20,30 @@ const MAX_TEXT = LIMITS.reportCharacters, MAX_NAME = 40, PER_SESSION = LIMITS.re
 const CLOSED_POLL_MS = 2000, OPEN_POLL_MS = 4000;
 /** Tus reportes cambian de estado sin tocar el estado público: mientras alguno se procesa, se relee más seguido. */
 const PROCESSING_REFRESH_MS = 2000, IDLE_REFRESH_MS = 15_000;
+/**
+ * Con 15–40 teléfonos: tras fallos seguidos se espera hasta 15 s y el ritmo se reparte ±20 %, para que al volver la
+ * red no consulten todos a la vez. El envío espera más que la IA del servidor (hasta 10 s) antes de darse por perdido.
+ */
+const POLL = { maxBackoffMs: 15_000, jitter: true, fingerprint: channelFingerprint } as const;
+const SEND_TIMEOUT_MS = 15_000;
+/** Borrador y clave pendiente por pestaña: una recarga no pierde el texto y el reenvío no duplica el reporte. */
+const DRAFT_KEY = "relevo-canal-borrador";
 const NAME_KEY = "relevo-canal-nombre";
 
-type Problem = { readonly title: string; readonly detail: string };
+interface Draft { readonly executionId: string; readonly nickname: string; readonly text: string; readonly attempt: { content: string; key: string } | null }
 
-/** Clave de intento: se reutiliza al reintentar el mismo contenido para no duplicar el reporte (C14). */
-const newKey = () => `web-${crypto.randomUUID()}`;
-const nameLength = (name: string) => [...name.trim()].length;
+function readDraft(): Draft | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) as Draft : null;
+  } catch { return null; }
+}
+function writeDraft(draft: Draft | null) {
+  try {
+    if (draft && draft.text) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    else sessionStorage.removeItem(DRAFT_KEY);
+  } catch { /* sin almacenamiento: el borrador vive solo en memoria */ }
+}
 
 /*
  * Nombre recordado en este navegador. Si el almacenamiento falla, dura lo que la pestaña (memoria del módulo).
@@ -45,19 +65,42 @@ function writeName(name: string | null) {
 }
 const subscribeName = (listener: () => void) => { nameListeners.add(listener); return () => { nameListeners.delete(listener); }; };
 
+type Problem = { readonly title: string; readonly detail: string };
+
+/** Clave de intento: se reutiliza al reintentar el mismo contenido para no duplicar el reporte (C14). */
+const newKey = () => `web-${crypto.randomUUID()}`;
+const nameLength = (name: string) => [...name.trim()].length;
+
 /**
  * Canal del público en tres pasos derivados del estado: nombre, espera común tras abrir el canal y envío.
  * El nombre no identifica ni da permisos; la cuota es por sesión. El servidor decide si admite cada reporte.
  */
 export function Channel({ view }: { view: ChannelViewDTO }) {
+  const router = useRouter();
+  // El estado lo manda el servidor: la página se rehace cuando cambia y se limpia al desmontar.
   const processing = view.ownReports.some(r => r.status === "processing");
-  const live = useServerViewSync(view.channelOpen ? OPEN_POLL_MS : CLOSED_POLL_MS, processing ? PROCESSING_REFRESH_MS : IDLE_REFRESH_MS);
-  const remaining = useLobbyRemaining(live, view.channelOpen ? view.channelOpenedAt : null);
+  const live = useServerViewSync(view.channelOpen ? OPEN_POLL_MS : CLOSED_POLL_MS, processing ? PROCESSING_REFRESH_MS : IDLE_REFRESH_MS, POLL);
+  const lost = live.status === "lost";
+  // El sondeo en vivo trae la hora de apertura sin rehacer la página; la vista del servidor cubre el primer render.
+  const openedAt = live.state && live.state.executionId === view.executionId ? live.state.channelOpenedAt : view.channelOpenedAt;
+  const remaining = useLobbyRemaining(live, view.channelOpen ? openedAt : null);
   const name = useSyncExternalStore(subscribeName, readName, () => undefined);
   const ready = view.channelOpen && remaining === 0;
 
+  // Al volver la red, relee Tus reportes: un envío sin respuesta pudo quedar registrado mientras tanto.
+  const wasLost = useRef(false);
+  useEffect(() => {
+    if (lost) { wasLost.current = true; return; }
+    if (live.status === "live" && wasLost.current) { wasLost.current = false; router.refresh(); }
+  }, [lost, live.status, router]);
+
   return (
     <>
+      {lost ? (
+        <DegradedNotice title={`Sin conexión${live.lostSince ? ` desde las ${hhmmss(live.lostSince)}` : ""}`}>
+          <p>Tus reportes pueden no estar al día. Lo que escribiste se conserva en este teléfono y la página vuelve a consultar sola.</p>
+        </DegradedNotice>
+      ) : null}
       {name === undefined ? null : name === null ? <NameStep onEnter={writeName} /> : (
         <>
           <div className="flex flex-wrap items-baseline justify-between gap-x-6">
@@ -120,6 +163,21 @@ function SendStep({ view, name }: { view: ChannelViewDTO; name: string }) {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const attempt = useRef<{ content: string; key: string } | null>(null);
+  const restored = useRef(false);
+
+  // Al montar, recupera el borrador de esta pestaña. Solo en el cliente: el HTML del servidor no lo conoce.
+  useEffect(() => {
+    const draft = readDraft();
+    restored.current = true;
+    if (!draft) return;
+    // La clave solo vale en su ejecución; tras un reset se conserva el texto y se envía como reporte nuevo.
+    attempt.current = draft.executionId === view.executionId ? draft.attempt : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage no existe al renderizar en el servidor
+    setText(draft.text);
+  }, [view.executionId]);
+  useEffect(() => {
+    if (restored.current) writeDraft({ executionId: view.executionId, nickname: name, text, attempt: attempt.current });
+  }, [name, text, view.executionId]);
 
   const length = reportLength(text);
   const textError = length > MAX_TEXT ? `El reporte tiene ${length} caracteres. El máximo es ${MAX_TEXT}.` : undefined;
@@ -131,28 +189,36 @@ function SendStep({ view, name }: { view: ChannelViewDTO; name: string }) {
     if (sending || exhausted || textError || length === 0) return;
     const content = JSON.stringify([name, text.trim()]);
     if (attempt.current?.content !== content) attempt.current = { content, key: newKey() };
+    writeDraft({ executionId: view.executionId, nickname: name, text, attempt: attempt.current });
     setSending(true);
     setProblem(null);
     setConfirmation(null);
+    let reached = false;
     try {
-      const response = await fetch("/api/messages", {
-        method: "POST", headers: { "content-type": "application/json", [SECURITY.publicSubmitHeader]: "1" }, cache: "no-store",
+      const response = await fetchWithTimeout("/api/messages", {
+        timeoutMs: SEND_TIMEOUT_MS, method: "POST", headers: { "content-type": "application/json", [SECURITY.publicSubmitHeader]: "1" }, cache: "no-store",
         body: JSON.stringify({ executionId: view.executionId, idempotencyKey: attempt.current.key, nickname: name, text: text.trim() }),
       });
       const body = await response.json().catch(() => null) as { ok?: boolean; error?: { message?: string } } | null;
+      reached = true;
       if (response.ok && body?.ok) {
         setText("");
         attempt.current = null;
+        writeDraft(null);
         void announceChange();
         setConfirmation("Reporte enviado. Su estado aparece en Tus reportes.");
       } else {
         setProblem({ title: "No se recibió el reporte", detail: body?.error?.message ?? "El servidor respondió con un error. Revisa Tus reportes antes de reenviar." });
       }
     } catch {
-      setProblem({ title: "No se pudo comprobar si el reporte llegó", detail: "Revisa Tus reportes. Si no aparece, vuelve a enviar: el reintento no lo duplica." });
+      setProblem({
+        title: "No se pudo comprobar si el reporte llegó",
+        detail: "Tu texto se conserva. Revisa Tus reportes; si no aparece, vuelve a enviar: el reintento no lo duplica.",
+      });
     } finally {
       setSending(false);
-      router.refresh();
+      // Sin respuesta no se rehace la página: sin red fallaría igual. Se relee al volver la conexión.
+      if (reached) router.refresh();
     }
   }
 

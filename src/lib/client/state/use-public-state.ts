@@ -55,7 +55,7 @@ function schedule() {
   const cadence = combineCadence([...cadences]);
   // Si hay una petición en curso, al terminar programa la siguiente.
   if (!cadence || inFlight) return;
-  timer = setTimeout(tick, nextDelay({ ...cadence, hidden: document.visibilityState === "hidden", failures }));
+  timer = setTimeout(tick, nextDelay({ ...cadence, hidden: document.visibilityState === "hidden", failures, random: Math.random() }));
 }
 
 async function tick() {
@@ -160,10 +160,21 @@ export function announceChange(): Promise<void> {
   return refreshNow();
 }
 
+export interface PollOptions {
+  readonly keepPaceHidden?: boolean;
+  /** Tope de espera propio tras fallos seguidos (canal público). */
+  readonly maxBackoffMs?: number;
+  /** Reparte el ritmo ±20 % entre teléfonos. */
+  readonly jitter?: boolean;
+}
+
 /** Estado público vivo, compartido por las pantallas de la pestaña. */
-export function usePublicState(intervalMs = 1000, options: { keepPaceHidden?: boolean } = {}): PublicStateView {
+export function usePublicState(intervalMs = 1000, options: PollOptions = {}): PublicStateView {
   const keepPaceHidden = options.keepPaceHidden ?? false;
-  useEffect(() => join({ intervalMs, keepPaceHidden }), [intervalMs, keepPaceHidden]);
+  const { maxBackoffMs, jitter } = options;
+  useEffect(() => join({
+    intervalMs, keepPaceHidden, ...(maxBackoffMs === undefined ? {} : { maxBackoffMs }), ...(jitter ? { jitter } : {}),
+  }), [intervalMs, keepPaceHidden, maxBackoffMs, jitter]);
   return useSyncExternalStore(subscribe, () => view, () => initial);
 }
 
@@ -171,13 +182,16 @@ export function usePublicState(intervalMs = 1000, options: { keepPaceHidden?: bo
  * Para vistas que llegan del servidor (control, canal): rehace la página solo cuando el estado público cambió,
  * más una relectura de seguridad cada `safetyMs` para lo privado. Nunca lanza un refresco sobre otro en curso.
  */
-export function useServerViewSync(intervalMs: number, safetyMs: number): PublicStateView {
+export function useServerViewSync(
+  intervalMs: number, safetyMs: number,
+  options: PollOptions & { readonly fingerprint?: (state: PublicStateDTO) => string } = {},
+): PublicStateView {
   const router = useRouter();
-  const live = usePublicState(intervalMs);
+  const live = usePublicState(intervalMs, options);
   const [refreshing, startTransition] = useTransition();
   const rendered = useRef<string | null>(null);
   const refreshedAt = useRef(0);
-  const fingerprint = live.state ? stateFingerprint(live.state) : null;
+  const fingerprint = live.state ? (options.fingerprint ?? stateFingerprint)(live.state) : null;
   useEffect(() => {
     if (fingerprint === null || refreshing) return;
     const now = Date.now();

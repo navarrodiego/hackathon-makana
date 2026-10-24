@@ -3,6 +3,7 @@ import type { RouteExample } from "./http";
 import type { CoverageDTO, HandoffSummaryDTO, IncidentSummaryDTO, PublicStateDTO, ReportReceiptDTO } from "./public";
 import type { PageViewMap, NoteDTO } from "./private";
 import type { EquivalenceKey } from "./classification";
+import { BASE_FIXTURE } from "./fixtures";
 
 export const coverageExample = {
   windowId: "window_example", status: "unconfirmed", actor: null,
@@ -22,7 +23,7 @@ export const publicStateExample = {
   audience: "public", executionId: "execution_example", version: 1,
   scene: { id: "scene_closing", label: "Cierre" }, preparation: "ready",
   clocks: { operationalNow: "2026-10-23T15:00:00.000Z", narrativeNow: "2026-10-24T01:09:50.000Z", timeZone: "America/Santiago" },
-  channelOpen: false, channelOpenedAt: null, coverage: coverageExample, handoff: handoffExample,
+  channelOpen: false, channelOpenedAt: null, coverage: coverageExample, handoff: handoffExample, closing: null,
   incidents: [], notifications: [], events: [], outgoingNoticeCount: 0,
 } as const satisfies PublicStateDTO;
 export const receiptExample = {
@@ -105,13 +106,7 @@ export const routeExamples = {
     }, correlationId } },
   },
 } as const satisfies { readonly [K in keyof import("./http").ApiRoutes]: RouteExample<K> };
-const ticketViewExamples = [
-  { id: "ticket_481", reference: "#481", text: "Adjuntos de correo de una persona.", disposition: "puede_esperar", reason: "Afecta a una persona." },
-  { id: "ticket_477", reference: "#477", text: "Impresora administrativa sin tóner.", disposition: "puede_esperar", reason: "Uso administrativo." },
-  { id: "ticket_470", reference: "#470", text: "Respaldo fallido; próximo intento a las 02:00.", disposition: "transferir", reason: "Revisar próximo intento." },
-  { id: "ticket_466", reference: "#466", text: "VPN lenta para dos personas.", disposition: "puede_esperar", reason: "Degradación localizada." },
-  { id: "ticket_462", reference: "#462", text: "Cuenta para el lunes.", disposition: "puede_esperar", reason: "Solicitud para el lunes." },
-] as const satisfies readonly import("./private").TicketDTO[];
+const ticketViewExamples = BASE_FIXTURE.tickets satisfies readonly import("./private").TicketDTO[];
 export const pageExamples = {
   "/canal": { audience: "reporter", executionId: "execution_example", channelOpen: false, channelOpenedAt: null, remainingSessionReports: 5, remainingExecutionReports: 50, ownReports: [] },
   "/rodrigo": {

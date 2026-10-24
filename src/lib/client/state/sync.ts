@@ -9,6 +9,10 @@ export interface Cadence {
   readonly intervalMs: number;
   /** Mantiene el ritmo aunque la pestaña esté oculta (proyector: sus lecturas evalúan vencimientos). */
   readonly keepPaceHidden: boolean;
+  /** Tope propio tras fallos (canal público). Sin él rige `MAX_BACKOFF_MS`. */
+  readonly maxBackoffMs?: number;
+  /** Reparte el ritmo ±20 %: muchos teléfonos que abrieron juntos no consultan en el mismo instante. */
+  readonly jitter?: boolean;
 }
 
 /**
@@ -19,19 +23,37 @@ export function stateFingerprint(state: PublicStateDTO): string {
   return JSON.stringify({ ...state, clocks: undefined });
 }
 
+/**
+ * Lo que puede cambiar la vista del canal público: apertura, ejecución y el estado de los avisos que muestran sus
+ * recibos. Excluye eventos e incidentes sin aviso: con 40 teléfonos, cada reporte ajeno rehacía todas las páginas.
+ * Los recibos propios en procesamiento se releen con la relectura de seguridad.
+ */
+export function channelFingerprint(state: PublicStateDTO): string {
+  return JSON.stringify({
+    executionId: state.executionId, channelOpen: state.channelOpen,
+    notifications: state.notifications.map(n => [n.id, n.status]),
+  });
+}
+
 /** Varias pantallas en una pestaña comparten un sondeo: gana el ritmo más rápido. */
 export function combineCadence(list: readonly Cadence[]): Cadence | null {
   if (list.length === 0) return null;
+  // Un tope o un ritmo exacto pedido por cualquiera de las pantallas gana sobre la holgura del canal.
+  const backoffs = list.map(c => c.maxBackoffMs);
   return {
     intervalMs: Math.min(...list.map(c => c.intervalMs)),
     keepPaceHidden: list.some(c => c.keepPaceHidden),
+    ...(backoffs.every(b => b !== undefined) ? { maxBackoffMs: Math.min(...backoffs) } : {}),
+    ...(list.every(c => c.jitter) ? { jitter: true } : {}),
   };
 }
 
-export function nextDelay(input: Cadence & { readonly hidden: boolean; readonly failures: number }): number {
+/** `random` en [0, 1]; solo cuenta con `jitter`. */
+export function nextDelay(input: Cadence & { readonly hidden: boolean; readonly failures: number; readonly random?: number }): number {
   const base = input.hidden && !input.keepPaceHidden ? Math.max(input.intervalMs, HIDDEN_INTERVAL_MS) : input.intervalMs;
-  if (input.failures === 0) return base;
-  return Math.max(base, Math.min(MAX_BACKOFF_MS, 1000 * 2 ** (input.failures - 1)));
+  const delay = input.failures === 0 ? base
+    : Math.max(base, Math.min(input.maxBackoffMs ?? MAX_BACKOFF_MS, 1000 * 2 ** (input.failures - 1)));
+  return input.jitter ? Math.round(delay * (0.8 + 0.4 * (input.random ?? 0.5))) : delay;
 }
 
 export type RefreshDecision = "baseline" | "changed" | "safety" | null;

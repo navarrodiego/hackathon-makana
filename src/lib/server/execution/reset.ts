@@ -43,7 +43,7 @@ async function seedSuccessor(tx: TransactionRepositories, execution: Execution):
   for (const t of fixture.tickets) {
     const ticket: Ticket = {
       executionId, version: 1, id: `ticket_${randomUUID()}` as TicketId, reference: t.reference, text: t.text,
-      suggestedDisposition: null, disposition: t.disposition, reason: "Pendiente ficticio para revisión.", incidentId: null,
+      suggestedDisposition: null, disposition: t.disposition, reason: t.reason, incidentId: null,
     };
     await tx.aggregates.tickets.insert(ticket);
     ticketIds.push(ticket.id);
@@ -124,14 +124,15 @@ async function runReset(deps: ResetDeps, context: CommandContext, input: ResetEx
 }
 
 /**
- * Genera y guarda la nota del escenario para la ejecución indicada y marca la preparación (C03/C09). Va fuera de la
- * transacción del reset porque llama al proveedor. Si entretanto hubo otro reset, la escritura falla por ejecución
+ * Marca la preparación de la ejecución indicada (C03/C09). Sin servicio de nota, como en la demo, el resumen de
+ * traspaso es fijo en el código y la preparación queda lista sin llamar a ningún proveedor. Con servicio, genera y
+ * guarda la nota fuera de la transacción del reset; si entretanto hubo otro reset, la escritura falla por ejecución
  * retirada y no repuebla la nueva (S04). Un fallo deja `failed` sin nota inventada.
  */
 const preparing = new Set<ExecutionId>();
 
 export async function prepareNote(
-  deps: ResetDeps & { readonly note: HandoffNoteService }, context: CommandContext, signal?: AbortSignal,
+  deps: ResetDeps & { readonly note?: HandoffNoteService }, context: CommandContext, signal?: AbortSignal,
 ): Promise<ServiceResult<"ready" | "failed">> {
   // Un reintento de reset reprograma esta tarea: si ya hay una generación en curso en este proceso, no se paga otra.
   if (preparing.has(context.executionId)) return fail("OPERATION_PENDING");
@@ -140,13 +141,16 @@ export async function prepareNote(
 }
 
 async function prepare(
-  deps: ResetDeps & { readonly note: HandoffNoteService }, context: CommandContext, signal?: AbortSignal,
+  deps: ResetDeps & { readonly note?: HandoffNoteService }, context: CommandContext, signal?: AbortSignal,
 ): Promise<ServiceResult<"ready" | "failed">> {
-  const current = await deps.store.run(context, async tx => ({ ok: true, value: (await tx.aggregates.executions.get(context.executionId))?.preparation ?? null }));
-  if (current.ok && current.value && current.value !== "pending") return { ok: true, value: current.value };
-  const generated = await deps.note.prepare(context, signal);
-  if (!generated.ok && generated.code === "EXECUTION_STALE") return generated;
-  const status = generated.ok ? "ready" as const : "failed" as const;
+  let status: "ready" | "failed" = "ready";
+  if (deps.note) {
+    const current = await deps.store.run(context, async tx => ({ ok: true, value: (await tx.aggregates.executions.get(context.executionId))?.preparation ?? null }));
+    if (current.ok && current.value && current.value !== "pending") return { ok: true, value: current.value };
+    const generated = await deps.note.prepare(context, signal);
+    if (!generated.ok && generated.code === "EXECUTION_STALE") return generated;
+    status = generated.ok ? "ready" : "failed";
+  }
   return deps.store.run(context, async tx => {
     const execution = await tx.aggregates.executions.get(context.executionId);
     if (!execution) return fail("NOT_FOUND");

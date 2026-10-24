@@ -183,7 +183,7 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
       </p>
       <p role="status" className="text-aux text-muted-foreground">
         {state.channelOpen ? "Canal abierto" : "Canal cerrado"}
-        {view.preparation === "pending" ? " · Nota de relevo en preparación" : view.preparation === "failed" ? " · La nota de relevo no se generó" : " · Nota de relevo guardada"}
+        {view.preparation === "pending" ? " · Escenario en preparación" : " · Escenario listo"}
       </p>
       {/* La región existe antes del aviso: así los lectores de pantalla anuncian su contenido nuevo. */}
       <div data-testid="control-avisos" aria-live="polite" aria-atomic="true" className="empty:hidden">

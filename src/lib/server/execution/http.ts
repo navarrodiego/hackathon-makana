@@ -5,7 +5,7 @@ import type { CorrelationId } from "@/lib/contracts/core";
 import type { ChangeScene, ErrorCode, RequestValidator, ResetExecution } from "@/lib/contracts/http";
 import { failure, success } from "@/lib/server/http/errors";
 import { authHeaders } from "@/lib/server/http/request";
-import { jsonResponse } from "@/lib/server/http/response";
+import { gzipped, jsonResponse } from "@/lib/server/http/response";
 import type { ExecutionRuntimeService } from "./index";
 
 export interface ExecutionHttpDeps {
@@ -23,11 +23,11 @@ const fail = (code: ErrorCode, correlationId: CorrelationId) => jsonResponse(fai
  * `GET /api/state`: público y saneado. Su único efecto es técnico: evalúa plazos vencidos (C07/C08). No acepta cuerpo
  * ni autenticación, y nada de lo que recibe cambia lo que evalúa.
  */
-export async function handleState(deps: Pick<ExecutionHttpDeps, "service">): Promise<Response> {
+export async function handleState(deps: { readonly service: Pick<ExecutionRuntimeService, "evaluateCurrent"> }, request?: Request): Promise<Response> {
   const correlation = newCorrelation();
   try {
     const state = await deps.service.evaluateCurrent();
-    return state.ok ? jsonResponse(success(state.value, 200, correlation)) : fail(state.code, correlation);
+    return state.ok ? gzipped(jsonResponse(success(state.value, 200, correlation)), request) : fail(state.code, correlation);
   } catch {
     return fail("STORAGE_UNAVAILABLE", correlation);
   }
@@ -60,7 +60,7 @@ export async function handleCommand(deps: ExecutionHttpDeps, route: CommandRoute
     const result = await deps.service.reset(context, input);
     if (!result.ok) return fail(result.code, context.correlationId);
     const next: CommandContext = { ...context, executionId: result.value.executionId, executionVersion: result.value.state.version, actorId: null, narrativeNow: result.value.state.clocks.narrativeNow };
-    // La nota se genera con el proveedor real fuera de la transacción y después de responder (C09).
+    // La preparación se marca fuera de la transacción y después de responder (C09); sin IA en la demo.
     deps.afterResponse(() => deps.service.prepareNote(next));
     return jsonResponse(success(result.value, 201, context.correlationId));
   } catch {

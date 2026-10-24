@@ -85,6 +85,29 @@ test('evaluación de plazos al consultar el estado (I06/I07)', async t => {
     } finally { await w.close(); }
   });
 
+  await t.test('con despacho diferido, el estado responde antes de enviar avisos y el envío queda programado', async () => {
+    const deferred: (() => Promise<unknown>)[] = [];
+    const w = await world(ACCEPTED_FIXTURE, { deferDispatch: work => { deferred.push(work); } });
+    try {
+      const state = await w.execution.evaluate(w.system());
+      assert.ok(state.ok);
+      assert.deepEqual(w.notified, []);
+      assert.equal(deferred.length, 1);
+      await deferred[0]();
+      assert.deepEqual(w.notified, [w.prepared.executionId]);
+    } finally { await w.close(); }
+  });
+
+  await t.test('cada consulta rescata reportes trabados antes de evaluar plazos, y un fallo del rescate no la impide', async () => {
+    const seen: string[] = [];
+    const w = await world(ACCEPTED_FIXTURE, { reports: { rescueStalled: async context => { seen.push(context.executionId); throw new Error('db'); } } });
+    try {
+      const state = await w.execution.evaluate(w.system());
+      assert.ok(state.ok);
+      assert.deepEqual(seen, [w.prepared.executionId]);
+    } finally { await w.close(); }
+  });
+
   await t.test('un fallo del transporte no impide entregar el estado ni se oculta como éxito', async () => {
     const failing: NotificationService = { dispatchPending: async () => { throw new Error('ntfy caído'); } };
     const w = await world(INCIDENT_FIXTURE, { notifications: failing });

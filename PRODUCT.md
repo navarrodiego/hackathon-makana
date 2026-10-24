@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Decisión aprobada: Next.js App Router, Tailwind + shadcn/ui, PostgreSQL local, Neon para la demo y Vercel. OpenRouter para clasificación y nota; ntfy para el S26 que representa a Paula. Jev previsto `typesafe/jev-1.14` por Decisions API alfa; disponibilidad, salida y calidad en chileno deben comprobarse. Alternativa acordada: modelo de chat con salida estructurada, misma política. Inicialización técnica autorizada el 23-10-2026: Next.js con Prisma ORM y adaptador PostgreSQL, sin modelos ni recorrido operativo. El alcance funcional que sigue es objetivo; no hay despliegue comprobado. Un único servidor PostgreSQL local aloja bases separadas por worktree y una de integración. Neon conserva los datos compartidos de la demo pública; mismas migraciones/seed, conexión solo backend, sin servicios ni SDK de Supabase.
+Decisión aprobada: Next.js App Router, Tailwind + shadcn/ui, PostgreSQL local, Neon para la demo y Vercel. OpenRouter para la clasificación del canal (el cierre no usa IA desde el 24-10-2026); ntfy para el S26 que representa a Paula. Jev previsto `typesafe/jev-1.14` por Decisions API alfa; disponibilidad, salida y calidad en chileno deben comprobarse. Alternativa acordada: modelo de chat con salida estructurada, misma política. Inicialización técnica autorizada el 23-10-2026: Next.js con Prisma ORM y adaptador PostgreSQL, sin modelos ni recorrido operativo. El alcance funcional que sigue es objetivo; no hay despliegue comprobado. Un único servidor PostgreSQL local aloja bases separadas por worktree y una de integración. Neon conserva los datos compartidos de la demo pública; mismas migraciones/seed, conexión solo backend, sin servicios ni SDK de Supabase.
 
 ## Users
 
@@ -50,7 +50,7 @@ El registro y la cobertura del sistema son continuos, 24/7. No implica disponibi
 
 ### Alcance objetivo, no construido acreditado
 
-1. Cierre en un paso: Rodrigo ve sus pendientes y envía el relevo. No clasifica tickets ni escribe razones; la IA destaca los que necesitan seguimiento, sin convertir nada en urgencia. Nota IA opcional y editable. Decisión de Diego del 23-10-2026.
+1. Cierre en un paso: Rodrigo ve sus pendientes del retail y envía el relevo. No clasifica tickets ni escribe razones; los que necesitan seguimiento vienen destacados en el escenario, sin convertir nada en urgencia. Resumen de traspaso fijo, opcional y editable; sin IA. Decisiones de Diego del 23-10-2026 y 24-10-2026.
 2. Envío y aceptación/rechazo del relevo. Aceptación anticipada efectiva desde la ventana.
 3. Paula rechaza o no responde: Tomás; si también falla, aviso a Carla y Sin cobertura confirmada. No extensión automática de Rodrigo.
 4. Canal público QR de reportes ficticios; política visible sobre clasificación IA.
