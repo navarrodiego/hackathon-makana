@@ -156,6 +156,7 @@ function repositories(tx: Tx, executionId: ExecutionId): TransactionRepositories
       async windows() { active(); return select(tx, 'coverage_windows', where); },
       async insertWindow(window) { active(); if (window.executionId !== executionId) throw new Error('Execution mismatch'); await insert(tx, 'coverage_windows', window as unknown as Row); },
       async scenes() { active(); const rows = await select<Row>(tx, 'scenes', where, Prisma.sql`ORDER BY "order" ASC`); return rows.map(({ executionId: _, ...row }) => { void _; return row as unknown as Awaited<ReturnType<TransactionRepositories['reference']['scenes']>>[number]; }); },
+      async removeScenes(ids) { active(); if (!ids.length) return; await tx.$executeRaw(Prisma.sql`DELETE FROM scenes WHERE ${where} AND id IN (${Prisma.join(ids)})`); },
     },
     notes: {
       async get() { active(); const handoffs = await aggregates.handoffs.list(); return handoffs[0]?.savedSuggestion ?? null; },

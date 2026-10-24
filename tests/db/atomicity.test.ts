@@ -102,7 +102,7 @@ test('equivalencia, decisiones ordenadas, eventos, cuotas globales y reset', asy
       try {
         await checked(store, c, async r => {
           await r.idempotency.reserve(reservation); const successor = await r.replaceExecution(next, 1); assert.ok(successor);
-          assert.equal((await successor.reference.actors()).length, 4); assert.equal((await successor.reference.scenes()).length, 4);
+          assert.equal((await successor.reference.actors()).length, 4); assert.equal((await successor.reference.scenes()).length, BASE_FIXTURE.scenes.length);
           await r.idempotency.complete(reservation, saved, next.executionId); return success(null);
         });
         assert.equal((await store.current())?.executionId, next.executionId);

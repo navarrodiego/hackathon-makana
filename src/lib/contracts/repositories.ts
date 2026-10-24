@@ -69,6 +69,8 @@ export interface TransactionRepositories {
     windows(): Promise<readonly CoverageWindow[]>;
     insertWindow(window: CoverageWindow): Promise<void>;
     scenes(): Promise<readonly Scene[]>;
+    /** Retira escenas de esta ejecución; el reset lo usa con las que ya no son del escenario. */
+    removeScenes(ids: readonly Scene["id"][]): Promise<void>;
   };
   readonly notes: {
     get(): Promise<StoredNote | null>;

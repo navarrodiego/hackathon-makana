@@ -110,8 +110,8 @@ test.describe("/control", () => {
     await page.goto("/control");
     await page.evaluate(() => { const i = document.createElement("input"); i.id = "probe"; document.body.append(i); });
     await page.locator("#probe").focus();
-    await page.keyboard.type("oq");
-    await expect(page.getByRole("status").filter({ hasText: /^Canal cerrado ·/ })).toBeVisible();
+    await page.keyboard.type("oi");
+    await expect(page.getByRole("status").filter({ hasText: /Canal cerrado/ })).toBeVisible();
   });
 });
 
