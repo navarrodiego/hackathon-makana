@@ -3,6 +3,7 @@ import type {
 } from "@/lib/contracts/client";
 import { LIMITS } from "@/lib/contracts/client";
 import { continuityState, type ContinuityState } from "@/components/relevo/continuity-line";
+import { MORNING_SCENE_LABEL } from "@/components/relevo/noche";
 
 /** Mismo criterio que el validador del servidor: separar por espacios en blanco. */
 export function countWords(text: string): number {
@@ -121,9 +122,6 @@ export function followUp(p: {
     coverageNotice,
   };
 }
-
-/** Etiqueta de la escena de mañana del seed (`BASE_FIXTURE.scenes`): los ids cambian en cada ejecución, la etiqueta no. */
-const MORNING_SCENE_LABEL = "Registro de mañana";
 
 export type Phase = "closing" | "following" | "morning";
 

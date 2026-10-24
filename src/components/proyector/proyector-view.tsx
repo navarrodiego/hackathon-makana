@@ -6,6 +6,7 @@ import { Status } from "@/components/ui/status";
 import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, EmptyState, LoadingState } from "@/components/ui/feedback";
 import { hhmm } from "@/components/registro/time";
+import { isMorning, reportCount, SERVICE } from "@/components/relevo/noche";
 import { useLobbyRemaining, usePublicState } from "@/lib/client/state";
 import type { ActorDTO, IncidentSummaryDTO, PublicStateDTO } from "@/lib/contracts/client";
 import { cierre } from "./cierre";
@@ -13,11 +14,6 @@ import { Conexion } from "./conexion";
 import { QrImage, type CanalQr } from "./qr-image";
 import { relato } from "./relato";
 import { estadoReporte } from "./reportes";
-
-const SERVICE: Record<string, string> = {
-  facturacion: "Facturación", red_locales: "Red de locales", correo: "Correo", vpn: "VPN",
-  impresora: "Impresora", cuentas: "Cuentas", otro: "Otro servicio",
-};
 
 const OUTGOING_FALLBACK: ActorDTO = { id: "actor_saliente" as ActorDTO["id"], displayName: "Turno saliente" };
 
@@ -196,6 +192,44 @@ function FaseQr({ state, qr }: { state: PublicStateDTO; qr: CanalQr }) {
   );
 }
 
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+
+/**
+ * Escena de mañana: la noche ya pasó y se cuenta en pasado. «Avisos a Rodrigo» es el titular; debajo, quién quedó a
+ * cargo, cada incidente con quién lo tomó (tomado no es resuelto) y cuánto escribió la sala. Sin «Ahora» ni plazos.
+ */
+function Manana({ state }: { state: PublicStateDTO }) {
+  const reportes = reportCount(state.events);
+  return (
+    <div className="flex flex-1 flex-col gap-14 motion-safe:animate-escena [@media(max-height:52rem)]:gap-8">
+      <section aria-labelledby="rodrigo-titulo" className="flex flex-col gap-4">
+        <p className={LABEL}>Resumen de la noche</p>
+        <h2 id="rodrigo-titulo" className="text-[clamp(3rem,min(7vw,12svh),8rem)] leading-none font-semibold tracking-[-0.02em] text-balance">
+          Avisos a <span className="whitespace-nowrap">Rodrigo: <span className="tabular-nums">{state.outgoingNoticeCount}</span></span>
+        </h2>
+        <p className="text-section text-muted-foreground">Avisos que el sistema le dirigió en esta demostración.</p>
+      </section>
+      <div className="grid content-start gap-x-20 gap-y-14 border-t border-line pt-10 lg:grid-cols-[3fr_2fr] [@media(max-height:52rem)]:pt-6">
+        <div className="flex flex-col gap-14 [@media(max-height:52rem)]:gap-6">
+          <ACargo state={state} emphasis />
+          <section aria-labelledby="sala-titulo" className="flex flex-col gap-2">
+            <h2 id="sala-titulo" className={LABEL}>Reportes de la sala</h2>
+            <p className="text-people">{reportes > 0 ? `La sala envió ${plural(reportes, "reporte", "reportes")}.` : "La sala no envió reportes."}</p>
+          </section>
+        </div>
+        <section aria-labelledby="incidentes-titulo" className="flex flex-col gap-2">
+          <h2 id="incidentes-titulo" className={LABEL}>Incidentes de la noche</h2>
+          {state.incidents.length > 0 ? (
+            <ul className="divide-y divide-line border-y border-line">
+              {state.incidents.map(i => <li key={i.id} className="py-4"><Incidente i={i} state={state} /></li>)}
+            </ul>
+          ) : <p className="text-people">No se registraron incidentes.</p>}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function Panel({ state }: { state: PublicStateDTO }) {
   return (
     <div className="grid flex-1 content-start gap-x-20 gap-y-14 lg:grid-cols-[3fr_2fr]">
@@ -213,7 +247,8 @@ function Panel({ state }: { state: PublicStateDTO }) {
 }
 
 /**
- * Espejo público para la sala: quién está a cargo, qué pasa ahora, los avisos a Rodrigo y los reportes de la sala. Solo lectura, sin
+ * Espejo público para la sala: quién está a cargo, qué pasa ahora, los avisos a Rodrigo y los reportes de la sala; en la
+ * escena de mañana, el resumen de la noche. Solo lectura, sin
  * controles privilegiados. El registro completo y los resultados por canal viven en /control. Sigue consultando
  * cada segundo: esas lecturas evalúan los plazos.
  */
@@ -242,7 +277,7 @@ export function ProyectorView({ qr }: { qr: CanalQr | null }) {
       {enEspera && !qr ? (
         <DegradedNotice title="QR no disponible"><p>Falta configurar la dirección pública de la aplicación. Nadie puede enviar reportes desde este QR.</p></DegradedNotice>
       ) : null}
-      {faseQr && qr ? <FaseQr state={state} qr={qr} /> : <Panel state={state} />}
+      {faseQr && qr ? <FaseQr state={state} qr={qr} /> : isMorning(state) ? <Manana state={state} /> : <Panel state={state} />}
     </div>
   );
 }
