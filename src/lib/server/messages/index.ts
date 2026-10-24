@@ -179,7 +179,7 @@ export function createMessageService(deps: MessageDeps): MessageService {
       return classifyAndDrain(context, a.report);
     },
     async rescueStalled(context) {
-      return deps.store.run(context, async tx => {
+      return deps.store.runReadFirst(context, async tx => {
         let rescued = 0;
         for (const report of await tx.reportsAwaitingDecision()) {
           if (report.classification || ageMs(report, context) < LIMITS.classificationStallMs) continue;

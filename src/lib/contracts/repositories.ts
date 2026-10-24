@@ -94,6 +94,11 @@ export interface UnitOfWork {
    * o invalida el trabajo; no admite escrituras tardías en ejecuciones retiradas.
    */
   run<T>(context: CommandContext, work: (transaction: TransactionRepositories) => Promise<ServiceResult<T>>): Promise<ServiceResult<T>>;
+  /**
+   * Mismo trabajo que `run`, primero en una foto de solo lectura sin bloquear la ejecución. Si intenta escribir, se
+   * descarta y se repite entero con `run`; el resultado nunca mezcla ambas pasadas.
+   */
+  runReadFirst<T>(context: CommandContext, work: (transaction: TransactionRepositories) => Promise<ServiceResult<T>>): Promise<ServiceResult<T>>;
   /** Solo reintento de reset: verifica principal, fingerprint y sucesora aún vigente. */
   replayReset(scope: IdempotencyScope, fingerprint: string): Promise<ServiceResult<SavedResponse | null>>;
 }
@@ -103,3 +108,5 @@ export interface CredentialReader {
   findGrant(credentialHash: string): Promise<RecipientGrant | null>;
   findSession(credentialHash: string): Promise<ReportSession | null>;
 }
+/** Sesiones del canal: globales, sin ejecución; se guardan fuera de la transacción de dominio. */
+export interface SessionWriter { saveSession(session: ReportSession): Promise<void> }

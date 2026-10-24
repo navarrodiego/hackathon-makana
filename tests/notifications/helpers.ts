@@ -56,6 +56,7 @@ export function fakeUow(w: World): UnitOfWork & { runs: number } {
       if (context.executionId !== w.currentExecution) return { ok: false, code: "EXECUTION_STALE" as ErrorCode };
       return work(tx);
     },
+    runReadFirst<T>(context: CommandContext, work: (t: TransactionRepositories) => Promise<ServiceResult<T>>) { return uow.run(context, work); },
     async replayReset() { return { ok: true as const, value: null }; },
   };
   return uow as UnitOfWork & { runs: number };

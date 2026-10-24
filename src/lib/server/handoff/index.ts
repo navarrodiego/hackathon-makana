@@ -108,7 +108,7 @@ export function createHandoffService(deps: HandoffDeps): HandoffService {
     accept: (context, id, input) => respond(context, id, input, "accept"),
     reject: (context, id, input) => respond(context, id, input, "reject"),
     async evaluateDeadlines(context) {
-      return deps.store.run(context, async tx => {
+      return deps.store.runReadFirst(context, async tx => {
         const state = await loadState(tx);
         if (!state) return { ok: true, value: [] };
         let changed = false;

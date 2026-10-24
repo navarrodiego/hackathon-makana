@@ -13,6 +13,7 @@ const tables = {
   coverages: 'coverages', reports: 'reports', incidents: 'incidents', incidentAttempts: 'incident_attempts', notifications: 'notification_intents',
 } as const;
 const ok = <T>(value: T): ServiceResult<T> => ({ ok: true, value });
+class WriteAttempt extends Error { constructor() { super('WriteAttempt'); } }
 class Rollback extends Error { constructor(readonly result: ServiceResult<never>) { super('Rollback'); } }
 const scoped = (executionId: ExecutionId) => Prisma.sql`"executionId"=${executionId}`;
 const idempotencyWhere = (scope: IdempotencyScope) => Prisma.sql`"executionId"=${scope.executionId} AND "principalKey"=${scope.principalKey} AND operation=${scope.operation} AND key=${scope.key}`;
@@ -42,6 +43,30 @@ export class PostgresPersistence implements UnitOfWork, ExecutionReader, Credent
       if (error instanceof Rollback) return error.result;
       return { ok: false, code: 'STORAGE_UNAVAILABLE' };
     }
+  }
+  /**
+   * Primero en una foto de solo lectura sin el candado global; si el trabajo intenta escribir, se descarta y se repite
+   * entero con `run`. Lecturas y evaluaciones sin nada vencido dejan de hacer fila detrás de las escrituras.
+   */
+  async runReadFirst<T>(context: CommandContext, work: (repositories: TransactionRepositories) => Promise<ServiceResult<T>>): Promise<ServiceResult<T>> {
+    let wrote = false;
+    try {
+      const result = await this.db.$transaction(async tx => {
+        await tx.$executeRaw`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY`;
+        const current = (await select<Execution>(tx, 'executions', Prisma.sql`status='active'`))[0];
+        if (!current || current.executionId !== context.executionId) return { ok: false as const, code: 'EXECUTION_STALE' as const };
+        // Toda escritura de los repositorios pasa por $executeRaw: se corta antes de llegar a la base.
+        const readOnly = new Proxy(tx, { get: (target, key, receiver) => key === '$executeRaw' ? () => { wrote = true; throw new WriteAttempt(); } : Reflect.get(target, key, receiver) });
+        return work(repositories(readOnly, current.executionId));
+      }, { maxWait: 10_000, timeout: 15_000 });
+      return wrote ? this.run(context, work) : result;
+    } catch {
+      return wrote ? this.run(context, work) : { ok: false, code: 'STORAGE_UNAVAILABLE' };
+    }
+  }
+  /** Las sesiones del canal son globales y de id aleatorio: un insert suelto, sin el candado de la ejecución. */
+  async saveSession(session: ReportSession): Promise<void> {
+    await insert(this.db, 'report_sessions', session as unknown as Row);
   }
   async replayReset(scope: IdempotencyScope, fingerprint: string): Promise<ServiceResult<SavedResponse | null>> {
     if (scope.operation !== 'POST /api/reset') return { ok: false, code: 'EXECUTION_STALE' };
@@ -94,7 +119,14 @@ function repositories(tx: Tx, executionId: ExecutionId): TransactionRepositories
     const table = tables[key], idColumn = key === 'executions' ? 'executionId' : 'id';
     return {
       async get(id) { active(); const row = (await select<Row>(tx, table, Prisma.sql`${where} AND ${identifier(idColumn)}=${id}`))[0]; return row ? hydrate(key, row) : null; },
-      async list() { active(); return Promise.all((await select<Row>(tx, table, where)).map(row => hydrate(key, row))); },
+      async list() {
+        active(); const rows = await select<Row>(tx, table, where);
+        if (key !== 'reports' || rows.length === 0) return Promise.all(rows.map(row => hydrate(key, row)));
+        // Dos consultas para toda la lista, no dos por reporte.
+        const [classifications, decisions] = await Promise.all(['report_classifications', 'report_policy_decisions'].map(async child =>
+          new Map((await select<{ reportId: string; value: unknown }>(tx, child, where)).map(c => [c.reportId, c.value]))));
+        return rows.map(row => decode<AggregateMap[K]>({ ...row, classification: classifications.get(row.id as string) ?? null, decision: decisions.get(row.id as string) ?? null }));
+      },
       async insert(value) { active(); await insert(tx, table, stored(key, value)); await reportChildren(value); },
       async compareAndSwap(value, guard) {
         active();

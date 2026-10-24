@@ -103,7 +103,7 @@ export function createIncidentService(deps: IncidentDeps): IncidentService {
   }
 
   async function evaluateDeadlines(context: CommandContext): Promise<ServiceResult<readonly IncidentId[]>> {
-    return deps.store.run(context, async tx => {
+    return deps.store.runReadFirst(context, async tx => {
       const changed: IncidentId[] = [];
       const window = await coordinatorWindow(tx);
       for (const incident of await tx.aggregates.incidents.list()) {
