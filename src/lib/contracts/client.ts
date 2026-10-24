@@ -5,6 +5,6 @@ export type {
   IncidentAttemptId, IncidentId, Instant, ReportId, SceneId, TicketDisposition, TicketId, Version,
 } from "./core";
 export type {
-  ActorDTO, ChannelViewDTO, CoverageDTO, HandoffSummaryDTO, IncidentSummaryDTO,
+  ActorDTO, ChannelViewDTO, ClosingSummaryDTO, CoverageDTO, HandoffSummaryDTO, IncidentSummaryDTO,
   NotificationDTO, PublicEventDTO, PublicStateDTO, ReportReceiptDTO,
 } from "./public";

@@ -8,6 +8,7 @@ import { DegradedNotice, EmptyState, LoadingState } from "@/components/ui/feedba
 import { hhmm } from "@/components/registro/time";
 import { usePublicState } from "@/lib/client/state";
 import type { ActorDTO, IncidentSummaryDTO, PublicStateDTO } from "@/lib/contracts/client";
+import { cierre } from "./cierre";
 import { Conexion } from "./conexion";
 import { QrImage, type CanalQr } from "./qr-image";
 import { relato } from "./relato";
@@ -57,7 +58,20 @@ function Cabecera({ state, live }: { state: PublicStateDTO; live: ReactNode }) {
   );
 }
 
-/** Quién está a cargo: la cadena con nombres, o una frase cuando todavía no hay nadie a quien unir. */
+/** Relevo en borrador: el saliente sigue a cargo y cierra su turno. Solo conteos; sin pendientes ni nota. */
+function Cierre({ state, emphasis }: { state: PublicStateDTO; emphasis?: boolean }) {
+  if (!state.closing) return null;
+  const c = cierre(state.closing, state.coverage?.outgoingEndsAt ?? null, state.clocks.narrativeNow);
+  return (
+    <div className="flex flex-col gap-3 py-2">
+      <p className={emphasis ? "text-title font-semibold tracking-[-0.02em] text-balance" : "text-people font-semibold text-balance"}>{c.titulo}</p>
+      <p className={emphasis ? "text-people text-balance" : "text-section text-balance"}>{c.pendientes}</p>
+      <p className="text-body text-muted-foreground">{c.siguiente}</p>
+    </div>
+  );
+}
+
+/** Quién está a cargo: el cierre en curso, la cadena con nombres, o una frase cuando todavía no hay nadie a quien unir. */
 function ACargo({ state, emphasis }: { state: PublicStateDTO; emphasis?: boolean }) {
   const outgoing = state.events.find(e => e.kind === "handoff_sent")?.actor
     ?? state.events.find(e => e.kind === "outgoing_ended")?.actor ?? null;
@@ -68,7 +82,7 @@ function ACargo({ state, emphasis }: { state: PublicStateDTO; emphasis?: boolean
   return (
     <section aria-labelledby="cargo-titulo" className="flex flex-col gap-2">
       <h2 id="cargo-titulo" className={LABEL}>A cargo del turno</h2>
-      {incoming ? (
+      {state.closing ? <Cierre state={state} emphasis={emphasis} /> : incoming ? (
         <>
           <ContinuityLine outgoing={outgoing ?? OUTGOING_FALLBACK} incoming={incoming} state={cs} emphasis={emphasis}
             startsAtLabel={state.coverage ? hhmm(state.coverage.startsAt) : undefined} />
@@ -94,7 +108,7 @@ function AvisosRodrigo({ count, emphasis }: { count: number; emphasis?: boolean 
   return (
     <section aria-labelledby="rodrigo-titulo" className="flex flex-col gap-1">
       <h2 id="rodrigo-titulo" className={emphasis ? "text-title font-semibold" : "text-people font-semibold"}>
-        Avisos a Rodrigo: <span className="tabular-nums">{count}</span>
+        Avisos a <span className="whitespace-nowrap">Rodrigo: <span className="tabular-nums">{count}</span></span>
       </h2>
       <p className="text-body text-muted-foreground">Avisos que el sistema le dirigió en esta demostración.</p>
     </section>

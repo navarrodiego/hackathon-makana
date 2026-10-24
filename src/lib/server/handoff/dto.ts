@@ -1,5 +1,5 @@
-import type { Actor, Coverage, CoverageWindow, Handoff, HandoffAttempt } from "@/lib/contracts/domain";
-import type { CoverageDTO, HandoffSummaryDTO } from "@/lib/contracts/public";
+import type { Actor, Coverage, CoverageWindow, Handoff, HandoffAttempt, Ticket } from "@/lib/contracts/domain";
+import type { ClosingSummaryDTO, CoverageDTO, HandoffSummaryDTO } from "@/lib/contracts/public";
 import type { CoverageStatus, ActorId } from "@/lib/contracts/core";
 
 const actorDto = (actors: readonly Actor[], id: ActorId) => {
@@ -20,5 +20,22 @@ export function handoffSummary(handoff: Handoff, attempt: HandoffAttempt | null,
     id: handoff.id, version: handoff.version, status: handoff.status, attemptId: handoff.currentAttemptId,
     candidate: attempt ? actorDto(actors, attempt.candidateActorId) : null, deadlineAt: pending?.deadlineAt ?? null,
     acceptedAt: handoff.acceptedAt, effectiveAt: handoff.effectiveAt,
+  };
+}
+
+/**
+ * Cierre en borrador para el proyector: solo conteos. Un pendiente queda para seguimiento con la misma regla que
+ * `/rodrigo`: la propuesta guardada de la IA manda sobre la decisión base del ticket. `null` una vez enviado.
+ */
+export function closingSummary(handoff: Handoff, window: CoverageWindow, tickets: readonly Ticket[], actors: readonly Actor[]): ClosingSummaryDTO | null {
+  if (handoff.status !== "draft") return null;
+  const suggestions = handoff.savedSuggestion?.output.suggestions ?? [];
+  const followUpCount = handoff.ticketIds.filter(id => {
+    const disposition = suggestions.find(s => s.ticketId === id)?.disposition ?? tickets.find(t => t.id === id)?.disposition;
+    return disposition === "transferir";
+  }).length;
+  return {
+    outgoing: actorDto(actors, handoff.outgoingActorId), firstCandidate: actorDto(actors, window.incomingActorId),
+    pendingCount: handoff.ticketIds.length, followUpCount,
   };
 }

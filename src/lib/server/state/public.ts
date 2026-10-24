@@ -4,7 +4,7 @@ import type { ActorId, Instant, PreparationStatus } from "@/lib/contracts/core";
 import type { TransactionRepositories } from "@/lib/contracts/repositories";
 import type { ActorDTO, IncidentSummaryDTO, NotificationDTO, PublicEventDTO, PublicStateDTO } from "@/lib/contracts/public";
 import { narrativeNow } from "@/lib/server/auth/service";
-import { coverageDto, handoffSummary } from "@/lib/server/handoff/dto";
+import { closingSummary, coverageDto, handoffSummary } from "@/lib/server/handoff/dto";
 import { loadState } from "@/lib/server/handoff/engine";
 import { incidentService, incidentSummary } from "@/lib/server/incidents/dto";
 
@@ -26,12 +26,12 @@ function publicEvent(event: Event, actors: readonly Actor[]): PublicEventDTO {
 
 /**
  * Construye el DTO público campo a campo dentro de la transacción de lectura. Nunca serializa entidades:
- * ni tickets, ni notas, ni textos de reporte, ni concesiones, ni destinos de aviso.
+ * ni tickets (del cierre en borrador solo van conteos), ni notas, ni textos de reporte, ni concesiones, ni destinos de aviso.
  */
 export async function buildPublicState(tx: TransactionRepositories, execution: Execution, now: Instant): Promise<PublicStateDTO> {
-  const [actors, scenes, state, incidents, reports, notifications, events] = await Promise.all([
+  const [actors, scenes, state, incidents, reports, notifications, events, tickets] = await Promise.all([
     tx.reference.actors(), tx.reference.scenes(), loadState(tx), tx.aggregates.incidents.list(), tx.aggregates.reports.list(),
-    tx.aggregates.notifications.list(), tx.events.list(),
+    tx.aggregates.notifications.list(), tx.events.list(), tx.aggregates.tickets.list(),
   ]);
   const scene = scenes.find(s => s.id === execution.sceneId);
   const window = state?.window ?? (await tx.reference.windows())[0] ?? null;
@@ -55,6 +55,8 @@ export async function buildPublicState(tx: TransactionRepositories, execution: E
     channelOpen: execution.channelOpen,
     coverage: state ? coverageDto(state.coverage, state.window, actors) : null,
     handoff: state ? handoffSummary(state.handoff, state.attempt, actors) : null,
+    // Solo conteos: ni referencias ni textos de tickets (decisión de Diego del 24-10-2026).
+    closing: state ? closingSummary(state.handoff, state.window, tickets, actors) : null,
     incidents: incidentDtos,
     notifications: notificationDtos,
     events: events.map(e => publicEvent(e, actors)),
