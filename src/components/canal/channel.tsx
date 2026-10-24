@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { SECURITY } from "@/lib/contracts/auth";
+import { announceChange, useServerViewSync } from "@/lib/client/state";
 import type { ChannelViewDTO } from "@/lib/contracts/public";
 import { Button } from "@/components/ui/button";
 import { DegradedNotice, EmptyState, ErrorMessage } from "@/components/ui/feedback";
 import { TextAreaField, TextField } from "@/components/ui/field";
 import { receiptLines, reportLength } from "./receipt-text";
 
-const MAX_TEXT = 280, MAX_NICKNAME = 40, REFRESH_MS = 4000;
+const MAX_TEXT = 280, MAX_NICKNAME = 40;
+/** Con el canal cerrado se consulta más seguido: abrirlo es el momento en que el público escanea el QR. */
+const CLOSED_POLL_MS = 2000, OPEN_POLL_MS = 4000;
+/** Tus reportes cambian de estado sin tocar el estado público: mientras alguno se procesa, se relee más seguido. */
+const PROCESSING_REFRESH_MS = 2000, IDLE_REFRESH_MS = 15_000;
 
 type Problem = { readonly title: string; readonly detail: string };
 
@@ -25,11 +30,9 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const attempt = useRef<{ content: string; key: string } | null>(null);
 
-  // El estado lo manda el servidor: se relee mientras la pestaña está visible y se limpia al desmontar.
-  useEffect(() => {
-    const id = window.setInterval(() => { if (document.visibilityState === "visible") router.refresh(); }, REFRESH_MS);
-    return () => window.clearInterval(id);
-  }, [router]);
+  // El estado lo manda el servidor: la página se rehace cuando cambia y se limpia al desmontar.
+  const processing = view.ownReports.some(r => r.status === "processing");
+  useServerViewSync(view.channelOpen ? OPEN_POLL_MS : CLOSED_POLL_MS, processing ? PROCESSING_REFRESH_MS : IDLE_REFRESH_MS);
 
   const length = reportLength(text);
   const nicknameLength = [...nickname.trim()].length;
@@ -56,6 +59,7 @@ export function Channel({ view }: { view: ChannelViewDTO }) {
       if (response.ok && body?.ok) {
         setText("");
         attempt.current = null;
+        void announceChange();
         setConfirmation("Reporte registrado. Su estado aparece en Tus reportes.");
       } else {
         setProblem({ title: "No se recibió el reporte", detail: body?.error?.message ?? "El servidor respondió con un error. Revisa tu lista antes de reenviar." });

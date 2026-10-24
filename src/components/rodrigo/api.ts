@@ -1,5 +1,3 @@
-import type { PublicStateDTO } from "@/lib/contracts/client";
-
 export type ApiResult<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly code: string; readonly network: boolean };
@@ -28,10 +26,3 @@ export async function postJson<T>(url: string, body: unknown): Promise<ApiResult
   }
 }
 
-export async function getState(signal: AbortSignal): Promise<ApiResult<PublicStateDTO>> {
-  try {
-    return await parse<PublicStateDTO>(await fetch("/api/state", { cache: "no-store", signal }));
-  } catch {
-    return { ok: false, code: "NETWORK", network: true };
-  }
-}

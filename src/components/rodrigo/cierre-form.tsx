@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RodrigoViewDTO } from "@/lib/contracts/private";
 import type {
-  CoverageDTO, HandoffId, HandoffSummaryDTO, PublicStateDTO, TicketDisposition, TicketId,
+  CoverageDTO, HandoffId, HandoffSummaryDTO, TicketDisposition, TicketId,
 } from "@/lib/contracts/client";
 import { PendingList } from "@/components/relevo/pending-row";
 import { ContinuityLine } from "@/components/relevo/continuity-line";
@@ -15,7 +15,8 @@ import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
 import { OperatorLogin } from "@/components/acceso/operator-login";
 import { isSessionProblem } from "@/components/acceso/messages";
 import { SignOutButton } from "@/components/acceso/sign-out-button";
-import { getState, postJson } from "./api";
+import { announceChange, usePublicState } from "@/lib/client/state";
+import { postJson } from "./api";
 import {
   buildSendBody, clockLabel, errorMessage, followUp, leftSummary, noteIssue, phaseOf, sendPayloadKey,
 } from "./model";
@@ -27,6 +28,8 @@ type Busy = "idle" | "regenerating" | "sending";
 interface Problem { readonly text: string; readonly retryable: boolean; readonly relogin?: boolean }
 type SuggestionData = { version: number; note: RodrigoViewDTO["note"] };
 type SendData = { handoff: HandoffSummaryDTO; coverage: CoverageDTO };
+
+const POLL_MS = 1500;
 
 const INCIDENT_LABEL = { awaiting_ack: "Esperando acuse", unacknowledged: "Sin acuse", taken: "Tomado" } as const;
 const SERVICE_LABEL: Record<string, string> = {
@@ -50,54 +53,42 @@ function originText(view: RodrigoViewDTO): string {
   return "No se generó. Escríbela o usa Regenerar.";
 }
 
-/** Polling del estado público: sin caché, con aborto y limpieza al desmontar. */
-function useStatePoll(enabled: boolean, intervalMs: number, onState: (s: PublicStateDTO) => void, onLost: () => void) {
-  const handlers = useRef({ onState, onLost });
-  useEffect(() => { handlers.current = { onState, onLost }; });
-  useEffect(() => {
-    if (!enabled) return;
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const tick = async () => {
-      const result = await getState(controller.signal);
-      if (controller.signal.aborted) return;
-      if (result.ok) handlers.current.onState(result.data); else handlers.current.onLost();
-      timer = setTimeout(tick, intervalMs);
-    };
-    void tick();
-    return () => { controller.abort(); if (timer) clearTimeout(timer); };
-  }, [enabled, intervalMs]);
-}
-
 export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffId: HandoffId }) {
   const router = useRouter();
   const [tickets, setTickets] = useState<TicketDraft[]>(() => initialTickets(view));
   const [note, setNote] = useState(view.note.saved?.output.note ?? "");
   const [origin, setOrigin] = useState(() => originText(view));
   const [version, setVersion] = useState<number>(view.draftVersion);
-  const [handoff, setHandoff] = useState<HandoffSummaryDTO | null>(view.handoff);
-  const [coverage, setCoverage] = useState<CoverageDTO | null>(view.coverage);
-  const [snapshot, setSnapshot] = useState<PublicStateDTO | null>(null);
+  const [localHandoff, setLocalHandoff] = useState<HandoffSummaryDTO | null>(view.handoff);
+  const [localCoverage, setLocalCoverage] = useState<CoverageDTO | null>(view.coverage);
   const [busy, setBusy] = useState<Busy>("idle");
   const [problem, setProblem] = useState<Problem | null>(null);
   const [showErrors, setShowErrors] = useState(false);
-  const [lost, setLost] = useState(false);
-  const [stale, setStale] = useState(false);
+  const [staleByServer, setStaleByServer] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [firstCandidate, setFirstCandidate] = useState<string | null>(view.handoff?.candidate?.id ?? null);
   const attempt = useRef<{ payload: string; key: string } | null>(null);
+
+  // Estado público compartido con las demás pantallas. Otra ejecución significa que se reinició la demostración.
+  const live = usePublicState(POLL_MS);
+  const otherExecution = live.state !== null && live.state.executionId !== view.executionId;
+  const snapshot = live.state && !otherExecution ? live.state : null;
+  const lost = live.status === "lost";
+  const stale = staleByServer || otherExecution;
+  const remote = snapshot?.handoff && snapshot.handoff.status !== "draft" ? snapshot.handoff : null;
+  // Lo más nuevo entre la respuesta de enviar y el sondeo: una lectura en vuelo no deshace el envío.
+  const handoff = remote && (!localHandoff || remote.version >= localHandoff.version) ? remote : localHandoff;
+  const coverage = handoff === remote && snapshot?.coverage ? snapshot.coverage : localCoverage;
   const sent = handoff !== null && handoff.status !== "draft";
   const preparing = view.note.status === "pending" && !dirty && !sent;
+  // Primer candidato visto: se recuerda aunque el relevo escale después.
+  if (firstCandidate === null && handoff?.status === "awaiting_candidate" && handoff.candidate) setFirstCandidate(handoff.candidate.id);
 
-  const onState = useCallback((s: PublicStateDTO) => {
-    setLost(false);
-    if (s.executionId !== view.executionId) { setStale(true); return; }
-    setSnapshot(s);
-    if (s.handoff && s.handoff.status !== "draft") { setHandoff(s.handoff); if (s.coverage) setCoverage(s.coverage); }
-    if (s.handoff?.status === "awaiting_candidate") setFirstCandidate(prev => prev ?? s.handoff?.candidate?.id ?? null);
-    if (preparing && s.preparation !== "pending") router.refresh();
-  }, [view.executionId, preparing, router]);
-  useStatePoll(sent || preparing, sent && handoff?.status === "awaiting_candidate" ? 1500 : 4000, onState, useCallback(() => setLost(true), []));
+  const notePrepared = preparing && snapshot !== null && snapshot.preparation !== "pending";
+  useEffect(() => { if (notePrepared) router.refresh(); }, [notePrepared, router]);
+  // Tras un reset la vista se rehace sola, salvo que haya cambios sin enviar: entonces se avisa y se espera el clic.
+  const rebuild = otherExecution && !dirty && busy === "idle";
+  useEffect(() => { if (rebuild) router.refresh(); }, [rebuild, router]);
 
   const locked = sent || stale || busy !== "idle";
 
@@ -109,7 +100,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
     setBusy("idle");
     if (!result.ok) {
       setProblem({ text: result.network ? "No se pudo conectar. Se conserva tu borrador." : errorMessage(result.code, "suggest"), retryable: result.network, relogin: isSessionProblem(result.code) });
-      if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE") setStale(true);
+      if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE") setStaleByServer(true);
       return;
     }
     const saved = result.data.note.saved;
@@ -139,11 +130,12 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
         text: result.network ? "No se pudo comprobar si el relevo se envió. Reintenta: el servidor no lo duplicará." : errorMessage(result.code, "send"),
         retryable: result.network || result.code === "OPERATION_PENDING", relogin: isSessionProblem(result.code),
       });
-      if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE" || result.code === "STATE_CONFLICT") setStale(true);
+      if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE" || result.code === "STATE_CONFLICT") setStaleByServer(true);
       return;
     }
     setFirstCandidate(result.data.handoff.candidate?.id ?? null);
-    setHandoff(result.data.handoff); setCoverage(result.data.coverage);
+    setLocalHandoff(result.data.handoff); setLocalCoverage(result.data.coverage);
+    void announceChange();
   }
 
   const outgoing = { id: view.actorId, displayName: "Tú" };

@@ -99,10 +99,24 @@ test("escena de mañana sin relevo enviado: sigue el cierre, no se inventa resum
   await expect(page.getByRole("region", { name: "Resumen de la noche" })).toHaveCount(0);
 });
 
-test("tras reset la vista abierta avisa que quedó desactualizada", async ({ page, request }) => {
+test("tras reset la vista abierta se rehace sola, sin recargar", async ({ page, request }) => {
   await resetExecution(request);
   await openCierre(page);
   await sendHandoff(page);
   await resetExecution(request);
-  await expect(page.getByText("Esta vista quedó desactualizada")).toBeVisible({ timeout: 15_000 });
+  // La ejecución nueva empieza en el cierre: vuelve el botón de enviar y no queda el seguimiento anterior.
+  await expect(page.getByRole("button", { name: "Enviar relevo" })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/Esperando aceptación de/)).toHaveCount(0);
+  await expect(page.getByText("Esta vista quedó desactualizada")).toHaveCount(0);
+});
+
+test("tras reset con cambios sin enviar avisa y conserva el texto hasta recargar", async ({ page, request }) => {
+  await resetExecution(request);
+  await openCierre(page);
+  await page.getByLabel("Nota del relevo").fill("Borrador que no se envió.");
+  await resetExecution(request);
+  await expect(page.getByText("Esta vista quedó desactualizada")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByLabel("Nota del relevo")).toHaveValue("Borrador que no se envió.");
+  await page.getByRole("button", { name: "Recargar cierre" }).click();
+  await expect(page.getByText("Esta vista quedó desactualizada")).toHaveCount(0);
 });

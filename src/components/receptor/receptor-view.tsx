@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { HandoffResultDTO } from "@/lib/contracts/http";
 import type { HandoffPackageDTO } from "@/lib/contracts/private";
 import { ContinuityLine, continuityState } from "@/components/relevo/continuity-line";
@@ -9,9 +10,12 @@ import { SurfaceShell } from "@/components/relevo/surface-shell";
 import { Button } from "@/components/ui/button";
 import { Countdown } from "@/components/ui/countdown";
 import { DegradedNotice, ErrorMessage } from "@/components/ui/feedback";
+import { announceChange, usePublicState } from "@/lib/client/state";
 import { buildRespondRequest, failureView, formatClock, reviewState, type FailureView, type RespondAction } from "./logic";
 
 type Decision = "accepted" | "rejected" | null;
+
+const POLL_MS = 1500;
 
 
 async function respond(action: RespondAction, pkg: HandoffPackageDTO, token: string): Promise<{ ok: true; result: HandoffResultDTO } | { ok: false; failure: FailureView }> {
@@ -28,6 +32,7 @@ async function respond(action: RespondAction, pkg: HandoffPackageDTO, token: str
 
 /** Revisión del paquete. Abrir el enlace no acepta: solo estos dos botones envían una respuesta. */
 export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; token: string }) {
+  const router = useRouter();
   const [pkg, setPkg] = useState(initial);
   const [decision, setDecision] = useState<Decision>(null);
   const [busy, setBusy] = useState<RespondAction | null>(null);
@@ -47,9 +52,19 @@ export function ReceptorView({ pkg: initial, token }: { pkg: HandoffPackageDTO; 
     if (outcome.ok) {
       setPkg({ ...pkg, handoff: outcome.result.handoff, coverage: outcome.result.coverage });
       setDecision(action === "accept" ? "accepted" : "rejected");
+      void announceChange();
     } else setFailure(outcome.failure);
     inFlight.current = false; setBusy(null);
   }
+
+  // Si el relevo cambió en el servidor (plazo vencido, otra respuesta, reinicio) mientras se revisa, la página se
+  // vuelve a leer con el mismo enlace. Es una lectura: no acepta ni responde. Tras responder aquí ya no se relee.
+  const live = usePublicState(POLL_MS);
+  const remote = live.state;
+  const changedElsewhere = decision === null && busy === null && remote !== null && (
+    remote.executionId !== pkg.executionId
+    || (remote.handoff?.id === pkg.handoff.id && remote.handoff.version > pkg.handoff.version));
+  useEffect(() => { if (changedElsewhere) router.refresh(); }, [changedElsewhere, router]);
 
   // Un relevo ya aceptado también se lee así tras recargar: el estado persistido manda, no el clic local.
   const accepted = decision === "accepted" || (decision === null && state !== "awaiting");

@@ -18,3 +18,8 @@ export function acceptSnapshot(prev: PublicStateDTO | null, next: PublicStateDTO
   if (next.version === prev.version && Date.parse(next.clocks.operationalNow) < Date.parse(prev.clocks.operationalNow)) return null;
   return { state: next, executionChanged: false };
 }
+
+/** El snapshot más nuevo entre el que trajo la página y el último del sondeo; nunca retrocede (C11/C14). */
+export function freshest(base: PublicStateDTO, live: PublicStateDTO | null): PublicStateDTO {
+  return live && acceptSnapshot(base, live) ? live : base;
+}

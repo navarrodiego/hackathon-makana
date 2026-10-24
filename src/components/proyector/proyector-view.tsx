@@ -75,7 +75,7 @@ function Panel({ state, qr }: { state: PublicStateDTO; qr: ReactNode }) {
 
 /** Espejo público: solo lectura, sin controles privilegiados. El QR llega ya generado desde el servidor. */
 export function ProyectorView({ qr }: { qr: ReactNode }) {
-  const view = usePublicState(1000);
+  const view = usePublicState(1000, { keepPaceHidden: true });
   return (
     <>
       <Conexion view={view} />
