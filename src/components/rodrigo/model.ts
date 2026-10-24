@@ -41,15 +41,12 @@ export function clockLabel(instant: string): string {
   return clock.format(new Date(instant));
 }
 
-type Action = "suggest" | "send" | "refresh";
+type Action = "send" | "refresh";
 const SESSION = "Tu sesión terminó o ya no es válida. Ingresa de nuevo con la contraseña de operador; tus cambios no se enviaron y se conservan.";
 
 /** Qué falló y qué se conserva; nunca afirma que algo se guardó si no se sabe. */
 export function errorMessage(code: string, action: Action): string {
   switch (code) {
-    case "PROVIDER_FAILED":
-    case "PROVIDER_TIMEOUT":
-      return "No se pudo generar la nota. Se conserva tu borrador; puedes editarlo y enviarlo, o usar Regenerar otra vez.";
     case "VERSION_CONFLICT":
     case "EXECUTION_STALE":
       return "El relevo cambió mientras lo editabas. Recarga la página para ver el estado actual; tus cambios locales no se enviaron.";
@@ -58,7 +55,7 @@ export function errorMessage(code: string, action: Action): string {
     case "IDEMPOTENCY_CONFLICT":
       return "Este envío ya se registró con otro contenido. Recarga la página para ver qué se envió.";
     case "STATE_CONFLICT":
-      return action === "send" ? "Este relevo ya no está en borrador. Recarga la página para ver su estado." : "No se puede regenerar la nota en este estado. Recarga la página.";
+      return "Este relevo ya no está en borrador. Recarga la página para ver su estado.";
     case "AUTH_REQUIRED":
     case "AUTH_INVALID":
     case "AUTH_EXPIRED":

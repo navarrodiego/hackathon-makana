@@ -6,11 +6,9 @@ import type { PublicStateDTO } from "@/lib/contracts/public";
 import { createPersistedAuthorization } from "@/lib/server/auth/persistence";
 import { getDb } from "@/lib/server/db";
 import { createHandoffService } from "@/lib/server/handoff";
-import { createHandoffNoteService } from "@/lib/server/handoff-note";
 import { createIncidentService } from "@/lib/server/incidents";
 import { createRequestValidator } from "@/lib/server/http/validate";
 import { createDefaultNotificationService } from "@/lib/server/notifications";
-import { createOpenRouterProvider } from "@/lib/server/providers/openrouter";
 import { PostgresPersistence } from "@/lib/server/repositories";
 import { runtime as messagesRuntime } from "@/lib/server/messages/runtime";
 import { createReadService } from "@/lib/server/state";
@@ -22,7 +20,10 @@ let cached: ExecutionHttpDeps | undefined;
 let shared: { get(): Promise<ServiceResult<PublicStateDTO>> } | undefined;
 const afterResponse = (work: () => Promise<unknown>) => after(async () => { try { await work(); } catch { /* el estado lo informa */ } });
 
-/** Ensamblado perezoso: el pool, el proveedor y los secretos se leen en la primera petición, no al importar (build). */
+/**
+ * Ensamblado perezoso: el pool y los secretos se leen en la primera petición, no al importar (build). Sin servicio de
+ * nota: el cierre no usa IA y el reset deja la preparación lista con el resumen fijo.
+ */
 function deps(): ExecutionHttpDeps {
   if (!cached) {
     const store = new PostgresPersistence(getDb());
@@ -32,14 +33,13 @@ function deps(): ExecutionHttpDeps {
       authorization: createPersistedAuthorization(store),
       service: createExecutionService({
         store, handoff, incidents: createIncidentService({ store, handoff }), notifications: createDefaultNotificationService(store),
-        note: createHandoffNoteService({ unitOfWork: store, provider: createOpenRouterProvider() }),
         read: createReadService({ store, now }), now,
         reports: { rescueStalled: context => messagesRuntime().service.rescueStalled(context) },
         // Un aviso que falla queda pendiente o `failed` y se reintenta en la próxima consulta.
         deferDispatch: afterResponse,
       }),
       validator: createRequestValidator(),
-      // El estado muestra preparation=pending/failed si la nota no se generó.
+      // El estado muestra preparation=pending si la preparación no terminó.
       afterResponse,
     };
   }

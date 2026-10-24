@@ -6,7 +6,7 @@ export interface TicketDraft {
   readonly disposition: TicketDisposition; readonly reason: string;
 }
 
-/** Pendiente de solo lectura. Quien entra recibe todos; la IA solo destaca los que necesitan seguimiento. */
+/** Pendiente de solo lectura. Quien entra recibe todos; se destacan los que quedan para seguimiento. */
 export function Pendiente({ ticket }: { ticket: TicketDraft }) {
   return (
     <PendingRow

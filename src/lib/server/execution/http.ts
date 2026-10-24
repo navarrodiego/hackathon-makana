@@ -60,7 +60,7 @@ export async function handleCommand(deps: ExecutionHttpDeps, route: CommandRoute
     const result = await deps.service.reset(context, input);
     if (!result.ok) return fail(result.code, context.correlationId);
     const next: CommandContext = { ...context, executionId: result.value.executionId, executionVersion: result.value.state.version, actorId: null, narrativeNow: result.value.state.clocks.narrativeNow };
-    // La nota se genera con el proveedor real fuera de la transacción y después de responder (C09).
+    // La preparación se marca fuera de la transacción y después de responder (C09); sin IA en la demo.
     deps.afterResponse(() => deps.service.prepareNote(next));
     return jsonResponse(success(result.value, 201, context.correlationId));
   } catch {

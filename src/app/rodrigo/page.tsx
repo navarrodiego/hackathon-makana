@@ -24,8 +24,8 @@ export default async function Page({ searchParams }: Props) {
   const loaded = await loadRodrigo();
   if (loaded.kind === "ready") {
     const { view, handoffId } = loaded;
-    // La clave reinicia el formulario cuando cambia la versión del borrador o termina la preparación de la nota.
-    return <CierreForm key={`${view.executionId}:${view.draftVersion}:${view.note.status}`} view={view} handoffId={handoffId} />;
+    // La clave reinicia el formulario cuando cambia la ejecución o la versión del borrador.
+    return <CierreForm key={`${view.executionId}:${view.draftVersion}`} view={view} handoffId={handoffId} />;
   }
   return (
     <SurfaceShell title="Cierre de turno">
