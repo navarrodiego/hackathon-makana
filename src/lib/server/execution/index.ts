@@ -14,14 +14,15 @@ export interface ExecutionDeps {
   readonly handoff: Pick<HandoffService, "evaluateDeadlines">;
   readonly incidents: Pick<IncidentService, "evaluateDeadlines">;
   readonly notifications: NotificationService;
-  readonly note: HandoffNoteService;
+  /** Opcional: sin él, la preparación queda lista sin IA (el resumen de traspaso es fijo en el código). */
+  readonly note?: HandoffNoteService;
   readonly read: Pick<ReadService, "publicState">;
   readonly now: () => Instant;
 }
 
 /** El servicio de contrato más la preparación de nota que el reset deja para después de responder. */
 export interface ExecutionRuntimeService extends ExecutionService {
-  /** Genera y guarda la nota de la ejecución vigente y marca `preparation`. Idempotente si ya no está pendiente. */
+  /** Marca `preparation` de la ejecución vigente; con servicio de nota, antes la genera y guarda. Idempotente si ya no está pendiente. */
   prepareNote(context: CommandContext, signal?: AbortSignal): Promise<ServiceResult<"ready" | "failed">>;
   /** Evalúa con un contexto interno de la ejecución vigente; para `GET /api/state`, que no tiene principal. */
   evaluateCurrent(): Promise<ServiceResult<PublicStateDTO>>;

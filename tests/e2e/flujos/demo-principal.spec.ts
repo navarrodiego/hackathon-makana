@@ -1,7 +1,7 @@
 import { devices, expect, test } from "@playwright/test";
 import {
   HAS_AI, ORIGIN, PRINTER, PRINTER_LABEL, loginAs, eventsOf, expectNoSecrets, handoffNotice,
-  incidentNotice, pressNtfyAction, requireBackend, rows, state, waitNtfy, waitState, words,
+  incidentNotice, pressNtfyAction, requireBackend, rows, state, waitNtfy, waitState,
 } from "./support/flow";
 import { campoNota } from "../support/nota";
 
@@ -32,17 +32,10 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   expect(s.channelOpen).toBe(false);
   expect(s.incidents).toEqual([]);
   expect(s.scene.label).toBe("Cierre");
-  if (HAS_AI) {
-    expect(s.preparation, "la nota se genera con OpenRouter en el reset").toBe("ready");
-    const [saved] = await rows<{ savedSuggestion: { output: { suggestions: { ticketId: string; disposition: string }[] } } }>(
-      `select "savedSuggestion" from handoffs where "executionId"=$1`, [s.executionId]);
-    const [t470] = await rows<{ id: string }>(`select id from tickets where "executionId"=$1 and reference='#470'`, [s.executionId]);
-    expect(saved.savedSuggestion.output.suggestions, "cinco propuestas").toHaveLength(5);
-    expect(saved.savedSuggestion.output.suggestions.find(x => x.ticketId === t470.id)?.disposition, "#470 se transfiere").toBe("transferir");
-  } else {
-    testInfo.annotations.push({ type: "BLOCKED", description: "Sin OPENROUTER_API_KEY: nota generada por IA y clasificación real no se ejercen" });
-    expect(s.preparation).toBe("failed");
-  }
+  // El reset no llama a la IA: la preparación queda lista y los pendientes traen su decisión del escenario.
+  expect(s.preparation).toBe("ready");
+  const [t470] = await rows<{ disposition: string }>(`select disposition from tickets where "executionId"=$1 and reference='#470'`, [s.executionId]);
+  expect(t470.disposition, "#470 se transfiere").toBe("transferir");
 
   // 2. La sala mira el proyector desde el principio: el cierre se cuenta con conteos, sin pendientes ni nota.
   const proy = await open(undefined, { viewport: { width: 1920, height: 1080 } });
@@ -56,12 +49,8 @@ test("recorrido principal: Paula acepta, diferible en cola, crítico escala a To
   const rod = await open("outgoing");
   await rod.goto("/rodrigo");
   const nota = rod.getByLabel("Nota del relevo");
-  if (HAS_AI) {
-    const generated = await nota.inputValue();
-    expect(words(generated)).toBeGreaterThan(0);
-    expect(words(generated), "nota de hasta 60 palabras").toBeLessThanOrEqual(60);
-  }
-  await (await campoNota(rod)).fill("Hay cinco pendientes. #470: el respaldo falló y reintenta a las 02:00; queda para seguimiento. El resto puede esperar.");
+  await expect(nota).toHaveValue(/^Paula: dejo cinco pendientes\./);
+  await (await campoNota(rod)).fill("Hay cinco pendientes. #470: el cierre de caja de 6 locales no llegó a la central; reintenta a las 02:00. El resto puede esperar.");
   await rod.getByRole("button", { name: "Enviar relevo" }).click();
   await expect(rod.getByText(/Esperando aceptación de Paula/)).toBeVisible();
   // El proyector cambia solo, sin recargar.

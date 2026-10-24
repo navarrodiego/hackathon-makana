@@ -8,7 +8,7 @@ Guion operativo aprobado de cinco minutos, no evidencia de ejecución. La demo t
 
 - Deploy Vercel con base Neon; verificar acceso público desde otro dispositivo/red, commit correcto y secretos solo servidor. Localhost no sirve como backend de la demo pública.
 - Semilla ficticia: Rodrigo saliente 22:10; Paula entrante y push físico; Tomás respaldo; Carla coordinación in-app. Rodrigo no es respaldo elegible en esta ventana.
-- Cargar cinco pendientes de CONTRACTS C03 y nota guardada en reset, marcada como borrador. No introducir tickets/contactos/salud reales.
+- Cargar cinco pendientes de CONTRACTS C03 en reset; la nota parte del resumen de traspaso fijo (sin IA) y es editable. No introducir tickets/contactos/salud reales.
 - Reset escénico protegido, nueva ejecución y tokens vigentes. Comprobar que el canal comienza cerrado y no queda un incidente de ensayos anteriores.
 - Mantener proyector consultando cada segundo: esas peticiones evalúan vencimientos. Mostrar estado de conexión. No afirmar autonomía si no hay lector.
 - Plazos reales de 30 s por candidato, separados para relevo e incidente. Las escenas horarias no aceleran ese tiempo.

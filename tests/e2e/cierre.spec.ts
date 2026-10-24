@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { basicAs, loginAs } from "./support/acceso";
@@ -7,7 +6,7 @@ import { campoNota } from "./support/nota";
 /**
  * Cierre de Rodrigo contra el backend real local. Requiere, en el entorno del proceso: DATABASE_URL (o `.env`),
  * APP_ORIGIN igual al origen del servidor, OPERATOR_SECRET. Los tests comparten una base: ejecutar con `--workers=1`.
- * La nota guardada se inserta como fixture (no es una llamada en vivo a la IA); Regenerar con éxito requiere clave del proveedor.
+ * El cierre no usa IA: los pendientes y el resumen de traspaso son fijos en el código.
  */
 try { process.loadEnvFile(".env"); } catch { /* sin .env: se usa el entorno del proceso */ }
 
@@ -28,42 +27,16 @@ async function control(request: APIRequestContext, path: string, body: Json) {
   const response = await request.post(path, { headers: CONTROL, data: { idempotencyKey: randomUUID(), ...body } });
   return { status: response.status(), body: await response.json() };
 }
-// DIRECT_URL: el rol de la app ya ocupa su límite de conexiones con el servidor.
-const psql = (sql: string) => execFileSync("psql", [env.DIRECT_URL ?? env.DATABASE_URL!, "-At", "-F", "|", "-c", sql], { encoding: "utf8" }).trim();
-
-/** Reinicia la ejecución por la ruta de control y espera a que termine la preparación de la nota (sin proveedor: failed). */
+/** Reinicia la ejecución por la ruta de control y espera a que la preparación quede lista (sin IA). */
 async function resetExecution(request: APIRequestContext): Promise<Json> {
   const before = await state(request);
   const reset = await control(request, "/api/reset", { executionId: before.executionId, expectedVersion: before.version });
   expect(reset.status).toBe(201);
-  await expect.poll(async () => (await state(request)).preparation, { timeout: 20_000 }).not.toBe("pending");
+  await expect.poll(async () => (await state(request)).preparation, { timeout: 20_000 }).toBe("ready");
   return state(request);
 }
 
-/** Guarda una sugerencia fixture como lo haría la preparación: nota en el relevo, versión +1 y preparación lista. */
-function seedSavedSuggestion(executionId: string, handoffId: string) {
-  const rows = psql(`select t.id, t.reference from tickets t join handoffs h on t.id = any(h."ticketIds") where h.id='${handoffId}' order by t.reference desc`)
-    .split("\n").map(line => line.split("|"));
-  const suggestions = rows.map(([ticketId, reference]) => ({
-    ticketId, disposition: reference === "#470" ? "transferir" : "puede_esperar",
-    reason: reference === "#470" ? "El próximo intento del respaldo es a las 02:00." : "Puede esperar a la próxima atención.",
-  }));
-  const current = Number(psql(`select version from handoffs where id='${handoffId}'`));
-  const saved = {
-    executionId, version: current + 1,
-    output: { suggestions, note: "Hay cinco pendientes. #470 queda para seguimiento: el próximo intento del respaldo es a las 02:00. El resto puede esperar." },
-    provenance: { provider: "openrouter", api: "structured_chat", model: "fixture-e2e", configurationId: "fixture-e2e" },
-    generatedAt: new Date().toISOString(),
-  };
-  psql(`update handoffs set "savedSuggestion"='${JSON.stringify(saved).replace(/'/g, "''")}'::jsonb, version=version+1 where id='${handoffId}'`);
-  psql(`update executions set preparation='ready' where "executionId"='${executionId}'`);
-}
-
-async function freshReady(request: APIRequestContext): Promise<Json> {
-  const s = await resetExecution(request);
-  seedSavedSuggestion(s.executionId, s.handoff.id);
-  return state(request);
-}
+const freshReady = resetExecution;
 async function openCierre(page: Page) {
   await page.goto("/rodrigo");
   await expect(page.getByRole("heading", { name: "Cierre de turno", level: 1 })).toBeVisible();
@@ -126,10 +99,14 @@ test("muestra los cinco pendientes, destaca solo el de seguimiento y no afirma c
   for (const ref of ["#481", "#477", "#470", "#466", "#462"]) await expect(page.getByRole("list", { name: "Pendientes del turno" }).getByText(ref, { exact: true })).toBeVisible();
   const lista = page.getByRole("list", { name: "Pendientes del turno" });
   await expect(lista.getByText("Para seguimiento.")).toHaveCount(1);
-  await expect(lista.getByRole("listitem").filter({ hasText: "#470" }).getByText("Para seguimiento.")).toBeVisible();
+  const t470 = lista.getByRole("listitem").filter({ hasText: "#470" });
+  await expect(t470.getByText("Para seguimiento.")).toBeVisible();
+  await expect(t470.getByText(/El cierre de caja de 6 locales no llegó a la central/)).toBeVisible();
+  await expect(t470.getByText(/Revisa si el reintento de las 02:00 funcionó\./)).toBeVisible();
+  await expect(page.getByText("Solo #470 queda para seguimiento; eso no lo vuelve urgente.")).toBeVisible();
   await expect(page.getByRole("radio")).toHaveCount(0);
-  await expect(page.getByText(/Borrador de IA · puedes enviarla tal cual/)).toBeVisible();
-  await expect(page.getByLabel("Nota del relevo")).toHaveValue(/Hay cinco pendientes/);
+  await expect(page.getByText(/Resumen del turno · puedes enviarlo tal cual/)).toBeVisible();
+  await expect(page.getByLabel("Nota del relevo")).toHaveValue(/^Paula: dejo cinco pendientes\. Solo el #470 necesita seguimiento/);
   await expect(page.getByText(/Cobertura activa|Programado|Esperando aceptación/)).toHaveCount(0);
   expect(await noScroll(page)).toBe(true);
   await page.screenshot({ path: `.impeccable/review/cierre-borrador-${testInfo.project.name}.png`, fullPage: true });
@@ -147,23 +124,14 @@ test("pasar de 60 palabras bloquea el envío con un error vinculado", async ({ p
   expect((await state(request)).handoff.status).toBe("draft");
 });
 
-test("Regenerar sin proveedor muestra el fallo y conserva el borrador editado", async ({ page, request }) => {
-  test.skip(Boolean(env.OPENROUTER_API_KEY), "El servidor tiene clave del proveedor: este caso exige que falle");
-  await freshReady(request);
-  await openCierre(page);
-  const note = await campoNota(page);
-  await note.fill("Mi nota editada a mano.");
-  await page.getByRole("button", { name: "Regenerar" }).click();
-  await expect(page.getByRole("alert").getByText(/No se pudo generar la nota/)).toBeVisible();
-  await expect(note).toHaveValue("Mi nota editada a mano.");
-  await expect(page.getByRole("button", { name: "Regenerar" })).toBeEnabled();
-});
-
-test("sin nota guardada avisa que no se generó y deja escribirla", async ({ page, request }) => {
+test("el cierre no usa IA: sin Regenerar, sin avisos de preparación y con el resumen fijo", async ({ page, request }) => {
   await resetExecution(request);
   await openCierre(page);
-  await expect(page.getByText("La nota no se generó")).toBeVisible();
-  await (await campoNota(page)).fill("Nota escrita por Rodrigo.");
+  await campoNota(page);
+  await expect(page.getByRole("button", { name: "Regenerar" })).toHaveCount(0);
+  await expect(page.getByText(/\bIA\b/)).toHaveCount(0);
+  await expect(page.getByText(/La nota aún se está preparando|La nota no se generó/)).toHaveCount(0);
+  await expect(page.getByLabel("Nota del relevo")).toHaveValue(/ninguno detiene las ventas\.$/);
   await expect(sendButton(page)).toBeEnabled();
 });
 

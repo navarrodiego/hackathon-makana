@@ -83,7 +83,6 @@ test("sin cobertura distingue aviso a jefatura registrado de pendiente", () => {
 });
 
 test("los errores explican qué se conserva", () => {
-  assert.match(errorMessage("PROVIDER_FAILED", "suggest"), /conserva/);
   assert.match(errorMessage("VERSION_CONFLICT", "send"), /cambió/);
   assert.match(errorMessage("OPERATION_PENDING", "send"), /en curso/);
   assert.match(errorMessage("AUTH_REQUIRED", "send"), /Ingresa de nuevo/);

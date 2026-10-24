@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { RodrigoViewDTO } from "@/lib/contracts/private";
-import type {
-  CoverageDTO, HandoffId, HandoffSummaryDTO, TicketDisposition, TicketId,
-} from "@/lib/contracts/client";
+import type { CoverageDTO, HandoffId, HandoffSummaryDTO, TicketId } from "@/lib/contracts/client";
+import { HANDOFF_SUMMARY } from "@/lib/contracts/fixtures";
 import { PendingList } from "@/components/relevo/pending-row";
 import { ContinuityLine } from "@/components/relevo/continuity-line";
 import { ROOM_COLUMNS, SurfaceShell } from "@/components/relevo/surface-shell";
@@ -25,9 +24,8 @@ import { NotaEditor } from "./nota-editor";
 import { Pendiente, type TicketDraft } from "./pendiente-card";
 import { ResumenNoche } from "./resumen/resumen-noche";
 
-type Busy = "idle" | "regenerating" | "sending";
+type Busy = "idle" | "sending";
 interface Problem { readonly text: string; readonly retryable: boolean; readonly relogin?: boolean }
-type SuggestionData = { version: number; note: RodrigoViewDTO["note"] };
 type SendData = { handoff: HandoffSummaryDTO; coverage: CoverageDTO };
 
 const POLL_MS = 1500;
@@ -38,14 +36,17 @@ const SERVICE_LABEL: Record<string, string> = {
   impresora: "Impresora", cuentas: "Cuentas", otro: "Otro servicio",
 };
 
+/** Decisión y razón vienen del pendiente del escenario; el cierre no usa IA. */
 function initialTickets(view: RodrigoViewDTO): TicketDraft[] {
-  const saved = view.note.saved?.output.suggestions ?? [];
-  return view.tickets.map(t => {
-    const s = saved.find(x => x.ticketId === t.id);
-    return s
-      ? { id: t.id, reference: t.reference, text: t.text, disposition: s.disposition, reason: s.reason }
-      : { id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason };
-  });
+  return view.tickets.map(t => ({ id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason }));
+}
+
+/** Pendientes para seguimiento por referencia, en frase completa: «Solo #470 queda…» o «#470 y #466 quedan…». */
+function followUpHint(tickets: readonly TicketDraft[]): string {
+  const refs = tickets.filter(t => t.disposition === "transferir").map(t => t.reference);
+  if (refs.length === 0) return "Ningún pendiente queda para seguimiento.";
+  if (refs.length === 1) return `Solo ${refs[0]} queda para seguimiento; eso no lo vuelve urgente.`;
+  return `${refs.slice(0, -1).join(", ")} y ${refs.at(-1)} quedan para seguimiento; eso no los vuelve urgentes.`;
 }
 
 /** Plegable con flecha dibujada; `open`/`onToggle` opcionales para abrirlo desde fuera (errores de la nota). */
@@ -65,19 +66,12 @@ function Plegable({ summary, open, onToggle, children }: {
   );
 }
 
-/** Origen del borrador guardado; solo se muestra cuando existe (`aiDraft`). */
-function originText(view: RodrigoViewDTO): string {
-  return view.note.saved ? `Guardada a las ${clockLabel(view.note.saved.generatedAt)}, al preparar el turno.` : "";
-}
-
 export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffId: HandoffId }) {
   const router = useRouter();
-  const [tickets, setTickets] = useState<TicketDraft[]>(() => initialTickets(view));
-  const [note, setNote] = useState(view.note.saved?.output.note ?? "");
-  const [origin, setOrigin] = useState(() => originText(view));
-  // Solo hay borrador de IA si se guardó al preparar el turno o se regeneró aquí; si no, los avisos ya lo explican.
-  const [aiDraft, setAiDraft] = useState(view.note.status === "ready" && view.note.saved !== null);
-  const [version, setVersion] = useState<number>(view.draftVersion);
+  const [tickets] = useState<TicketDraft[]>(() => initialTickets(view));
+  // Resumen de traspaso fijo en el código, editable antes de enviar.
+  const [note, setNote] = useState(HANDOFF_SUMMARY);
+  const version = view.draftVersion;
   const [localHandoff, setLocalHandoff] = useState<HandoffSummaryDTO | null>(view.handoff);
   const [localCoverage, setLocalCoverage] = useState<CoverageDTO | null>(view.coverage);
   const [busy, setBusy] = useState<Busy>("idle");
@@ -85,8 +79,8 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const [showErrors, setShowErrors] = useState(false);
   const [staleByServer, setStaleByServer] = useState(false);
   const [dirty, setDirty] = useState(false);
-  // La edición de la nota se abre sola si la nota no se generó o si su error bloquea el envío.
-  const [editing, setEditing] = useState(view.note.status === "failed");
+  // La edición de la nota se abre sola si su error bloquea el envío.
+  const [editing, setEditing] = useState(false);
   const [firstCandidate, setFirstCandidate] = useState<string | null>(view.handoff?.candidate?.id ?? null);
   const attempt = useRef<{ payload: string; key: string } | null>(null);
 
@@ -101,41 +95,14 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const handoff = remote && (!localHandoff || remote.version >= localHandoff.version) ? remote : localHandoff;
   const coverage = handoff === remote && snapshot?.coverage ? snapshot.coverage : localCoverage;
   const sent = handoff !== null && handoff.status !== "draft";
-  const preparing = view.note.status === "pending" && !dirty && !sent;
   // Primer candidato visto: se recuerda aunque el relevo escale después.
   if (firstCandidate === null && handoff?.status === "awaiting_candidate" && handoff.candidate) setFirstCandidate(handoff.candidate.id);
 
-  const notePrepared = preparing && snapshot !== null && snapshot.preparation !== "pending";
-  useEffect(() => { if (notePrepared) router.refresh(); }, [notePrepared, router]);
   // Tras un reset la vista se rehace sola, salvo que haya cambios sin enviar: entonces se avisa y se espera el clic.
   const rebuild = otherExecution && !dirty && busy === "idle";
   useEffect(() => { if (rebuild) router.refresh(); }, [rebuild, router]);
 
   const locked = sent || stale || busy !== "idle";
-
-  async function regenerate() {
-    setBusy("regenerating"); setProblem(null);
-    const result = await postJson<SuggestionData>("/api/handoff/suggest", {
-      executionId: view.executionId, idempotencyKey: crypto.randomUUID(), expectedVersion: version, handoffId,
-    });
-    setBusy("idle");
-    if (!result.ok) {
-      setProblem({ text: result.network ? "No se pudo conectar. Se conserva tu borrador." : errorMessage(result.code, "suggest"), retryable: result.network, relogin: isSessionProblem(result.code) });
-      if (result.code === "VERSION_CONFLICT" || result.code === "EXECUTION_STALE") setStaleByServer(true);
-      return;
-    }
-    const saved = result.data.note.saved;
-    setVersion(result.data.version);
-    if (!saved) { setProblem({ text: errorMessage("PROVIDER_FAILED", "suggest"), retryable: true }); return; }
-    setNote(saved.output.note);
-    setOrigin(`Regenerada en esta sesión a las ${clockLabel(saved.generatedAt)}.`);
-    setAiDraft(true);
-    setTickets(list => list.map(t => {
-      const s = saved.output.suggestions.find(x => x.ticketId === (t.id as TicketId));
-      return s ? { ...t, disposition: s.disposition as TicketDisposition, reason: s.reason } : t;
-    }));
-    setDirty(true);
-  }
 
   async function send() {
     if (noteIssue(note)) { setShowErrors(true); setEditing(true); setProblem({ text: "Acorta la nota antes de enviar.", retryable: false }); return; }
@@ -170,7 +137,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
 
   const action = sent ? undefined : (
     <Button variant="primary" className="w-full" loading={busy === "sending"} loadingLabel="Enviando relevo…"
-      disabled={busy === "regenerating" || stale} onClick={send}>
+      disabled={stale} onClick={send}>
       Enviar relevo
     </Button>
   );
@@ -178,7 +145,7 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
   const pendientes = (
     <section aria-labelledby="pendientes" className="space-y-3">
       <h2 id="pendientes" className="text-section font-semibold">Pendientes que dejas</h2>
-      <p className="text-aux text-muted-foreground">La IA destaca los que necesitan seguimiento; eso no los vuelve urgentes.</p>
+      <p className="text-aux text-muted-foreground">{followUpHint(tickets)}</p>
       <PendingList label="Pendientes del turno">
         {tickets.map(t => <Pendiente key={t.id} ticket={t} />)}
       </PendingList>
@@ -192,10 +159,10 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
       {editing ? null : note.trim()
         ? <blockquote className="max-w-[60ch] text-body text-pretty break-words whitespace-pre-line">{note}</blockquote>
         : <p className="text-body text-muted-foreground">Sin nota. Es opcional.</p>}
-      {aiDraft ? <p className="text-aux text-muted-foreground">Borrador de IA · puedes enviarla tal cual, editarla o dejarla vacía. {origin}</p> : null}
+      <p className="text-aux text-muted-foreground">Resumen del turno · puedes enviarlo tal cual, editarlo o dejarlo vacío.</p>
       <Plegable summary="Editar nota" open={editing} onToggle={setEditing}>
-        <NotaEditor note={note} disabled={locked} regenerating={busy === "regenerating"} showErrors={showErrors}
-          onChange={value => { setNote(value); setDirty(true); }} onRegenerate={regenerate} />
+        <NotaEditor note={note} disabled={locked} showErrors={showErrors}
+          onChange={value => { setNote(value); setDirty(true); }} />
       </Plegable>
     </section>
   );
@@ -210,8 +177,6 @@ export function CierreForm({ view, handoffId }: { view: RodrigoViewDTO; handoffI
         </DegradedNotice>
       ) : null}
       {lost ? <DegradedNotice title="Sin conexión con el estado">No se pudo comprobar el estado más reciente. Lo último que ves puede estar desactualizado.</DegradedNotice> : null}
-      {view.note.status === "pending" && !sent ? <DegradedNotice title="La nota aún se está preparando">Puedes esperar unos segundos o escribirla tú. No es una nota guardada.</DegradedNotice> : null}
-      {view.note.status === "failed" && !dirty && !sent ? <DegradedNotice title="La nota no se generó">No hay borrador de IA. Puedes enviar el relevo sin nota, escribirla o usar Regenerar.</DegradedNotice> : null}
       {problem ? <ErrorMessage title={problem.text}>{problem.retryable ? "Puedes volver a pulsar el botón." : null}</ErrorMessage> : null}
       {problem?.relogin ? (
         <OperatorLogin role="outgoing" onSuccess={() => setProblem({ text: "Ingresaste de nuevo. Tu borrador se conserva; vuelve a pulsar el botón.", retryable: false })} />
