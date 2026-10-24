@@ -18,15 +18,6 @@ export async function postJson<T>(url: string, body: unknown): Promise<ApiResult
   }
 }
 
-/** Evalúa plazos vencidos en el servidor (GET público). El resultado visible llega por la recarga de la página. */
-export async function touchState(signal: AbortSignal): Promise<boolean> {
-  try {
-    return (await fetch("/api/state", { cache: "no-store", signal })).ok;
-  } catch {
-    return false;
-  }
-}
-
 const MESSAGES: Readonly<Record<string, string>> = {
   CHANNEL_CLOSED: "El canal está cerrado. Ábrelo antes de enviar un reporte guionado.",
   QUOTA_EXCEEDED: "Se alcanzó el límite de reportes. No se envió nada.",

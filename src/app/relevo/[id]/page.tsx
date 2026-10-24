@@ -13,5 +13,6 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const token = typeof query.token === "string" ? query.token : undefined;
   const result = await loadHandoffPackage(id, token);
   if (!result.ok) return <ReceptorFailure view={failureView(result.code)} />;
-  return <ReceptorView pkg={result.value} token={token as string} />;
+  // La clave rehace la revisión cuando el relevo cambió en el servidor (C11: versión vigente).
+  return <ReceptorView key={`${result.value.executionId}:${result.value.handoff.version}`} pkg={result.value} token={token as string} />;
 }

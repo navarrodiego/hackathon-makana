@@ -11,13 +11,17 @@ import { Status } from "@/components/ui/status";
 import { OperatorLogin } from "@/components/acceso/operator-login";
 import { isSessionProblem } from "@/components/acceso/messages";
 import { SignOutButton } from "@/components/acceso/sign-out-button";
-import { failureMessage, postJson, touchState } from "./api";
+import { Conexion } from "@/components/proyector/conexion";
+import { announceChange, freshest, useServerViewSync } from "@/lib/client/state";
+import { failureMessage, postJson } from "./api";
 import {
   SCRIPTED_REPORTS, adjacentScene, buildReportRequest, buildResetRequest, buildSceneRequest, buildTakeRequest,
   clockLabel, eventText, resolveShortcut, takeableIncident, type ScriptedReport, type ShortcutState,
 } from "./logic";
 
-const REFRESH_MS = 2000;
+const POLL_MS = 1000;
+/** Relectura de la vista protegida aunque el estado público no cambie (preparación de la nota). */
+const SAFETY_REFRESH_MS = 10_000;
 const newKey = () => `control-${crypto.randomUUID()}`;
 type Notice = { readonly tone: "ok" | "error"; readonly text: string; readonly relogin?: boolean } | null;
 
@@ -27,7 +31,9 @@ type Notice = { readonly tone: "ok" | "error"; readonly text: string; readonly r
  */
 export function ControlPanel({ view }: { view: ControlViewDTO }) {
   const router = useRouter();
-  const { state } = view;
+  const live = useServerViewSync(POLL_MS, SAFETY_REFRESH_MS);
+  // El sondeo muestra el cambio sin esperar a que la página vuelva del servidor; nunca retrocede.
+  const state = freshest(view.state, live.state);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [resetOpen, setResetOpen] = useState(false);
@@ -42,19 +48,6 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
 
   // Estado en refs para que el oyente de teclado sea uno solo y se limpie al desmontar.
   const latest = useRef<Record<string, () => void>>({});
-
-  useEffect(() => {
-    let controller: AbortController | null = null;
-    const tick = async () => {
-      if (document.visibilityState !== "visible") return;
-      controller?.abort();
-      controller = new AbortController();
-      await touchState(controller.signal);
-      router.refresh();
-    };
-    const id = window.setInterval(tick, REFRESH_MS);
-    return () => { window.clearInterval(id); controller?.abort(); };
-  }, [router]);
 
   const keyFor = (intent: string) => {
     let key = keys.current.get(intent);
@@ -74,6 +67,8 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
     const result = await send(key);
     if (result.ok) {
       keys.current.delete(intent);
+      // Los botones vuelven cuando la vista ya tiene la versión que dejó esta acción.
+      await announceChange();
       setNotice({ tone: "ok", text: `${label} Registrado con origen escenario.` });
     } else {
       // Un rechazo definitivo del servidor no se reintenta con la misma clave; un corte sí.
@@ -181,6 +176,7 @@ export function ControlPanel({ view }: { view: ControlViewDTO }) {
 
   return (
     <SurfaceShell title="Control">
+      <Conexion view={live} />
       <p className="max-w-prose text-body">
         Escena actual: <strong>{state.scene.label}</strong> · {clockLabel(state.clocks.narrativeNow)} (hora narrativa). Cambiar de escena no acepta, no acusa ni adelanta plazos.
       </p>

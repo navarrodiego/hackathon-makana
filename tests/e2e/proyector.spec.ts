@@ -34,7 +34,8 @@ test("proyector: consulta cada segundo y deja de consultar al salir", async ({ p
   page.on("request", r => { if (r.url().endsWith("/api/state")) calls.push(Date.now()); });
   await page.goto("/proyector");
   await expect.poll(() => calls.length, { timeout: 8000 }).toBeGreaterThanOrEqual(3);
-  await page.goto("/canal");
+  // La portada no consulta el estado (canal, control y las demás pantallas sí lo hacen).
+  await page.goto("/");
   await page.waitForTimeout(500);
   const before = calls.length;
   await page.waitForTimeout(2500);
