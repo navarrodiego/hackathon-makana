@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-/** Proyector público: solo lectura, QR a /canal, desconexión visible y limpieza al salir. Usa el servidor real. */
+/** Proyector público: solo lectura, desconexión visible y limpieza al salir. Usa el servidor real. El QR y los reportes de la sala, en canal.spec. */
 test.skip(!process.env.APP_ORIGIN, "Falta APP_ORIGIN");
 
-test("proyector: estado, QR, sin controles ni secretos", async ({ page }) => {
+test("proyector: estado sin controles ni secretos", async ({ page }) => {
   await page.goto("/proyector");
   await expect(page.getByRole("heading", { name: "Proyector" })).toBeVisible();
   await expect(page.getByText(/^En vivo/)).toBeVisible();
-  await expect(page.getByRole("img", { name: /Código QR que abre .*\/canal/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Avisos a Rodrigo: \d+/ })).toBeVisible();
   await expect(page.getByText(/despertares:/i)).toHaveCount(0);
   // Para la sala: sin escenas, jerga de proveedor ni resultados por canal (viven en /control).

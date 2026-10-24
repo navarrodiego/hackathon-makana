@@ -17,7 +17,6 @@ function texto(e: PublicEventDTO): string | null {
     coverage_activated: `${who ?? "La persona entrante"} comenzó su cobertura`,
     coverage_unconfirmed: "Sin cobertura confirmada",
     outgoing_ended: who ? `Terminó el turno de ${who}` : "Terminó el turno saliente",
-    report_admitted: "Llegó un reporte",
     incident_created: "Se abrió un incidente",
     incident_escalated: `El incidente pasó${who ? ` a ${who}` : " al respaldo"}`,
     incident_taken: `${who ?? "Alguien"} tomó el incidente`,
@@ -34,20 +33,12 @@ const ACCIONES: readonly EventKind[] = ["handoff_sent", "handoff_accepted", "han
 
 export interface Hecho { id: string; hora: string; texto: string; desdeControl: boolean }
 
-/** Más recientes primero; los reportes seguidos se agrupan («Llegaron 7 reportes») para que el público no tape el relato. */
+/** Más recientes primero. Los reportes no entran: «Reportes de la sala» los muestra con nombre y texto. */
 export function relato(events: readonly PublicEventDTO[], limit = 5): Hecho[] {
   const out: Hecho[] = [];
-  let reportes = 0;
   for (const e of [...events].sort((a, b) => b.sequence - a.sequence)) {
     const t = texto(e);
     if (!t) continue;
-    const prev = out.at(-1);
-    if (e.kind === "report_admitted" && prev && reportes > 0) {
-      reportes += 1;
-      prev.texto = `Llegaron ${reportes} reportes`;
-      continue;
-    }
-    reportes = e.kind === "report_admitted" ? 1 : 0;
     if (out.length === limit) break;
     out.push({ id: e.id, hora: hhmm(e.narrativeAt), texto: t, desdeControl: e.origin === "scenario" && ACCIONES.includes(e.kind) });
   }

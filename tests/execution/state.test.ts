@@ -4,9 +4,11 @@ import { ACCEPTED_FIXTURE, BASE_FIXTURE, INCIDENT_FIXTURE } from '../../src/lib/
 import { at, world } from './helpers';
 
 const FORBIDDEN_KEYS = ['credentialHash', 'token', 'topic', 'opaqueToken', 'idempotencyKey', 'principalKey', 'details', 'savedSuggestion', 'note', 'text'];
+// El texto recortado de los reportes de la sala es público (decisión de Diego del 24-10-2026); ningún otro `text`.
+const allowed = (path: string, k: string) => k === 'text' && /^\.reports\[\d+\]$/.test(path);
 const walk = (value: unknown, path = ''): string[] => {
   if (Array.isArray(value)) return value.flatMap((v, i) => walk(v, `${path}[${i}]`));
-  if (value && typeof value === 'object') return Object.entries(value).flatMap(([k, v]) => [...(FORBIDDEN_KEYS.includes(k) ? [`${path}.${k}`] : []), ...walk(v, `${path}.${k}`)]);
+  if (value && typeof value === 'object') return Object.entries(value).flatMap(([k, v]) => [...(FORBIDDEN_KEYS.includes(k) && !allowed(path, k) ? [`${path}.${k}`] : []), ...walk(v, `${path}.${k}`)]);
   return [];
 };
 
@@ -74,6 +76,8 @@ test('estado público saneado (S02/S03)', async t => {
       assert.equal(incident.candidate?.displayName, 'Paula');
       assert.ok(incident.deadlineAt);
       assert.equal(result.value.outgoingNoticeCount, 0);
+      assert.deepEqual(result.value.reports.map(r => [r.nickname, r.status, r.duplicate]), [['Reporte de prueba', 'incident', false]]);
+      assert.deepEqual(Object.keys(result.value.reports[0]).sort(), ['duplicate', 'id', 'narrativeAt', 'nickname', 'status', 'text']);
       assert.deepEqual(walk(result.value), []);
     } finally { await w.close(); }
   });

@@ -12,6 +12,7 @@ import { cierre } from "./cierre";
 import { Conexion } from "./conexion";
 import { QrImage, type CanalQr } from "./qr-image";
 import { relato } from "./relato";
+import { estadoReporte } from "./reportes";
 
 const SERVICE: Record<string, string> = {
   facturacion: "Facturación", red_locales: "Red de locales", correo: "Correo", vpn: "VPN",
@@ -151,6 +152,30 @@ function LoQuePaso({ state }: { state: PublicStateDTO }) {
   );
 }
 
+/** Lo que escribió la sala, tal cual y recortado en el servidor, con lo que pasó con cada reporte. */
+function ReportesSala({ state }: { state: PublicStateDTO }) {
+  if (state.reports.length === 0) return null;
+  return (
+    <section aria-labelledby="sala-titulo" className="flex flex-col gap-2">
+      <h2 id="sala-titulo" className={LABEL}>Reportes de la sala</h2>
+      <ol className="divide-y divide-line border-y border-line">
+        {state.reports.map(r => {
+          const e = estadoReporte(r);
+          return (
+            <li key={r.id} className="flex gap-5 py-3">
+              <time className="min-w-16 shrink-0 text-body text-muted-foreground tabular-nums">{hhmm(r.narrativeAt)}</time>
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="line-clamp-2 break-words text-body"><span className="font-semibold">{r.nickname}:</span> {r.text}</p>
+                <Status kind={e.kind} className="text-aux">{e.text}</Status>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
 function FaseQr({ state, qr }: { state: PublicStateDTO; qr: CanalQr }) {
   return (
     <div className="grid flex-1 items-center gap-x-20 gap-y-10 lg:grid-cols-[auto_minmax(0,1fr)]">
@@ -180,29 +205,15 @@ function Panel({ state }: { state: PublicStateDTO }) {
       </div>
       <div className="flex flex-col gap-14">
         <AvisosRodrigo count={state.outgoingNoticeCount} emphasis />
+        <ReportesSala state={state} />
         <LoQuePaso state={state} />
       </div>
     </div>
   );
 }
 
-function QrPequeno({ qr }: { qr: CanalQr | null }) {
-  if (!qr) {
-    return <DegradedNotice title="QR no disponible"><p>Falta configurar la dirección pública de la aplicación. Nadie puede enviar reportes desde este QR.</p></DegradedNotice>;
-  }
-  return (
-    <section aria-labelledby="qr-titulo" className="flex items-center gap-5">
-      <QrImage qr={qr} className="size-32" />
-      <div className="flex flex-col gap-1">
-        <h2 id="qr-titulo" className="text-body font-semibold">Envía un reporte</h2>
-        <p className="break-all text-aux text-muted-foreground">{qr.url}</p>
-      </div>
-    </section>
-  );
-}
-
 /**
- * Espejo público para la sala: quién está a cargo, qué pasa ahora y los avisos a Rodrigo. Solo lectura, sin
+ * Espejo público para la sala: quién está a cargo, qué pasa ahora, los avisos a Rodrigo y los reportes de la sala. Solo lectura, sin
  * controles privilegiados. El registro completo y los resultados por canal viven en /control. Sigue consultando
  * cada segundo: esas lecturas evalúan los plazos.
  */
@@ -212,7 +223,8 @@ export function ProyectorView({ qr }: { qr: CanalQr | null }) {
   // Fase QR: al abrirse el canal el QR ocupa la pantalla durante la misma espera que ven los teléfonos (ancla del
   // servidor, así recargar no la reinicia) y cede antes si aparece un incidente.
   const lobby = useLobbyRemaining(view, state?.channelOpen ? state.channelOpenedAt : null);
-  const faseQr = Boolean(state?.channelOpen) && lobby !== 0 && (state?.incidents.length ?? 0) === 0 && qr !== null;
+  const enEspera = Boolean(state?.channelOpen) && lobby !== 0 && (state?.incidents.length ?? 0) === 0;
+  const faseQr = enEspera && qr !== null;
 
   if (!state) {
     return view.status === "loading" ? <LoadingState title="Cargando estado" /> : (
@@ -226,12 +238,11 @@ export function ProyectorView({ qr }: { qr: CanalQr | null }) {
     <div className="flex flex-1 flex-col gap-10">
       <Cabecera state={state} live={view.status === "live" ? <Conexion view={view} /> : null} />
       {view.status === "lost" ? <Conexion view={view} /> : null}
-      {faseQr && qr ? <FaseQr state={state} qr={qr} /> : (
-        <>
-          <Panel state={state} />
-          <footer className="border-t border-line pt-6"><QrPequeno qr={qr} /></footer>
-        </>
-      )}
+      {/* Pasada la espera el QR desaparece: el panel gana espacio y no se suman teléfonos (decisión de Diego del 24-10-2026). */}
+      {enEspera && !qr ? (
+        <DegradedNotice title="QR no disponible"><p>Falta configurar la dirección pública de la aplicación. Nadie puede enviar reportes desde este QR.</p></DegradedNotice>
+      ) : null}
+      {faseQr && qr ? <FaseQr state={state} qr={qr} /> : <Panel state={state} />}
     </div>
   );
 }

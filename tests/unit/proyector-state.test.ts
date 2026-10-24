@@ -37,7 +37,7 @@ test("separa ntfy, in-app, acuse y escenario", () => {
   } as never);
   assert.deepEqual(t, { ntfyAccepted: 1, inAppRecorded: 1, failed: 1, pending: 0, taken: 1, scenarioEvents: 1 });
 });
-test("el relato del proyector deja fuera la puesta en escena y agrupa reportes seguidos", () => {
+test("el relato del proyector deja fuera la puesta en escena y los reportes", () => {
   const ev = (sequence: number, kind: string, origin = "web", actor: string | null = null) =>
     ({ id: `e${sequence}`, sequence, kind, origin, actor: actor ? { id: `a_${actor}`, displayName: actor } : null, narrativeAt: "2026-10-23T22:10:00-03:00" }) as never;
   const r = relato([
@@ -45,7 +45,7 @@ test("el relato del proyector deja fuera la puesta en escena y agrupa reportes s
     ev(4, "report_admitted"), ev(5, "report_admitted"), ev(6, "report_admitted"),
     ev(7, "notification_provider_accepted", "system", "Paula"), ev(8, "incident_taken", "scenario", "Tomás"), ev(9, "handoff_accepted", "scenario", "Tomás"),
   ]);
-  assert.deepEqual(r.map(h => h.texto), ["Tomás aceptó el relevo", "Tomás tomó el incidente", "Llegaron 3 reportes", "Paula aceptó el relevo"]);
-  assert.deepEqual(r.map(h => h.desdeControl), [true, false, false, false]);
+  assert.deepEqual(r.map(h => h.texto), ["Tomás aceptó el relevo", "Tomás tomó el incidente", "Paula aceptó el relevo"]);
+  assert.deepEqual(r.map(h => h.desdeControl), [true, false, false]);
   for (const h of r) assert.doesNotMatch(h.texto, /ntfy|in-app|escena|ejecución|resuelt|despert/i);
 });

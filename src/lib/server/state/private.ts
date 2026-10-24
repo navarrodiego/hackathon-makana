@@ -11,6 +11,7 @@ import { coverageDto, handoffSummary } from "@/lib/server/handoff/dto";
 import { loadState } from "@/lib/server/handoff/engine";
 import { incidentService, incidentSummary } from "@/lib/server/incidents/dto";
 import { actorDto, buildPublicState, preparationOf } from "./public";
+import { reportStatus } from "./reports";
 
 const fail = (code: ErrorCode): { ok: false; code: ErrorCode } => ({ ok: false, code });
 const ticketDto = (t: Ticket): TicketDTO => ({ id: t.id, reference: t.reference, text: t.text, disposition: t.disposition, reason: t.reason });
@@ -87,9 +88,7 @@ export function receipt(report: Report, execution: Execution, tx: ReceiptSources
   const name = (id: ActorId | null | undefined) => id ? actorDto(tx.actors, id).displayName || null : null;
   const intents = incident ? tx.notifications.filter(n => n.subject.kind === "incident" && n.subject.id === incident.id) : [];
   const latest = [...intents].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
-  const route = report.decision?.route;
-  const status: ReportReceiptDTO["status"] = report.status === "processing" ? "processing"
-    : incident ? "incident" : route === "review" ? "review" : route === "out_of_scope" ? "out_of_scope" : "queued";
+  const status = reportStatus(report, incident);
   const output = report.classification?.output ?? null;
   return {
     audience: "reporter", executionId: execution.executionId, reportId: report.id, text: report.text, status,
